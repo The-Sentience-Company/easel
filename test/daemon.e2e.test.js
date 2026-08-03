@@ -128,9 +128,11 @@ test('auto-open: off by default, opt-in opens unwatched boards on wait/publish, 
 
   process.env.EASEL_OPEN_CMD = stub
   process.env.EASEL_AUTO_OPEN_COOLDOWN_MS = '300'
+  process.env.EASEL_WAITING_GRACE_MS = '150'
   const d = startDaemon(port, dir)
   delete process.env.EASEL_OPEN_CMD
   delete process.env.EASEL_AUTO_OPEN_COOLDOWN_MS
+  delete process.env.EASEL_WAITING_GRACE_MS
   try {
     await waitHealthy(base)
     const page = join(dir, 'p.html')
@@ -143,6 +145,7 @@ test('auto-open: off by default, opt-in opens unwatched boards on wait/publish, 
     assert.equal((await papi('POST', '/api/config', { autoOpen: true })).status, 200)
     assert.equal((await papi('GET', '/api/config')).data.autoOpen, true)
 
+    await new Promise((r) => setTimeout(r, 200)) // let the grace lapse: next attach is a new wait
     await papi('POST', `/api/b/${k}/await`, { agent: 'ao-agent', timeoutS: 1 })
     assert.deepEqual(opened(), [`${base}/b/${k}`], 'wait-start must open the board')
 
@@ -153,10 +156,34 @@ test('auto-open: off by default, opt-in opens unwatched boards on wait/publish, 
     await papi('POST', `/api/b/${k}/publish`, {})
     for (let i = 0; i < 20 && opened().length < 2; i++) await new Promise((r) => setTimeout(r, 50))
     assert.equal(opened().length, 2, 'publish after the cooldown must open again')
+
+    // What `easel await` really does: window expires, re-attach, repeat. One wait,
+    // so one tab — the expiry gap must not read as the agent leaving and returning.
+    const before = opened().length
+    for (let i = 0; i < 3; i++) {
+      const r = await papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 1 })
+      assert.equal(r.data.timedOut, true, `window ${i} should expire, not resolve`)
+      assert.equal((await papi('GET', `/api/b/${k}/status`)).data.agentWaiting, true, `waiting across ${i}`)
+    }
+    assert.equal(opened().length, before + 1, 're-attaching must not reopen the board')
+
+    // Nothing re-attaches: the wait is genuinely over and the next one counts as new.
+    await new Promise((r) => setTimeout(r, 250))
+    assert.equal((await papi('GET', `/api/b/${k}/status`)).data.agentWaiting, false, 'wait ends after grace')
+    await papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 1 })
+    assert.equal(opened().length, before + 2, 'a genuinely new wait opens again')
+
+    // Feedback landing inside the gap: that re-attach collects and exits instead of
+    // parking, so the wait is over now and must not linger for the whole grace.
+    await papi('POST', `/api/b/${k}/chat`, { clientId: 'c-gap', text: 'landed in the gap' })
+    const caught = await papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 1 })
+    assert.ok(caught.data.items.length > 0, 'the re-attach collects the queued feedback')
+    assert.equal((await papi('GET', `/api/b/${k}/status`)).data.agentWaiting, false, 'no phantom wait')
   } finally {
     d.kill()
   }
 })
+
 
 test('open creates round 1; second open of same file is idempotent', async () => {
   const first = await api('POST', '/api/open', { file: PAGE, title: 'e2e' })

@@ -205,8 +205,21 @@ async function maybeAutoOpen(key) {
 
 const waiters = new Map() // key -> Set<waiter>
 
+// A window expiring empties the set until the CLI re-attaches; that gap is not
+// the agent leaving, so the board stays logically waiting across it.
+const waitingGrace = new Map() // key -> timer running since the set emptied
+const WAITING_GRACE_MS = Number(process.env.EASEL_WAITING_GRACE_MS || 30000)
+
 function agentWaiting(key) {
-  return (waiters.get(key)?.size ?? 0) > 0
+  return (waiters.get(key)?.size ?? 0) > 0 || waitingGrace.has(key)
+}
+
+function endGrace(key) {
+  const timer = waitingGrace.get(key)
+  if (!timer) return false
+  clearTimeout(timer)
+  waitingGrace.delete(key)
+  return true
 }
 
 // One waiter per (board, agent): a new attach supersedes the old one.
@@ -216,23 +229,41 @@ function addWaiter(key, waiter) {
   if (!waiters.has(key)) waiters.set(key, new Set())
   const set = waiters.get(key)
   const wasEmpty = set.size === 0
+  const reattach = endGrace(key)
   const old = [...set].find((w) => w.agent === waiter.agent)
   set.add(waiter)
   if (old) old.supersede()
-  if (wasEmpty) {
+  if (wasEmpty && !reattach) {
     broadcast(key, 'agent', { waiting: true })
     maybeAutoOpen(key)
   }
 }
 
-function removeWaiter(key, waiter) {
+// grace is for the expiry path only: the server ended that window, so the CLI is
+// about to re-attach. A dropped socket or a cancel is the agent actually gone.
+function removeWaiter(key, waiter, grace = false) {
   const set = waiters.get(key)
   if (!set) return
   set.delete(waiter)
-  if (set.size === 0) {
-    waiters.delete(key)
+  if (set.size !== 0) return
+  waiters.delete(key)
+  if (!grace) {
     broadcast(key, 'agent', { waiting: false })
+    return
   }
+  if (waitingGrace.has(key)) return
+  const timer = setTimeout(() => {
+    waitingGrace.delete(key)
+    broadcast(key, 'agent', { waiting: false })
+  }, WAITING_GRACE_MS)
+  timer.unref?.()
+  waitingGrace.set(key, timer)
+}
+
+// Cancel and end are the agent deliberately leaving — no re-attach is coming, so
+// the wait ends now instead of lingering for the grace window.
+function clearWaitingNow(key) {
+  if (endGrace(key)) broadcast(key, 'agent', { waiting: false })
 }
 
 function wakeWaiters(key) {
@@ -242,6 +273,7 @@ function wakeWaiters(key) {
 function cancelWaiters(key) {
   const set = [...(waiters.get(key) ?? [])]
   for (const waiter of set) waiter.cancel()
+  clearWaitingNow(key)
   return set.length
 }
 
@@ -637,6 +669,8 @@ async function handleAwait(req, res, match) {
     // The fast path must uphold the one-waiter-per-agent invariant too.
     const stale = [...(waiters.get(board.key) ?? [])].find((w) => w.agent === agent)
     if (stale) stale.supersede()
+    // This re-attach collects and exits rather than parking, so the wait is over.
+    clearWaitingNow(board.key)
     return respond(initial)
   }
 
@@ -658,16 +692,16 @@ async function handleAwait(req, res, match) {
     },
   }
   const timer = setTimeout(() => {
-    cleanup()
+    cleanup(true)
     respond([], { timedOut: true })
   }, timeoutS * 1000)
-  const cleanup = () => {
+  const cleanup = (expired = false) => {
     clearTimeout(timer)
-    removeWaiter(board.key, waiter)
+    removeWaiter(board.key, waiter, expired)
   }
   // res, not req: the request stream is fully consumed by now, so its 'close'
   // has already fired; res 'close' fires when the connection actually drops.
-  res.on('close', cleanup)
+  res.on('close', () => cleanup())
   addWaiter(board.key, waiter)
 }
 
