@@ -842,6 +842,11 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   color: inherit;
 }
 
+/* mmdc sized every node box around a label laid out at mermaid's own metrics, so
+   the page's line-height reflows it taller than the box the SVG then clips.
+   On the foreignObject, not its contents: mermaid's own inline value must win. */
+#sf-content .sd-diagram svg foreignObject { line-height: normal; }
+
 /* A diagram that failed to render degrades to this small block. Never a bomb. */
 .sd-diagram-error {
   border: 1px solid var(--color-error);
@@ -1023,8 +1028,32 @@ button.sf-marker:hover { filter: brightness(1.12); }
 /* Widget rows anchor to a sid but carry no marker hue, so these fall back. */
 #sf-content .sf-linked { background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent); }
 .sf-queue-item.sf-linked { border-color: var(--marker-color, var(--color-primary)); }
+/* An overlay child, not an inset box-shadow: a marked block whose child paints
+   its own background (a card in a grid) covers anything drawn inside it. */
+#sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed) {
+  position: relative;
+}
+#sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--diff-edge);
+  pointer-events: none;
+  /* Above a positioned child — an annotated card, a diagram — that paints its own. */
+  z-index: 1;
+}
+#sf-content .sf-diff-added    { --diff-edge: var(--color-success); }
+#sf-content .sf-diff-modified { --diff-edge: var(--color-warning); }
+#sf-content .sf-diff-moved    { --diff-edge: var(--color-info); }
+#sf-content .sf-diff-removed  { --diff-edge: var(--color-error); }
+
 /* Tints an overlay child, not the element: animating background would blank the
-   element's own for the whole run, and box-shadow is the diff marks' channel. */
+   element's own for the whole run. Declared after the diff bar, which shares
+   this pseudo-element, so a flash outranks it for its 1.2s. */
 @keyframes sf-flash {
   0%, 100% { opacity: 0; }
   30%      { opacity: 1; }
@@ -1035,6 +1064,7 @@ button.sf-marker:hover { filter: brightness(1.12); }
   content: "";
   position: absolute;
   inset: 0;
+  width: auto; /* or the diff bar's 3px would survive and tint a strip, not the block */
   pointer-events: none;
   border-radius: 3px;
   background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 22%, transparent);
@@ -1044,10 +1074,6 @@ button.sf-marker:hover { filter: brightness(1.12); }
   #sf-content .sf-flash::after { animation-duration: 0.01s; }
 }
 
-#sf-content .sf-diff-added    { box-shadow: inset 3px 0 0 var(--color-success); }
-#sf-content .sf-diff-modified { box-shadow: inset 3px 0 0 var(--color-warning); }
-#sf-content .sf-diff-moved    { box-shadow: inset 3px 0 0 var(--color-info); }
-#sf-content .sf-diff-removed  { box-shadow: inset 3px 0 0 var(--color-error); }
 /* In-place ghosts from diff.removedDetail; hidden until the Removed toggle. */
 .sf-ghost-item { display: none; }
 #sf-content.sf-show-removed .sf-ghost-item {

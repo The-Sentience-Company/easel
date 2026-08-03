@@ -345,7 +345,7 @@ function scrubCss(css) {
   return out
 }
 
-function sanitizeAttrs(el) {
+function sanitizeAttrs(el, inSvg = false) {
   if (!el.attrs) return
   const svg = isSvg(el)
   el.attrs = el.attrs.filter((a) => {
@@ -362,7 +362,15 @@ function sanitizeAttrs(el) {
       a.value = scrubbed
       return true
     }
-    if (name === 'style') return false // css url() exfil from HTML-context markup
+    if (name === 'style') {
+      // A mermaid label lives in HTML inside <foreignObject>, and mmdc sized its
+      // node box around the metrics these carry. Scrubbed like any SVG css.
+      if (!inSvg) return false // css url() exfil from HTML-context markup
+      const scrubbed = scrubCss(a.value)
+      if (scrubbed === null) return false
+      a.value = scrubbed
+      return true
+    }
     if (name.startsWith('data-') || name.startsWith('aria-')) return true
     return HTML_ATTRS.has(name)
   })
@@ -378,7 +386,7 @@ function allowedElement(el) {
   return isSvg(el) ? SVG_ELEMENTS.has(tag) : HTML_ELEMENTS.has(tag)
 }
 
-function sanitize(node) {
+function sanitize(node, inSvg = false) {
   const out = []
   for (const child of node.childNodes || []) {
     if (!child.tagName) {
@@ -386,9 +394,9 @@ function sanitize(node) {
       continue
     }
     if (dropWhole(child)) continue
-    sanitize(child) // sanitize descendants before keeping or promoting them
+    sanitize(child, inSvg || isSvg(child)) // descendants first, keep or promote after
     if (allowedElement(child)) {
-      sanitizeAttrs(child)
+      sanitizeAttrs(child, inSvg)
       if (isSvg(child) && child.tagName.toLowerCase() === 'style') {
         for (const t of child.childNodes || []) {
           if (t.nodeName === '#text') t.value = scrubCss(t.value) ?? ''

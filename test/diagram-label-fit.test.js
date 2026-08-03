@@ -77,3 +77,45 @@ test('a label too wide for its box wraps instead of overflowing', SLOW, async ()
   )
   assert.ok(texts.includes('no nothing, annotate'), `expected a wrapped first line, got ${JSON.stringify(texts)}`)
 })
+
+// mmdc sizes each node box around a label laid out at mermaid's metrics. The page
+// it lands in has its own line-height, and an SVG clips what leaves its viewBox.
+test('a mermaid label still fits its box inside the board page', SLOW, async () => {
+  const { preRender } = await import('../render/mermaid.js')
+  const { annotateAndDiff } = await import('../daemon/differ.js')
+  const { readFile } = await import('node:fs/promises')
+  const source = `graph LR
+  A["Executor needs your call<br/>(decision / review / merge OK)"] --> B["Round report to the orchestrator<br/>over the bridge — already<br/>happens today, nothing new"]`
+  const rendered = await preRender(`<pre class="mermaid">${source.replaceAll('<', '&lt;')}</pre>`, { excalidraw: false })
+  // Through the publish path, not the raw render: the sanitizer is what used to
+  // drop the label's own metrics and leave the page's line-height to reflow it.
+  const { html: published } = annotateAndDiff(rendered)
+  const css = await readFile(new URL('../chrome/easel.css', import.meta.url), 'utf8')
+
+  const page = await browser.newPage()
+  try {
+    await page.setContent(
+      `<!doctype html><html data-theme="lantern"><head><style>${css}</style></head>` +
+        `<body class="sf-shell"><main id="sf-content">${published}</main></body></html>`
+    )
+    await page.evaluate(() => document.fonts.ready)
+    const spills = await page.evaluate(() => {
+      const out = []
+      for (const svg of document.querySelectorAll('.sd-diagram .sd-svg-light svg')) {
+        const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width || 1
+        for (const fo of svg.querySelectorAll('foreignObject')) {
+          const div = fo.firstElementChild
+          if (!div) continue
+          const top = div.getBoundingClientRect().top
+          const bottom = Math.max(...[...div.querySelectorAll('*')].map((k) => k.getBoundingClientRect().bottom))
+          const over = Math.round((bottom - top) / scale - fo.height.baseVal.value)
+          if (over > 1) out.push({ text: div.textContent.trim().slice(0, 30), over })
+        }
+      }
+      return out
+    })
+    assert.deepEqual(spills, [], `labels must fit the boxes mmdc drew, but these spilled: ${JSON.stringify(spills)}`)
+  } finally {
+    await page.close()
+  }
+})

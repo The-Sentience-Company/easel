@@ -74,14 +74,7 @@ const PAGE_JOB = async (source, dark) => {
     // Unsupported diagram types come back as a rasterised <image> embed rather
     // than shapes; the plain mermaid path renders those better, so report it.
     if (elements.some((el) => el.type === 'image')) return { unsupported: true }
-    // Excalidraw text has no markup, so a <br/> label arrives literal; the node
-    // is already sized for the extra line. Mirrored in chrome/whiteboard-frame.js.
-    const br = /<br\s*\/?>/gi
-    for (const el of elements) {
-      if (typeof el.text === 'string') el.text = el.text.replace(br, '\n')
-      if (typeof el.label?.text === 'string') el.label.text = el.label.text.replace(br, '\n')
-    }
-    const converted = window.__excal.convertToExcalidrawElements(elements)
+    const converted = window.__excal.convertToExcalidrawElements(window.__excal.normalizeSkeleton(elements))
     const svg = await window.__excal.exportToSvg({
       elements: converted,
       files: files ?? {},

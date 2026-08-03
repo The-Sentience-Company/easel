@@ -20,15 +20,24 @@ const VERSION = '0.1.0'
 
 // The running build vs what is on disk: if the checkout has moved past the commit
 // this process booted from, the daemon is serving stale code until `easel update`.
+// Forking git costs ~50ms and blocks the loop; the index polls the build every
+// two seconds, so the answer is cached just long enough to stay out of the way.
+const HEAD_TTL_MS = 15000
+let headCache = { at: -Infinity, commit: null }
+
 function headCommit() {
+  if (Date.now() - headCache.at < HEAD_TTL_MS) return headCache.commit
+  let commit = null
   try {
-    return execFileSync('git', ['-C', ROOT, 'rev-parse', '--short', 'HEAD'], {
+    commit = execFileSync('git', ['-C', ROOT, 'rev-parse', '--short', 'HEAD'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim()
   } catch {
-    return null
+    commit = null
   }
+  headCache = { at: Date.now(), commit }
+  return commit
 }
 const BOOT_COMMIT = headCommit()
 
@@ -273,7 +282,10 @@ function addWaiter(key, waiter) {
   if (old) old.supersede()
   if (wasEmpty && !reattach) {
     broadcast(key, 'agent', { waiting: true })
-    maybeAutoOpen(key)
+    // Grace covers an in-process re-attach; the flag covers one that outlived it.
+    // Answered: the agent collected a reply and went back to waiting on the same
+    // round — a tab there shows the reader only what they already responded to.
+    if (!waiter.resumed && !store.answeredCurrentRound(key)) maybeAutoOpen(key)
   }
 }
 
@@ -516,6 +528,9 @@ html[data-theme$="dark"] .badge.lost{color:#ff7b72}
 .state{font-size:11px;opacity:.7}
 .legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin:2px 0 10px;font-size:11px;opacity:.65}
 .legend span{display:flex;align-items:center;gap:6px}
+#pager{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 0;font-size:12px;opacity:.8}
+#pager button{font:inherit;padding:5px 10px;border-radius:8px;cursor:pointer;border:1px solid color-mix(in srgb,CanvasText 18%,Canvas);background:color-mix(in srgb,CanvasText 5%,Canvas);color:inherit}
+#pager button:disabled{opacity:.4;cursor:default}
 </style></head>
 <body><div class="wrap">
 <div class="top"><h1>easel sessions <span id="count"></span></h1>
@@ -529,6 +544,7 @@ html[data-theme$="dark"] .badge.lost{color:#ff7b72}
 </div>
 <div id="stale"></div>
 <div id="rows"><p>Loading…</p></div>
+<div id="pager"></div>
 </div>
 <script>
 const favicon = (waiting) => {
@@ -536,9 +552,8 @@ const favicon = (waiting) => {
   document.getElementById('favicon').href = 'data:image/svg+xml,' + svg
 }
 function basename(p) { return (p || '').split('/').pop() }
-function render(boards) {
-  const rank = (s) => (s.agentWaiting ? 0 : s.listenerLost ? 1 : s.connectedTabs ? 2 : s.status === 'open' ? 3 : 4)
-  boards.sort((a, b) => rank(a) - rank(b) || b.updatedAt.localeCompare(a.updatedAt))
+function render(d) {
+  const boards = d.boards
   const rows = document.getElementById('rows')
   rows.replaceChildren()
   for (const s of boards) {
@@ -573,10 +588,33 @@ function render(boards) {
     rows.appendChild(row)
   }
   if (!boards.length) rows.innerHTML = '<p>No sessions yet.</p>'
-  const waiting = boards.filter((s) => s.agentWaiting).length
-  document.getElementById('count').textContent = '(' + boards.length + ')'
-  document.title = (waiting ? '(' + waiting + ') ' : '') + 'easel sessions'
-  favicon(waiting > 0)
+  document.getElementById('count').textContent = '(' + d.total + ')'
+  document.title = (d.waiting ? '(' + d.waiting + ') ' : '') + 'easel sessions'
+  favicon(d.waiting > 0)
+  renderPager(d)
+}
+// Ranked server-side, so a page is the next hundred of one list, not a slice of
+// whatever came back. Paging never pauses the poll; the offset just sticks.
+function renderPager(d) {
+  const el = document.getElementById('pager')
+  el.replaceChildren()
+  if (d.total <= PAGE) return
+  const first = d.offset + 1
+  const last = Math.min(d.offset + PAGE, d.total)
+  const button = (label, target) => {
+    const b = document.createElement('button')
+    b.textContent = label
+    b.disabled = target == null
+    b.onclick = () => { offset = target; tick() }
+    return b
+  }
+  const where = document.createElement('span')
+  where.textContent = first + '–' + last + ' of ' + d.total
+  el.append(
+    button('← Newer', d.offset > 0 ? Math.max(0, d.offset - PAGE) : null),
+    where,
+    button('Older →', last < d.total ? d.offset + PAGE : null)
+  )
 }
 function renderStale(d) {
   const el = document.getElementById('stale')
@@ -587,11 +625,14 @@ function renderStale(d) {
   p.textContent = 'Daemon is running ' + d.commit + ' but the checkout is at ' + d.onDisk + ' — run: easel update'
   el.appendChild(p)
 }
+const PAGE = 100
+let offset = 0
 async function tick() {
   try {
-    const d = await (await fetch('/api/status')).json()
+    const d = await (await fetch('/api/status?limit=' + PAGE + '&offset=' + offset)).json()
+    offset = d.offset
     renderStale(d.daemon)
-    render(d.boards)
+    render(d)
   } catch {}
 }
 tick()
@@ -741,6 +782,9 @@ async function handleAwait(req, res, match) {
 
   const waiter = {
     agent,
+    // A re-attach continues a wait that was already running, so it must not read
+    // as a fresh one — after a daemon restart every live agent re-attaches at once.
+    resumed: body.resumed === true,
     check() {
       const items = store.submittedSince(board.key, cursor)
       if (!items.length) return
@@ -989,9 +1033,18 @@ const handlers = {
     json(res, 200, { cancelled: cancelWaiters(board.key) })
   },
 
-  statusAll(req, res) {
-    const boards = store.allBoards().map((s) => statusRow(s))
-    json(res, 200, { daemon: buildInfo(), boards })
+  // Paginated only when asked: the CLI and `easel status` still want every board.
+  // Ranked here rather than in the page, or a slice would be an arbitrary hundred.
+  statusAll(req, res, match, url) {
+    const rounds = store.roundCounts()
+    const all = store.allBoards().map((s) => statusRow(s, rounds.get(s.key) ?? 0))
+    all.sort((a, b) => statusRank(a) - statusRank(b) || String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    const total = all.length
+    const waiting = all.filter((r) => r.agentWaiting).length
+    const limit = positiveInt(url.searchParams.get('limit'))
+    const offset = Math.min(positiveInt(url.searchParams.get('offset')) ?? 0, Math.max(0, total - 1))
+    const boards = limit == null ? all : all.slice(offset, offset + limit)
+    json(res, 200, { daemon: buildInfo(), boards, total, waiting, offset, limit: limit ?? null })
   },
 
   async config(req, res) {
@@ -1266,7 +1319,7 @@ const ASSET_TYPES = {
   '.png': 'image/png',
 }
 
-function statusRow(s) {
+function statusRow(s, roundCount = null) {
   const unacked = {}
   for (const c of store.cursorsFor(s.key)) {
     unacked[c.agent_id] = store.submittedSince(s.key, c.acked_upto).length
@@ -1278,7 +1331,7 @@ function statusRow(s) {
     dataFile: s.data_file,
     template: s.template,
     status: s.status,
-    rounds: store.rounds(s.key).length,
+    rounds: roundCount ?? store.rounds(s.key).length,
     unacked,
     updatedAt: s.updated_at,
     agentWaiting: agentWaiting(s.key),
@@ -1331,6 +1384,17 @@ const validIndex = (value) => {
   const n = Number(value)
   return Number.isInteger(n) && n >= 0 && n <= 999 ? n : null
 }
+
+/** null for absent or nonsense, so a bad ?limit= reads as "no pagination". */
+const positiveInt = (value) => {
+  const n = Number(value)
+  return value != null && Number.isInteger(n) && n > 0 ? n : null
+}
+
+// The index groups by what the reader is looking for: an agent blocked on them
+// first, a lost listener next, then live tabs, idle boards, and ended ones last.
+const statusRank = (r) =>
+  r.agentWaiting ? 0 : r.listenerLost ? 1 : r.connectedTabs ? 2 : r.status === 'open' ? 3 : 4
 
 /** Sources for what the tab is actually showing: WIP when the board has
     unpublished changes, otherwise the round's own. */

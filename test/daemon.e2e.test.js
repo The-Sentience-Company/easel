@@ -319,6 +319,33 @@ test('CLI: exit 0 on success, exit 1 with readable error on failure', async () =
   })
 })
 
+// The index polls this every two seconds; unpaged it shipped every board on the
+// machine each time. The CLI still asks for all of them, so paging is opt-in.
+test('status pages on request and reports the whole list either way', async () => {
+  for (const n of [1, 2]) {
+    const page = join(DATA_DIR, `paged-${n}.html`)
+    writeFileSync(page, `<h1>paged ${n}</h1>`)
+    await api('POST', '/api/open', { file: page, title: `paged ${n}` })
+  }
+  const all = (await api('GET', '/api/status')).data
+  assert.ok(all.total >= 3, `expected at least three boards, got ${all.total}`)
+  assert.equal(all.boards.length, all.total, 'no limit means no slicing')
+  assert.equal(all.limit, null)
+
+  const first = (await api('GET', '/api/status?limit=2&offset=0')).data
+  assert.equal(first.boards.length, 2)
+  assert.equal(first.total, all.total, 'the count is of the whole list, not the page')
+  const second = (await api('GET', '/api/status?limit=2&offset=2')).data
+  assert.equal(second.offset, 2)
+  const paged = [...first.boards, ...second.boards].map((b) => b.key)
+  assert.deepEqual(paged, all.boards.slice(0, paged.length).map((b) => b.key), 'pages walk one ranked list')
+  assert.equal(new Set(paged).size, paged.length, 'a board must not appear on two pages')
+
+  // A junk limit reads as "no pagination" rather than an empty page.
+  const junk = (await api('GET', '/api/status?limit=-4')).data
+  assert.equal(junk.boards.length, junk.total)
+})
+
 test('health and status carry the build, and agree on it', async () => {
   const h = (await api('GET', '/health')).data
   assert.equal(h.app, 'easel')

@@ -28,6 +28,8 @@ export function createStore(db = openDb()) {
        VALUES (@surface_key, @seq, @html, @note, @diff_json, @audit_json, @diagrams_json, @islands_json, @at)`
     ),
     rounds: db.prepare(`SELECT seq, note, published_at FROM rounds WHERE surface_key = ? ORDER BY seq`),
+    // One grouped count, because the index asks every board for its round count.
+    roundCounts: db.prepare(`SELECT surface_key, count(*) AS n FROM rounds GROUP BY surface_key`),
     round: db.prepare(`SELECT * FROM rounds WHERE surface_key = ? AND seq = ?`),
     lastRound: db.prepare(`SELECT * FROM rounds WHERE surface_key = ? ORDER BY seq DESC LIMIT 1`),
 
@@ -41,6 +43,11 @@ export function createStore(db = openDb()) {
     deleteFeedback: db.prepare(`DELETE FROM feedback WHERE id = ?`),
     submittedSince: db.prepare(
       `SELECT * FROM feedback WHERE surface_key = ? AND state = 'submitted' AND id > ? ORDER BY id`
+    ),
+    // "Has the reader already had their say on what is on screen" — auto-open asks.
+    submittedInRound: db.prepare(
+      `SELECT count(*) AS n FROM feedback WHERE surface_key = ? AND state = 'submitted'
+       AND round_seq = (SELECT max(seq) FROM rounds WHERE surface_key = ?)`
     ),
     draftsForClient: db.prepare(
       `SELECT * FROM feedback WHERE surface_key = ? AND state = 'draft' AND client_id = ? ORDER BY id`
@@ -183,6 +190,7 @@ export function createStore(db = openDb()) {
     },
     wipIslands: (key) => parseJson(q.boardByKey.get(key)?.wip_islands_json),
     rounds: (key) => q.rounds.all(key).map((r) => ({ seq: r.seq, note: r.note, publishedAt: r.published_at })),
+    roundCounts: () => new Map(q.roundCounts.all().map((r) => [r.surface_key, r.n])),
     round: (key, seq) => q.round.get(key, seq),
     lastRound: (key) => q.lastRound.get(key),
 
@@ -207,6 +215,7 @@ export function createStore(db = openDb()) {
     feedbackRow: (id) => q.feedbackById.get(id),
     deleteFeedback: (id) => q.deleteFeedback.run(id),
     submittedSince: (key, since) => q.submittedSince.all(key, since).map(feedbackItem),
+    answeredCurrentRound: (key) => q.submittedInRound.get(key, key).n > 0,
     draftsForClient: (key, clientId) => q.draftsForClient.all(key, clientId).map(feedbackItem),
     // Drafts move to the top of the id sequence on submit so they always land
     // ahead of every cursor (id-as-cursor breaks if an old draft submits late).

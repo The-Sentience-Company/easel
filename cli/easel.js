@@ -33,7 +33,10 @@ async function request(method, path, body, { timeoutMs } = {}) {
       signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
     })
   } catch (err) {
-    throw Object.assign(new Error(`daemon unreachable at ${BASE}: ${err.cause?.code || err.message}`), { connection: true })
+    throw Object.assign(new Error(`daemon unreachable at ${BASE}: ${err.cause?.code || err.message}`), {
+      connection: true,
+      code: err.cause?.code || null,
+    })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { http: true })
@@ -136,10 +139,16 @@ const commands = {
         // An HTTP error is terminal: no such board, or 409 board ended.
         if (err.http) fail(err.message)
         // Transport drop (daemon restarting, network blip): bounded backoff, silent re-attach.
+        // A refused connection never reached a daemon, so that attach still has to
+        // count as the first one; anything else was in flight and already landed.
+        if (err.code !== 'ECONNREFUSED') body.resumed = true
         await new Promise((r) => setTimeout(r, backoff))
         backoff = Math.min(backoff * 2, 30000)
         continue
       }
+      // Every attach after one that landed continues this wait rather than starting
+      // one — what keeps a daemon restart from auto-opening every live board.
+      body.resumed = true
       backoff = 1000
       if (data.timedOut) continue // window expired — re-attach with the same cursor
       output(data, values.json)

@@ -16,10 +16,13 @@ export const REBUILD_CMD = 'node render/build-excalidraw.mjs'
 const BUILDER = 'render/build-excalidraw.mjs'
 
 export const BUNDLES = [
-  { out: 'render/.gen/excalidraw-bundle.js', inputs: ['render/excalidraw-entry.js'] },
+  {
+    out: 'render/.gen/excalidraw-bundle.js',
+    inputs: ['render/excalidraw-entry.js', 'render/diagram-palette.js'],
+  },
   {
     out: 'render/.gen/whiteboard/whiteboard.js',
-    inputs: ['chrome/whiteboard-frame.js', 'chrome/whiteboard-protocol.js'],
+    inputs: ['chrome/whiteboard-frame.js', 'chrome/whiteboard-protocol.js', 'render/diagram-palette.js'],
   },
   { out: 'render/.gen/whiteboard/frame.css', inputs: ['chrome/whiteboard-frame.css'] },
 ].map((b) => ({ ...b, inputs: [...b.inputs, BUILDER] }))

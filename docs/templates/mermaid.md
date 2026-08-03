@@ -8,7 +8,11 @@ A ```` ```mermaid ```` fence in any prose field becomes `<pre class="mermaid">so
 
 **Every diagram gets its own timeout** (`options.timeoutMs`, default 20s). The headless render can hang rather than exit, and `execFile`'s timeout kills the process instead of waiting on it. Without the cap one bad diagram stalls a publish indefinitely.
 
-`<br/>` in a label is honoured everywhere: mmdc renders it as a line break, and the excalidraw sketch and whiteboard paths normalize it to a real newline in the parsed label text (excalidraw has no label markup). The normalization lives in `PAGE_JOB` and is mirrored in `chrome/whiteboard-frame.js`.
+`<br/>` in a label is honoured everywhere: mmdc renders it as a line break, and the excalidraw sketch and whiteboard paths normalize it to a real newline in the parsed label text (excalidraw has no label markup). That normalization lives in `render/diagram-palette.js`, which both paths call.
+
+## Sketch and whiteboard colour
+
+The mermaid→excalidraw converter carries only colour the source declared, so an unstyled diagram would convert to white boxes. `normalizeSkeleton()` fills nodes in (decisions apart from the rest) for the sketch look and the whiteboard alike. **One `classDef` or `style` line turns the default palette off for the whole diagram** — a source that paints two nodes keeps every other node neutral, because half-painting would make "neutral" read as a third meaning the author never wrote.
 
 ## Failure behavior
 

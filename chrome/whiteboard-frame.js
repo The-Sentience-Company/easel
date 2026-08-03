@@ -6,6 +6,7 @@ import { parseMermaidToExcalidraw } from '@excalidraw/mermaid-to-excalidraw'
 import { createElement, useEffect, useState, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { WB } from './whiteboard-protocol.js'
+import { normalizeSkeleton } from '../render/diagram-palette.js'
 
 // EXCALIDRAW_ASSET_PATH is set by the frame page, not here: excalidraw registers
 // its fonts at module init, which import hoisting runs before this file's body.
@@ -198,13 +199,7 @@ function App() {
         try {
           await drawingFontReady(message.source)
           const { elements, files } = await parseMermaidToExcalidraw(message.source)
-          // <br/> labels arrive literal; render them as line breaks. Mirrors PAGE_JOB.
-          const br = /<br\s*\/?>/gi
-          for (const el of elements) {
-            if (typeof el.text === 'string') el.text = el.text.replace(br, '\n')
-            if (typeof el.label?.text === 'string') el.label.text = el.label.text.replace(br, '\n')
-          }
-          a.updateScene({ elements: convertToExcalidrawElements(elements) })
+          a.updateScene({ elements: convertToExcalidrawElements(normalizeSkeleton(elements)) })
           if (files) a.addFiles(Object.values(files))
           fitBoard()
           showStatus({ kind: 'ok', text: '' })
