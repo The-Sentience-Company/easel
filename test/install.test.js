@@ -276,7 +276,7 @@ describe('install.sh: remove_owned_link', () => {
     ROOT=${JSON.stringify(root)}
     CLI="$ROOT/cli/easel.js"
     ${fn}
-    remove_owned_link ${JSON.stringify(dir)}
+    remove_owned_link ${JSON.stringify(dir)} easel
   `
 
   const writeEntryFor = (root, dir) => runBash(`

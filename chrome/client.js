@@ -364,6 +364,19 @@ function restoreDetails() {
   }
 }
 
+// Queue boards emit <time data-live-age datetime>; recompute so a long-open
+// tab never shows a stale "waiting" age. Publish-time text is the fallback.
+function refreshLiveAges() {
+  for (const t of CONTENT.querySelectorAll('time[data-live-age]')) {
+    const ms = Date.parse(t.getAttribute('datetime') || '')
+    if (Number.isNaN(ms)) continue
+    const m = Math.floor((Date.now() - ms) / 60000)
+    const age = m < 1 ? 'just now' : m < 60 ? `${m}m` : m < 2880 ? `${Math.floor(m / 60)}h` : `${Math.floor(m / 1440)}d`
+    t.textContent = `waiting ${age}`
+  }
+}
+setInterval(refreshLiveAges, 30_000)
+
 function render() {
   const d = state.data
   if (!d) return
@@ -373,6 +386,7 @@ function render() {
   const html = showWip ? d.wip.html : d.currentRound.html
   CONTENT.innerHTML = html
   restoreDetails()
+  refreshLiveAges()
   CONTENT.classList.toggle('sf-wip', Boolean(showWip))
   show(ui.wipMarker, Boolean(d.wip))
 

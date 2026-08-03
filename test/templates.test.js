@@ -9,13 +9,14 @@ import * as review from '../templates/review.js'
 import * as evalT from '../templates/eval.js'
 import * as page from '../templates/page.js'
 import * as answerKey from '../templates/answer-key.js'
+import * as queue from '../templates/queue.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
 
-const TEMPLATES = [review, evalT, page, answerKey]
+const TEMPLATES = [review, evalT, page, answerKey, queue]
 
 describe('contract: every template', () => {
   test('renders sample data to body-inner HTML with no document tags', async () => {
@@ -599,5 +600,69 @@ describe('answer-key', () => {
 
   test('emits no form controls — the publish sanitizer drops them', async () => {
     assert.doesNotMatch(answerKey.render(await base()), /<\s*(input|textarea|select)\b/i)
+  })
+})
+
+describe('queue', () => {
+  const base = () => sample('queue')
+
+  test('open entries render before answered, and only open entries get widgets', async () => {
+    const html = queue.render(await base())
+    const openAt = html.indexOf('Waiting on you')
+    const answeredAt = html.indexOf('Answered')
+    assert.ok(openAt >= 0 && answeredAt >= 0 && openAt < answeredAt)
+    const ids = [...html.matchAll(/data-widget-id="([^"]+)"/g)].map((m) => m[1])
+    assert.deepEqual(ids, ['design-note-extraction-table', 'merge-order-4801'])
+    assert.ok(html.includes('needs your review'), 'answered entry text must still render')
+  })
+
+  test('an entry with no options gets the approve/reject/discuss default', async () => {
+    const html = queue.render(await base())
+    const first = html.slice(html.indexOf('design-note-extraction-table'))
+    for (const opt of ['approve', 'reject', 'discuss']) {
+      assert.ok(first.includes(`data-option="${opt}"`), `default option ${opt} missing`)
+    }
+    assert.ok(html.includes('data-option="hold for schema PR"'), 'explicit options must be honoured')
+  })
+
+  test('open entries carry a live-age time element pinned to filed_at', async () => {
+    const html = queue.render(await base())
+    const ages = [...html.matchAll(/<time class="sd-muted" datetime="([^"]+)" data-live-age>waiting /g)]
+    assert.equal(ages.length, 2, 'one age per open entry, none for answered')
+    assert.equal(ages[0][1], '2026-08-03T18:00:00.000Z')
+  })
+
+  test('review stamps flag artifacts that changed since the last review', async () => {
+    const html = queue.render(await base())
+    assert.match(html, /sd-badge-success">current</)
+    assert.match(html, /sd-badge-warning">changed since review</)
+  })
+
+  test('open PRs render in given order with their dependency', async () => {
+    const html = queue.render(await base())
+    assert.ok(html.indexOf('#4799') < html.indexOf('#4801'), 'data order is merge order')
+    assert.match(html, /waits on #4799/)
+  })
+
+  test('an unknown kind throws a readable TemplateError', async () => {
+    const data = await base()
+    data.entries[0].kind = 'vibe'
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /kind must be one of/)
+      return true
+    })
+  })
+
+  test('duplicate open-entry ids throw — two widgets must not share a key', async () => {
+    const data = await base()
+    data.entries[1].id = data.entries[0].id
+    assert.throws(() => queue.render(data), TemplateError)
+  })
+
+  test('a seeded board with empty sections still renders', async () => {
+    const html = queue.render({ campaign: 'fresh-campaign', entries: [], review_stamps: [], open_prs: [] })
+    assert.ok(html.includes('Nothing waiting.'))
+    assert.doesNotMatch(html, /Review stamps|Open PRs/)
   })
 })

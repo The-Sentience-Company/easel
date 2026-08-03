@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Dev-only preview harness — renders a template from sample JSON without the daemon.
-   node test/preview.js <review|eval|answer-key|page> <data.json> [--out f] [--theme dark] [--mermaid] [--chrome] */
+   node test/preview.js <review|eval|answer-key|page|queue> <data.json> [--out f] [--theme dark] [--mermaid] [--chrome] */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 
-const TEMPLATES = { review: 'review.js', eval: 'eval.js', 'answer-key': 'answer-key.js', page: 'page.js' }
+const TEMPLATES = { review: 'review.js', eval: 'eval.js', 'answer-key': 'answer-key.js', page: 'page.js', queue: 'queue.js' }
 
 /* client.js applies sf-recorded at runtime; templates never emit it.
    Simulated here so that CSS is reviewable before the daemon exists. */
@@ -136,7 +136,7 @@ function chromeFixture(title) {
 async function main() {
   const argv = process.argv.slice(2)
   if (argv.length < 2) {
-    console.error('usage: node test/preview.js <review|eval|answer-key|page> <data.json> [--out f.html] [--theme dark] [--mermaid] [--chrome]')
+    console.error('usage: node test/preview.js <review|eval|answer-key|page|queue> <data.json> [--out f.html] [--theme dark] [--mermaid] [--chrome]')
     process.exit(2)
   }
   const [templateName, dataPath] = argv

@@ -105,9 +105,9 @@ write_entry() {
   chmod +x "$path"
 }
 
-# An unrelated `easel` on PATH belongs to someone else, on install and uninstall alike.
+# An unrelated entry on PATH belongs to someone else, on install and uninstall alike.
 remove_owned_link() {
-  local link="$1/easel"
+  local link="$1/$2"
   [ -e "$link" ] || [ -L "$link" ] || return 0
   if owns_entry "$link"; then
     rm -f "$link"; say "removed $link"
@@ -124,7 +124,8 @@ if [ "$UNINSTALL" -eq 1 ]; then
   LINK_DIRS=(/opt/homebrew/bin /usr/local/bin "$HOME/.local/bin")
   [ -n "$BIN_DIR" ] && LINK_DIRS+=("$BIN_DIR")
   for d in "${LINK_DIRS[@]}"; do
-    remove_owned_link "$d"
+    remove_owned_link "$d" easel
+    remove_owned_link "$d" queue-lint
   done
   echo "easel: uninstalled"
   exit 0
@@ -178,6 +179,23 @@ if { [ -e "$ENTRY" ] || [ -L "$ENTRY" ]; } && ! owns_entry "$ENTRY"; then
 fi
 write_entry "$ENTRY"
 say "cli: $ENTRY -> $CLI (port $PORT)"
+
+# queue-lint rides the same converge path, so `easel update` keeps it current.
+LINT="$ROOT/cli/queue-lint.sh"
+chmod +x "$LINT"
+LINT_ENTRY="$DEST_DIR/queue-lint"
+if { [ -e "$LINT_ENTRY" ] || [ -L "$LINT_ENTRY" ]; } && ! owns_entry "$LINT_ENTRY"; then
+  echo "error: $LINT_ENTRY exists and was not installed by this checkout" >&2
+  echo "  remove it yourself, or pick another directory with --bin-dir" >&2
+  exit 1
+fi
+rm -f "$LINT_ENTRY"
+printf '%s\n' \
+  '#!/bin/sh' \
+  "$MARKER $ROOT" \
+  "exec bash \"$LINT\" \"\$@\"" > "$LINT_ENTRY"
+chmod +x "$LINT_ENTRY"
+say "cli: $LINT_ENTRY -> $LINT"
 
 NODE_ENV_XML="$(node_env_xml)"
 [ -z "$NODE_ENV_XML" ] || say "pinning EASEL_NODE=$EASEL_NODE into the agent"

@@ -1,0 +1,39 @@
+{
+  "campaign": "preference-extraction",
+  "entries": [
+    {
+      "id": "design-note-extraction-table",
+      "pane": "a3",
+      "kind": "decision",
+      "question": "The extraction pipeline card adds a new database table for intermediate results. Its design note is ready — approve building it?",
+      "context_link": "http://127.0.0.1:4400/b/abc12345",
+      "filed_at": "2026-08-03T18:00:00Z",
+      "status": "open"
+    },
+    {
+      "id": "merge-order-4801",
+      "pane": "a4",
+      "kind": "merge",
+      "question": "The pipeline PR is ready by its readiness block. Merge now, or hold until the schema PR lands first?",
+      "options": ["merge now", "hold for schema PR", "discuss"],
+      "filed_at": "2026-08-03T20:15:00Z",
+      "status": "open"
+    },
+    {
+      "id": "answer-key-round-2",
+      "pane": "a3",
+      "kind": "review",
+      "question": "Round 2 of the eval answer key is on its board and needs your review.",
+      "filed_at": "2026-08-02T09:00:00Z",
+      "status": "answered"
+    }
+  ],
+  "review_stamps": [
+    { "artifact": "design note — extraction pipeline", "last_reviewed_version": "r2", "current_version": "r2" },
+    { "artifact": "eval answer key", "last_reviewed_version": "r1", "current_version": "r3" }
+  ],
+  "open_prs": [
+    { "number": 4799, "url": "https://github.com/example/repo/pull/4799", "title": "Schema for extraction intermediates" },
+    { "number": 4801, "url": "https://github.com/example/repo/pull/4801", "title": "Extraction pipeline", "blocked_by": 4799 }
+  ]
+}
