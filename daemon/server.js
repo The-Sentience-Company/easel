@@ -2,7 +2,7 @@
 // easeld daemon — implements docs/api.md (authoritative).
 
 import { createServer } from 'node:http'
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
 import { readFile, writeFile, mkdir, stat, truncate, rm, readdir } from 'node:fs/promises'
 import { watch } from 'node:fs'
 import { createHash, randomBytes } from 'node:crypto'
@@ -17,6 +17,25 @@ import { ROUTES } from './routes.js'
 const PORT = Number(process.env.EASEL_PORT || 4400)
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const VERSION = '0.1.0'
+
+// The running build vs what is on disk: if the checkout has moved past the commit
+// this process booted from, the daemon is serving stale code until `easel update`.
+function headCommit() {
+  try {
+    return execFileSync('git', ['-C', ROOT, 'rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return null
+  }
+}
+const BOOT_COMMIT = headCommit()
+
+function buildInfo() {
+  const onDisk = headCommit()
+  return { version: VERSION, commit: BOOT_COMMIT, onDisk, stale: Boolean(BOOT_COMMIT && onDisk && BOOT_COMMIT !== onDisk) }
+}
 // A scene carries excalidraw's embedded `files`, so one pasted image dwarfs the
 // generic limit — and a 413 on the close flush would trap the drawing unsaved.
 const MAX_SCENE_BYTES = 32 * 1024 * 1024
@@ -165,17 +184,23 @@ setInterval(() => {
 
 const CONFIG_PATH = join(DATA_DIR, 'config.json')
 
-async function readConfig() {
+// Cached so the auto-open path needs no await: a file read there would let two
+// triggers interleave between the cooldown check and its update, and both spawn.
+let configCache = {}
+
+async function loadConfig() {
   try {
-    return JSON.parse(await readFile(CONFIG_PATH, 'utf8'))
+    configCache = JSON.parse(await readFile(CONFIG_PATH, 'utf8'))
   } catch {
-    return {}
+    configCache = {}
   }
+  return configCache
 }
 
 async function writeConfig(patch) {
-  const next = { ...(await readConfig()), ...patch }
+  const next = { ...configCache, ...patch }
   await writeFile(CONFIG_PATH, JSON.stringify(next, null, 2))
+  configCache = next
   return next
 }
 
@@ -184,8 +209,8 @@ const AUTO_OPEN_COOLDOWN_MS = Number(process.env.EASEL_AUTO_OPEN_COOLDOWN_MS || 
 
 // Off by default; a burst of publishes opens at most one tab per cooldown, and a
 // a board someone is already viewing never opens.
-async function maybeAutoOpen(key) {
-  if ((await readConfig()).autoOpen !== true) return
+function maybeAutoOpen(key) {
+  if (configCache.autoOpen !== true) return
   if ((sseClients.get(key)?.size ?? 0) > 0 || globalTabCount(key) > 0) return
   const lastAt = autoOpenLast.get(key) ?? 0
   if (Date.now() - lastAt < AUTO_OPEN_COOLDOWN_MS) return
@@ -210,8 +235,20 @@ const waiters = new Map() // key -> Set<waiter>
 const waitingGrace = new Map() // key -> timer running since the set emptied
 const WAITING_GRACE_MS = Number(process.env.EASEL_WAITING_GRACE_MS || 30000)
 
+// A window that expired and was never re-attached: the listener is gone without
+// having cancelled or collected, which is a dead agent rather than a finished one.
+const lostListeners = new Map() // key -> { agent, at }
+
 function agentWaiting(key) {
   return (waiters.get(key)?.size ?? 0) > 0 || waitingGrace.has(key)
+}
+
+function listenerLost(key) {
+  return lostListeners.get(key) ?? null
+}
+
+function clearLost(key) {
+  if (lostListeners.delete(key)) broadcast(key, 'agent', { lost: null })
 }
 
 function endGrace(key) {
@@ -230,6 +267,7 @@ function addWaiter(key, waiter) {
   const set = waiters.get(key)
   const wasEmpty = set.size === 0
   const reattach = endGrace(key)
+  clearLost(key)
   const old = [...set].find((w) => w.agent === waiter.agent)
   set.add(waiter)
   if (old) old.supersede()
@@ -254,7 +292,9 @@ function removeWaiter(key, waiter, grace = false) {
   if (waitingGrace.has(key)) return
   const timer = setTimeout(() => {
     waitingGrace.delete(key)
-    broadcast(key, 'agent', { waiting: false })
+    // Nothing re-attached inside the window, so this listener died mid-wait.
+    lostListeners.set(key, { agent: waiter.agent, at: now() })
+    broadcast(key, 'agent', { waiting: false, lost: waiter.agent })
   }, WAITING_GRACE_MS)
   timer.unref?.()
   waitingGrace.set(key, timer)
@@ -263,6 +303,7 @@ function removeWaiter(key, waiter, grace = false) {
 // Cancel and end are the agent deliberately leaving — no re-attach is coming, so
 // the wait ends now instead of lingering for the grace window.
 function clearWaitingNow(key) {
+  clearLost(key)
   if (endGrace(key)) broadcast(key, 'agent', { waiting: false })
 }
 
@@ -463,10 +504,14 @@ html[data-theme$="light"]{color-scheme:light}html[data-theme$="dark"]{color-sche
 .row.ended,.row.archived{opacity:.55}
 .dot{width:8px;height:8px;border-radius:50%;background:#8a8a90;flex:none}.dot.live{background:#3fb950}
 .dot.waiting{background:#e3a008;animation:pulse 1.6s ease-in-out infinite}
+.dot.lost{background:#f85149}
 @keyframes pulse{50%{opacity:.35}}
 .name{font-weight:500;color:inherit;text-decoration:none}.name:hover{text-decoration:underline}
 .badge{font-size:10px;font-weight:600;letter-spacing:.02em;padding:2px 7px;border-radius:99px;background:color-mix(in srgb,#e3a008 18%,Canvas);color:#b45309;flex:none}
 html[data-theme$="dark"] .badge{color:#fbbf24}
+.badge.lost{background:color-mix(in srgb,#f85149 18%,Canvas);color:#b62324}
+html[data-theme$="dark"] .badge.lost{color:#ff7b72}
+.stale{margin:0 0 12px;padding:8px 12px;border-radius:8px;font-size:12px;background:color-mix(in srgb,#e3a008 14%,Canvas)}
 .file{flex:1;font:11px ui-monospace,monospace;opacity:.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .state{font-size:11px;opacity:.7}
 .legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin:2px 0 10px;font-size:11px;opacity:.65}
@@ -478,9 +523,11 @@ html[data-theme$="dark"] .badge{color:#fbbf24}
 <div class="legend">
 <span><i class="dot waiting"></i>waiting — an agent is blocked on your feedback</span>
 <span><i class="dot live"></i>live — open in a tab right now</span>
+<span><i class="dot lost"></i>listener lost — the agent stopped waiting without collecting</span>
 <span><i class="dot"></i>open — idle session</span>
 <span><i class="dot" style="opacity:.4"></i>ended — closed, still readable</span>
 </div>
+<div id="stale"></div>
 <div id="rows"><p>Loading…</p></div>
 </div>
 <script>
@@ -490,12 +537,12 @@ const favicon = (waiting) => {
 }
 function basename(p) { return (p || '').split('/').pop() }
 function render(boards) {
-  const rank = (s) => (s.agentWaiting ? 0 : s.connectedTabs ? 1 : s.status === 'open' ? 2 : 3)
+  const rank = (s) => (s.agentWaiting ? 0 : s.listenerLost ? 1 : s.connectedTabs ? 2 : s.status === 'open' ? 3 : 4)
   boards.sort((a, b) => rank(a) - rank(b) || b.updatedAt.localeCompare(a.updatedAt))
   const rows = document.getElementById('rows')
   rows.replaceChildren()
   for (const s of boards) {
-    const state = s.agentWaiting ? 'waiting' : s.connectedTabs ? 'live' : s.status
+    const state = s.agentWaiting ? 'waiting' : s.listenerLost ? 'lost' : s.connectedTabs ? 'live' : s.status
     const row = document.createElement('div')
     row.className = 'row ' + (s.status === 'open' ? state : s.status)
     const dot = document.createElement('span')
@@ -509,6 +556,11 @@ function render(boards) {
       const b = document.createElement('span')
       b.className = 'badge'
       b.textContent = 'agent waiting'
+      row.appendChild(b)
+    } else if (s.listenerLost) {
+      const b = document.createElement('span')
+      b.className = 'badge lost'
+      b.textContent = 'listener lost · ' + s.listenerLost.agent
       row.appendChild(b)
     }
     const file = document.createElement('span')
@@ -526,8 +578,21 @@ function render(boards) {
   document.title = (waiting ? '(' + waiting + ') ' : '') + 'easel sessions'
   favicon(waiting > 0)
 }
+function renderStale(d) {
+  const el = document.getElementById('stale')
+  el.replaceChildren()
+  if (!d || !d.stale) return
+  const p = document.createElement('div')
+  p.className = 'stale'
+  p.textContent = 'Daemon is running ' + d.commit + ' but the checkout is at ' + d.onDisk + ' — run: easel update'
+  el.appendChild(p)
+}
 async function tick() {
-  try { render((await (await fetch('/api/status')).json()).boards) } catch {}
+  try {
+    const d = await (await fetch('/api/status')).json()
+    renderStale(d.daemon)
+    render(d.boards)
+  } catch {}
 }
 tick()
 setInterval(() => { if (!document.hidden) tick() }, 2000)
@@ -706,7 +771,7 @@ async function handleAwait(req, res, match) {
 }
 
 const handlers = {
-  health: (req, res) => json(res, 200, { ok: true, app: 'easel', version: VERSION }),
+  health: (req, res) => json(res, 200, { ok: true, app: 'easel', ...buildInfo() }),
 
   index: (req, res) => html(res, 200, indexPage()),
 
@@ -926,11 +991,11 @@ const handlers = {
 
   statusAll(req, res) {
     const boards = store.allBoards().map((s) => statusRow(s))
-    json(res, 200, { boards })
+    json(res, 200, { daemon: buildInfo(), boards })
   },
 
   async config(req, res) {
-    if (req.method === 'GET') return json(res, 200, await readConfig())
+    if (req.method === 'GET') return json(res, 200, await loadConfig())
     const body = await readBody(req)
     if (typeof body.autoOpen !== 'boolean') return json(res, 400, { error: 'autoOpen boolean required' })
     json(res, 200, await writeConfig({ autoOpen: body.autoOpen }))
@@ -942,6 +1007,7 @@ const handlers = {
     json(res, 200, {
       ...statusRow(board),
       connectedTabs: (sseClients.get(board.key)?.size ?? 0) + globalTabCount(board.key),
+      daemon: buildInfo(),
     })
   },
 
@@ -1216,6 +1282,7 @@ function statusRow(s) {
     unacked,
     updatedAt: s.updated_at,
     agentWaiting: agentWaiting(s.key),
+    listenerLost: listenerLost(s.key),
     connectedTabs: (sseClients.get(s.key)?.size ?? 0) + globalTabCount(s.key),
   }
 }
@@ -1370,6 +1437,10 @@ export async function truncateOversizedLog(path, cap = LOG_CAP_BYTES) {
     if ((await stat(path)).size > cap) await truncate(path)
   } catch {} // no log file (tests, scratch daemons) — nothing to do
 }
+
+// Config is primed before the socket opens, so the first auto-open decision reads
+// the persisted setting rather than an empty cache.
+await loadConfig()
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`easeld ${VERSION} listening on http://127.0.0.1:${PORT}`)

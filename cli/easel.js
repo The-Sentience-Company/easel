@@ -182,6 +182,10 @@ const commands = {
     const data = positionals[0]
       ? await call('GET', `/api/b/${positionals[0]}/status`)
       : await call('GET', '/api/status')
+    // A stale daemon serves old code silently, so say so before the payload.
+    if (!values.json && data.daemon?.stale) {
+      console.error(`easel: daemon is running ${data.daemon.commit}, checkout is at ${data.daemon.onDisk} — run \`easel update\``)
+    }
     output(data, values.json)
   },
 

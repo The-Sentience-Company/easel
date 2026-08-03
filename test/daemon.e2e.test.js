@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, appendFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -124,11 +124,26 @@ test('auto-open: off by default, opt-in opens unwatched boards on wait/publish, 
   const openLog = join(dir, 'opened.txt')
   const stub = join(dir, 'open-stub.sh')
   writeFileSync(stub, `#!/bin/sh\necho "$1" >> "${openLog}"\n`, { mode: 0o755 })
-  const opened = () => (existsSync(openLog) ? readFileSync(openLog, 'utf8').trim().split('\n') : [])
+  const logLines = () => (existsSync(openLog) ? readFileSync(openLog, 'utf8').trim().split('\n').filter(Boolean) : [])
+  const opened = () => logLines().filter((l) => l.startsWith('http'))
+  // Phase markers interleave with the opener's own lines, so a failure shows which
+  // phase produced the surprise open rather than only that the count was wrong.
+  const mark = (m) => appendFileSync(openLog, `MARK ${m}\n`)
+  const trace = () => '\n' + logLines().join('\n')
+  // The opener is a detached spawn writing to a file, so its effect lands after
+  // the request returns — assert on it only once it has had a chance to appear.
+  const openedAtLeast = async (n) => {
+    for (let i = 0; i < 40 && opened().length < n; i++) await new Promise((r) => setTimeout(r, 50))
+    return opened()
+  }
 
   process.env.EASEL_OPEN_CMD = stub
-  process.env.EASEL_AUTO_OPEN_COOLDOWN_MS = '300'
-  process.env.EASEL_WAITING_GRACE_MS = '150'
+  // Long enough that the publish below lands inside it, short enough that the
+  // re-attach loop's 2s windows fall outside it and a lost grace would show.
+  process.env.EASEL_AUTO_OPEN_COOLDOWN_MS = '1000'
+  // Must dwarf this test's scheduling jitter under a loaded parallel suite, or a
+  // slow re-attach reads as a new wait and the open counts drift.
+  process.env.EASEL_WAITING_GRACE_MS = '5000'
   const d = startDaemon(port, dir)
   delete process.env.EASEL_OPEN_CMD
   delete process.env.EASEL_AUTO_OPEN_COOLDOWN_MS
@@ -145,40 +160,59 @@ test('auto-open: off by default, opt-in opens unwatched boards on wait/publish, 
     assert.equal((await papi('POST', '/api/config', { autoOpen: true })).status, 200)
     assert.equal((await papi('GET', '/api/config')).data.autoOpen, true)
 
-    await new Promise((r) => setTimeout(r, 200)) // let the grace lapse: next attach is a new wait
-    await papi('POST', `/api/b/${k}/await`, { agent: 'ao-agent', timeoutS: 1 })
-    assert.deepEqual(opened(), [`${base}/b/${k}`], 'wait-start must open the board')
+    await new Promise((r) => setTimeout(r, 5300)) // let the grace lapse: next attach is a new wait
+    // Held, not awaited: awaiting it would burn the whole window before the publish
+    // below, which is what has to land inside the cooldown.
+    const attach = papi('POST', `/api/b/${k}/await`, { agent: 'ao-agent', timeoutS: 1 })
+    assert.deepEqual(await openedAtLeast(1), [`${base}/b/${k}`], 'wait-start must open the board')
 
     await papi('POST', `/api/b/${k}/publish`, {})
     assert.equal(opened().length, 1, 'publish inside the cooldown must not reopen')
+    await attach
 
-    await new Promise((r) => setTimeout(r, 350))
+    await new Promise((r) => setTimeout(r, 1200))
     await papi('POST', `/api/b/${k}/publish`, {})
-    for (let i = 0; i < 20 && opened().length < 2; i++) await new Promise((r) => setTimeout(r, 50))
-    assert.equal(opened().length, 2, 'publish after the cooldown must open again')
+    assert.equal((await openedAtLeast(2)).length, 2, 'publish after the cooldown must open again')
 
-    // What `easel await` really does: window expires, re-attach, repeat. One wait,
-    // so one tab — the expiry gap must not read as the agent leaving and returning.
+    // Cancel so leftover grace can't decide whether the next attach is a new wait,
+    // and let the cooldown from the publish above lapse so that attach can open.
+    await papi('POST', `/api/b/${k}/cancel-waiting`, {})
+    await new Promise((r) => setTimeout(r, 1200))
+
+    // Window expires, re-attach, repeat — one wait, so one tab.
+    // Re-attach is issued before the status check, as the CLI does.
+    mark('loop-start')
     const before = opened().length
+    let pending = papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 2 })
     for (let i = 0; i < 3; i++) {
-      const r = await papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 1 })
+      const r = await pending
       assert.equal(r.data.timedOut, true, `window ${i} should expire, not resolve`)
+      pending = papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 2 })
+      mark(`reattached-${i}`)
       assert.equal((await papi('GET', `/api/b/${k}/status`)).data.agentWaiting, true, `waiting across ${i}`)
     }
-    assert.equal(opened().length, before + 1, 're-attaching must not reopen the board')
+    mark('loop-end')
+    assert.equal(opened().length, before + 1, `re-attaching must not reopen the board${trace()}`)
+    await pending
 
     // Nothing re-attaches: the wait is genuinely over and the next one counts as new.
-    await new Promise((r) => setTimeout(r, 250))
-    assert.equal((await papi('GET', `/api/b/${k}/status`)).data.agentWaiting, false, 'wait ends after grace')
+    await new Promise((r) => setTimeout(r, 5300))
+    const lapsed = (await papi('GET', `/api/b/${k}/status`)).data
+    assert.equal(lapsed.agentWaiting, false, 'wait ends after grace')
+    // A wait that expired and was never re-attached is a dead listener, not a
+    // finished one — the board has to say so rather than just going quiet.
+    assert.equal(lapsed.listenerLost?.agent, 're-agent', 'the lost listener is named')
     await papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 1 })
-    assert.equal(opened().length, before + 2, 'a genuinely new wait opens again')
+    assert.equal((await openedAtLeast(before + 2)).length, before + 2, 'a genuinely new wait opens again')
 
     // Feedback landing inside the gap: that re-attach collects and exits instead of
     // parking, so the wait is over now and must not linger for the whole grace.
     await papi('POST', `/api/b/${k}/chat`, { clientId: 'c-gap', text: 'landed in the gap' })
     const caught = await papi('POST', `/api/b/${k}/await`, { agent: 're-agent', timeoutS: 1 })
     assert.ok(caught.data.items.length > 0, 'the re-attach collects the queued feedback')
-    assert.equal((await papi('GET', `/api/b/${k}/status`)).data.agentWaiting, false, 'no phantom wait')
+    const collected = (await papi('GET', `/api/b/${k}/status`)).data
+    assert.equal(collected.agentWaiting, false, 'no phantom wait')
+    assert.equal(collected.listenerLost, null, 'collecting is a clean exit, not a lost listener')
   } finally {
     d.kill()
   }
@@ -283,6 +317,21 @@ test('CLI: exit 0 on success, exit 1 with readable error on failure', async () =
     assert.match(err.stderr, /no board/)
     return true
   })
+})
+
+test('health and status carry the build, and agree on it', async () => {
+  const h = (await api('GET', '/health')).data
+  assert.equal(h.app, 'easel')
+  assert.ok(h.version, 'version present')
+  assert.equal(typeof h.stale, 'boolean', 'staleness is answerable without reading git')
+  const build = { version: h.version, commit: h.commit, onDisk: h.onDisk, stale: h.stale }
+  const s = (await api('GET', '/api/status')).data
+  assert.deepEqual(s.daemon, build)
+  // `easel status <key>` reads this route, so the warning has to reach it too.
+  const one = (await api('GET', `/api/b/${key}/status`)).data
+  assert.deepEqual(one.daemon, build, 'keyed status carries the build as well')
+  // In a clean checkout the running build is the one on disk.
+  if (h.commit) assert.equal(h.stale, h.commit !== h.onDisk)
 })
 
 test('aborting a blocked await clears the waiter (agentWaiting resets)', async () => {
