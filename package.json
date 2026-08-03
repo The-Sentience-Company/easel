@@ -1,0 +1,31 @@
+{
+  "name": "easel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local review-board daemon: agent publishes HTML boards, user annotates in the browser, feedback flows back durably.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "easel": "cli/easel.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "preview": "node test/preview.js",
+    "postinstall": "node render/build-excalidraw.mjs"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.16.0",
+    "better-sqlite3": "^12.2.0",
+    "parse5": "^8.0.0",
+    "puppeteer": "25.4.0"
+  },
+  "devDependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "@excalidraw/mermaid-to-excalidraw": "2.2.2",
+    "esbuild": "0.25.8",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+}

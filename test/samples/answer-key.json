@@ -1,0 +1,108 @@
+{
+  "title": "Preference extraction — answer key review",
+  "status_badges": [
+    { "text": "key v4", "style": "info" },
+    { "text": "12 cells", "style": "neutral" }
+  ],
+  "intro": "This is the hand-authored answer key for the preference-extraction eval. Every row below is a judgement call I made about what the model should and should not say about a person. I need you to check the judgement, not the facts — the facts were already verified in an earlier pass.",
+  "teach": {
+    "lead": "The eval asks the model to describe a person from their message history. This key says what a correct description contains and what it must never contain.",
+    "steps": [
+      { "title": "The model writes a description", "desc": "From one person's messages, with no access to this key." },
+      { "title": "A judge compares it to this key", "desc": "It scores which listed items appeared and which forbidden items appeared." },
+      { "title": "You decide if the key is right", "desc": "If an item does not belong here, the score it produces is wrong." }
+    ],
+    "positives": "Things a good description **should** contain. Missing one costs points. Anything not listed here is neutral — it neither helps nor hurts.",
+    "negatives": "Things a description must **not** contain. These are sampled traps, so they are scored gently — except where marked zero tolerance, which fails the case outright.",
+    "footnote": "If a term on this page is unclear, that is a bug in the page and worth flagging."
+  },
+  "check_focus": [
+    { "style": "success", "label": "Does it belong?", "text": "Is this genuinely something the description should or should not contain?" },
+    { "style": "warning", "label": "Is the wording too strong?", "text": "An item stated more confidently than the evidence supports will punish a correct answer." },
+    { "style": "info", "label": "Is the trap fair?", "text": "A forbidden item should be plausible enough that a sloppy model would fall for it." }
+  ],
+  "category_labels": {
+    "comms_pref": "Communication preferences",
+    "location_tz": "Location and timezone"
+  },
+  "reasons": {
+    "contradicted": {
+      "label": "contradicts a stated preference",
+      "desc": "The person said the opposite somewhere in their history.",
+      "style": "error"
+    },
+    "unstated": {
+      "label": "plausible but never stated",
+      "desc": "Nothing in the history supports it; a model that says this is guessing.",
+      "style": "info"
+    }
+  },
+  "cells": [
+    {
+      "category": "comms_pref",
+      "person": "Dana Whitfield",
+      "header": ["412 messages", "Mar 2025 – Feb 2026"],
+      "positives": [
+        {
+          "content": "Prefers async written updates over standups",
+          "note": "Stated twice, three months apart.",
+          "must_not_violate": true,
+          "evidence": [
+            { "pointer": "messages:4471", "text": "can we just do this in writing, standups kill my morning" }
+          ]
+        },
+        {
+          "content": "Reads long documents rather than asking for summaries",
+          "evidence": [{ "pointer": "messages:5120", "text": "send me the full doc, I'd rather read it myself" }]
+        }
+      ],
+      "negatives": [
+        {
+          "content": "Prefers daily standups",
+          "reason": "contradicted",
+          "evidence": [{ "pointer": "messages:4471", "text": "can we just do this in writing, standups kill my morning" }]
+        },
+        { "content": "Dislikes written documentation", "reason": "unstated" }
+      ]
+    },
+    {
+      "category": "location_tz",
+      "person": "Dana Whitfield",
+      "positives": [
+        {
+          "content": "Works from Lisbon, UTC+1",
+          "evidence": [{ "pointer": "profiles:88", "text": "Location field: Lisbon, Portugal" }]
+        }
+      ],
+      "negatives": [{ "content": "Based in Berlin", "reason": "unstated" }]
+    },
+    {
+      "category": "comms_pref",
+      "person": "Marcus Lee",
+      "positives": [
+        {
+          "content": "Answers fastest in the early morning",
+          "note": "Consistent across a year of timestamps.",
+          "evidence": [{ "pointer": "messages:9902" }]
+        }
+      ],
+      "negatives": [{ "content": "Unreachable outside working hours", "reason": "unstated" }]
+    }
+  ],
+  "evidence_copy_prefix": "evrow ",
+  "how_to_test": {
+    "review_steps": [
+      "Read the teach block above before any cell.",
+      "Work one category at a time and give it a verdict before moving on.",
+      "Annotate any single entry you disagree with; use the category verdict for systemic problems."
+    ],
+    "code_blocks": [
+      {
+        "title": "Pull a full evidence row",
+        "note": "Run against the frozen cache DB, not production.",
+        "code": "psql $EVAL_CACHE_DB -c \"SELECT * FROM messages WHERE id = 4471;\""
+      }
+    ]
+  },
+  "footer": "Generated from key v4 (12 cells, 2 categories). The key YAML is the source of truth; this page is a disposable lens over it."
+}

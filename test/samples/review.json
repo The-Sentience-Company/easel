@@ -1,0 +1,45 @@
+{
+  "title": "Retry budget: per-agent cursors vs per-call limits",
+  "summary": "Round 2. The **cursor** design is settled; what is open is where the retry budget lives and whether `await` should surface partial batches.",
+  "sections": [
+    {
+      "heading": "Where the budget lives",
+      "badges": [
+        {"label": "decided", "tone": "success"},
+        {"label": "needs-review", "tone": "warning"},
+        {"label": "blocked-on-integration-with-the-scheduler-lane", "tone": "error"},
+        "no-tone-plain-badge"
+      ],
+      "body": "Per-agent is the only option that survives a cleared context.\n\n```mermaid\nflowchart LR\n  A[agent calls<br/>easel await] --> B{cursor<br/>advanced?}\n  B -->|no| C[re-deliver<br/>same batch]\n  B -->|yes| D[block until<br/>newer feedback]\n```\n\nThe alternative couples the budget to a process that `/clear` can kill.\n\n> A truncated read must stay re-fetchable forever.\n\n- Cursor is server-side, keyed by agent id\n- `await` is idempotent by construction\n- No resident poller, ever"
+    },
+    {
+      "heading": "Diagram that cannot parse",
+      "body": "This block is intentionally malformed to exercise the error path.\n\n```mermaid\nflowchart LR\n  A[unclosed --> B{{{\n  ???\n```\n\nRendering must degrade to a small block, never a bomb."
+    },
+    {
+      "heading": "Long unbreakable identifiers",
+      "body": "The anchor key is `surface_feedback_cursor_per_agent_identifier_with_a_deliberately_unreasonable_length_to_test_wrapping` and it must not force a horizontal scrollbar."
+    }
+  ],
+  "decisions": [
+    {
+      "id": "budget-location",
+      "question": "Where does the retry budget live?",
+      "context": "Per-agent survives /clear; per-call is simpler but dies with the process.",
+      "options": [
+        {"value": "per-agent", "label": "Per-agent (server-side)"},
+        {"value": "per-call", "label": "Per-call"},
+        {"value": "defer", "label": "Defer to integration"}
+      ],
+      "detail": "Recommendation: **per-agent**. It is the only shape where a stale terminal re-running `await` is harmless."
+    }
+  ],
+  "votes": [
+    {
+      "id": "ship-round-2",
+      "type": "approve",
+      "question": "Ship round 2 as-is?",
+      "options": ["approve", "hold"]
+    }
+  ]
+}

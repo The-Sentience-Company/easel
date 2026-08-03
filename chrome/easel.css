@@ -1,0 +1,1759 @@
+/* easel design system + chrome. Themes, the two class namespaces, and why
+   data-theme sits on <html>: docs/design-system.md. */
+
+/* ---------------------------------------------------------------- tokens -- */
+
+/* Three FAMILIES — default, lantern, fig — picked in the topbar or pinned via
+   ?theme=<family>; each has -light and -dark modes and T flips within one. */
+html[data-theme="light"],
+html[data-theme="lantern-light"],
+html[data-theme="fig-light"] {
+  --color-base-100: oklch(0.982 0.010 85);
+  --color-base-200: oklch(0.955 0.012 85);
+  --color-base-300: oklch(0.915 0.016 82);
+  /* Two text tiers. --color-base-content is the EMPHASIS tier and also every
+     control/table face; --color-body-content is prose, deliberately softer. */
+  --color-base-content: oklch(0.25 0.018 55);
+  --color-body-content: oklch(0.415 0.020 58);
+  --color-muted-content: oklch(0.47 0.020 60);
+  /* Terracotta, hue held at 45 rather than nearer --color-error's 25: adjacent
+     hues would blur the primary/destructive distinction. */
+  --color-primary: oklch(0.52 0.13 45);
+  --color-primary-content: oklch(0.99 0 0);
+  --color-success: oklch(0.53 0.13 155);
+  /* Lightness floored so --color-status-content clears 4.5:1 on the fill. */
+  --color-warning: oklch(0.54 0.14 75);
+  --color-error: oklch(0.55 0.20 25);
+  /* Teal, not blue: at hue 230 the "moved" diff sat 79 from marker-3. */
+  --color-info: oklch(0.50 0.105 200);
+  --color-status-content: oklch(0.99 0 0);
+  /* Own token, not --color-primary: a theme retoken that moves primary toward
+     the diff hues would otherwise recreate the mark-reads-as-diff defect. */
+  --marker-content: oklch(0.99 0 0);
+  --marker-0: oklch(0.52 0.20 297);
+  --marker-1: oklch(0.50 0.19 332);
+  --marker-2: oklch(0.55 0.17 312);
+  --marker-3: oklch(0.54 0.17 272);
+  --marker-4: oklch(0.44 0.16 342);
+  --marker-5: oklch(0.46 0.15 285);
+  /* Teal second accent, for distinguishing one entry from the next. */
+  --color-accent-2: oklch(0.50 0.075 195);
+  /* Diff tints. Hues track --color-error and --color-success so a removed line
+     reads as the same red the rest of the system uses. */
+  --diff-del-bg: oklch(0.885 0.062 25);
+  --diff-add-bg: oklch(0.888 0.072 155);
+  --diff-del-word: oklch(0.822 0.110 25);
+  --diff-add-word: oklch(0.818 0.125 155);
+  --diff-del-edge: oklch(0.800 0.090 25);
+  --diff-add-edge: oklch(0.800 0.090 155);
+  --border: oklch(0.885 0.014 80);
+  /* Lighter than --border: internal table rules, so the outer edge still reads
+     as the stronger line instead of every rule shouting equally. */
+  --border-subtle: oklch(0.935 0.012 85);
+  --shadow-card: 0 1px 2px oklch(0.3 0.03 60 / 0.07), 0 4px 12px oklch(0.3 0.03 60 / 0.06);
+}
+
+/* Warm dark, derived from the lavish reference: ground #16150f, accent #e0824b.
+   Hue 85 throughout replaces the previous cool 265, which read the accent blue. */
+/* base-200 is the page ground and is pure black; 100 and 300 step UP from it, so
+   panels lift off the page rather than recessing into it as they do in light. */
+html[data-theme="dark"],
+html[data-theme="lantern-dark"],
+html[data-theme="fig-dark"] {
+  --color-base-100: oklch(0.145 0.009 85);
+  --color-base-200: oklch(0 0 0);
+  --color-base-300: oklch(0.205 0.012 85);
+  /* Warm cream, sampled from the reference's own #ece7db ink rather than a
+     neutral grey: on black the tone is what reads as dim, not the ratio. */
+  --color-base-content: oklch(0.945 0.034 88);
+  --color-body-content: oklch(0.80 0.038 88);
+  --color-muted-content: oklch(0.685 0.034 88);
+  --color-primary: oklch(0.705 0.125 52);
+  --color-primary-content: oklch(0.17 0.015 85);
+  --color-success: oklch(0.72 0.14 155);
+  --color-warning: oklch(0.80 0.14 75);
+  --color-error: oklch(0.70 0.17 25);
+  --color-info: oklch(0.755 0.105 200);
+  --color-status-content: oklch(0.17 0.015 85);
+  --marker-content: oklch(0.17 0.015 85);
+  --marker-0: oklch(0.80 0.17 297);
+  --marker-1: oklch(0.76 0.16 332);
+  --marker-2: oklch(0.86 0.13 312);
+  --marker-3: oklch(0.72 0.16 272);
+  --marker-4: oklch(0.68 0.16 342);
+  --marker-5: oklch(0.62 0.15 285);
+  --color-accent-2: oklch(0.72 0.085 190);
+  --diff-del-bg: oklch(0.252 0.048 25);
+  --diff-add-bg: oklch(0.252 0.050 155);
+  --diff-del-word: oklch(0.352 0.086 25);
+  --diff-add-word: oklch(0.352 0.088 155);
+  --diff-del-edge: oklch(0.520 0.110 25);
+  --diff-add-edge: oklch(0.520 0.110 155);
+  --border: oklch(0.315 0.013 85);
+  --border-subtle: oklch(0.245 0.011 85);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 14px oklch(0 0 0 / 0.28);
+}
+
+/* lantern: the hand-tuned combo — cream paper with periwinkle panels in
+   light; candlelit gold on near-black umber in dark. */
+html[data-theme="lantern-light"] {
+  --color-base-100: oklch(0.942 0.025 276);
+  --color-base-200: oklch(0.923 0.041 90);
+  --color-base-300: oklch(0.878 0.026 85);
+  --color-base-content: oklch(0.30 0.030 55);
+  --color-body-content: oklch(0.40 0.032 55);
+  --color-muted-content: oklch(0.50 0.028 60);
+  --color-primary: oklch(0.55 0.16 30);
+  --color-accent-2: oklch(0.60 0.10 85);
+  --border: oklch(0.840 0.028 80);
+  --border-subtle: oklch(0.885 0.026 83);
+  --content-max: 920px;
+}
+html[data-theme="lantern-dark"] {
+  /* The pastel error fill sits nearer marker-4's pink than the default dark
+     does; marker-4 shifts darker so a mark never reads as a removed-diff. */
+  --marker-4: oklch(0.62 0.18 330);
+  --color-base-100: oklch(0.255 0.021 72);
+  --color-base-200: oklch(0.234 0.011 73);
+  --color-base-300: oklch(0.441 0.028 76);
+  --color-base-content: oklch(0.884 0.127 99);
+  --color-body-content: oklch(0.905 0.067 78);
+  --color-muted-content: oklch(0.782 0.117 74);
+  --color-primary: oklch(0.72 0.14 35);
+  --color-primary-content: oklch(0.19 0.014 70);
+  --color-accent-2: oklch(0.75 0.10 85);
+  --color-success: oklch(0.80 0.11 150);
+  --color-warning: oklch(0.82 0.12 80);
+  --color-error: oklch(0.74 0.12 30);
+  --color-status-content: oklch(0.20 0.014 70);
+  --border: oklch(0.340 0.022 72);
+  --border-subtle: oklch(0.270 0.020 72);
+  --content-max: 920px;
+}
+
+/* fig: honeyed blush paper, pale-sage panels, plum ink in light; black-plum
+   ground with rose-gold text in dark. */
+html[data-theme="fig-light"] {
+  --color-base-100: oklch(0.952 0.022 130);
+  --color-base-200: oklch(0.943 0.026 60);
+  --color-base-300: oklch(0.885 0.030 45);
+  --color-base-content: oklch(0.29 0.055 330);
+  --color-body-content: oklch(0.40 0.048 330);
+  --color-muted-content: oklch(0.50 0.040 335);
+  --color-primary: oklch(0.46 0.13 330);
+  --color-accent-2: oklch(0.50 0.09 135);
+  --border: oklch(0.845 0.032 40);
+  --border-subtle: oklch(0.895 0.028 48);
+  --content-max: 920px;
+}
+html[data-theme="fig-dark"] {
+  /* The pastel error fill sits nearer marker-4's pink than the default dark
+     does; marker-4 shifts darker so a mark never reads as a removed-diff. */
+  --marker-4: oklch(0.62 0.18 330);
+  --color-base-100: oklch(0.250 0.028 330);
+  --color-base-200: oklch(0.198 0.025 330);
+  --color-base-300: oklch(0.300 0.030 330);
+  --color-base-content: oklch(0.900 0.045 75);
+  --color-body-content: oklch(0.780 0.045 60);
+  --color-muted-content: oklch(0.650 0.040 45);
+  --color-primary: oklch(0.74 0.11 20);
+  --color-primary-content: oklch(0.19 0.020 330);
+  --color-accent-2: oklch(0.75 0.09 135);
+  --color-success: oklch(0.80 0.11 150);
+  --color-warning: oklch(0.82 0.12 80);
+  --color-error: oklch(0.74 0.12 25);
+  --color-status-content: oklch(0.20 0.020 330);
+  --border: oklch(0.335 0.030 330);
+  --border-subtle: oklch(0.262 0.027 330);
+  --content-max: 920px;
+}
+
+:root {
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* All system faces — nothing here is fetched, so the sanitizer has no @font-face
+     to strip and the publish path stays same-origin. */
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --space: 16px;
+  --rule: 1px solid var(--border);
+  --content-max: 1040px;
+  --chrome-z: 2147480000;
+}
+
+/* ------------------------------------------------------------------ base -- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light; }
+html[data-theme="dark"], html[data-theme$="-dark"] { color-scheme: dark; }
+
+/* Family typography. lantern keeps the sepia reading measure; fig sets the
+   whole page in Optima. */
+html[data-theme^="lantern"] body.sf-shell { font-size: 16px; line-height: 1.74; }
+html[data-theme^="fig"] body.sf-shell { font-family: 'Optima', 'Seravek', var(--font-sans); font-size: 16px; line-height: 1.72; }
+html[data-theme^="fig"] #sf-content h1, html[data-theme^="fig"] #sf-content h2,
+html[data-theme^="fig"] #sf-content h3, html[data-theme^="fig"] #sf-content h4 {
+  font-family: 'Optima', 'Seravek', var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* lantern + fig: zebra rows + hover ring, the lavish table treatment. */
+html:is([data-theme^="lantern"], [data-theme^="fig"]) #sf-content tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--color-base-content) 4.5%, transparent);
+}
+html:is([data-theme^="lantern"], [data-theme^="fig"]) #sf-content tbody tr:hover {
+  outline: 1px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+body.sf-shell {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.68;
+  /* explicit, not inherited: table cells do not pick up p/li color rules */
+  color: var(--color-base-content);
+  background: var(--color-base-200);
+  -webkit-font-smoothing: antialiased;
+}
+
+#sf-content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 48px 24px 120px;
+  color: var(--color-body-content);
+  /* Inherited: an unbroken token in plain prose must wrap, never widen the page. */
+  overflow-wrap: break-word;
+}
+
+/* Serif display against sans body, ~3x display-to-body, matching the reference. */
+#sf-content h1, #sf-content h2, #sf-content h3, #sf-content h4 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 0.5em;
+  color: var(--color-base-content);
+  text-wrap: balance;
+}
+#sf-content h1 { font-size: clamp(32px, 5.2vw, 46px); line-height: 1.08; letter-spacing: -0.015em; }
+#sf-content h2 { font-size: clamp(23px, 3.4vw, 30px); line-height: 1.18; letter-spacing: -0.01em; margin-top: 1.4em; }
+#sf-content h3 { font-size: 1.22rem; margin-top: 1.4em; }
+#sf-content h4 { font-size: 1.02rem; margin-top: 1.2em; }
+/* The two tiers: prose recedes, emphasis is the only near-full-contrast text. */
+#sf-content p, #sf-content li { color: var(--color-body-content); }
+#sf-content strong, #sf-content b { color: var(--color-base-content); font-weight: 650; }
+/* Accent text, not a fill. The UA default paints a yellow block that is
+   unreadable on a dark ground, and its padding broke the line box. */
+#sf-content mark {
+  display: inline;
+  background: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 0;
+  border-radius: 0;
+}
+#sf-content p { margin: 0 0 0.9em; }
+#sf-content a { color: var(--color-primary); text-underline-offset: 2px; }
+#sf-content ul, #sf-content ol { margin: 0 0 0.9em; padding-left: 1.4em; }
+#sf-content li { margin: 0.2em 0; }
+#sf-content blockquote {
+  margin: 0 0 1em;
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid var(--border);
+  color: var(--color-muted-content);
+}
+
+/* Colour is pinned rather than inherited: the muted tier on the raised code
+   ground falls to 4.27:1 in dark, and any future muted wrapper would repeat it. */
+#sf-content code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--color-body-content);
+  background: var(--color-base-300);
+  padding: 0.12em 0.38em;
+  border-radius: var(--radius-sm);
+  /* long identifiers must not force a horizontal scrollbar on the page */
+  overflow-wrap: anywhere;
+}
+#sf-content pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  background: var(--color-base-200);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 1em;
+}
+#sf-content pre code { background: none; padding: 0; }
+
+/* ------------------------------------------------------------------ diff -- */
+
+/* Tints run edge to edge, so the padding lives on the lines, not the block. */
+#sf-content pre.sd-diff {
+  padding: 10px 0;
+  white-space: normal;
+}
+/* Each line is its own block: a background then covers every wrapped line box,
+   which is what makes this work for prose and not just short code lines. */
+.sd-diff-line {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* Hanging indent — wrapped prose lines align past the marker, not under it. */
+  padding: 0 16px 0 calc(16px + 2ch);
+  text-indent: -2ch;
+  color: var(--color-body-content);
+  border-left: 2px solid transparent;
+}
+.sd-diff-mark {
+  display: inline-block;
+  width: 2ch;
+  color: var(--color-muted-content);
+  font-weight: 400;
+}
+.sd-diff-del { background: var(--diff-del-bg); border-left-color: var(--diff-del-edge); }
+.sd-diff-add { background: var(--diff-add-bg); border-left-color: var(--diff-add-edge); }
+/* Hunk and file headers are navigation, not content. */
+.sd-diff-hunk, .sd-diff-meta { color: var(--color-muted-content); }
+.sd-diff-hunk { padding-top: 0.4em; }
+.sd-diff-text { color: inherit; }
+/* Not the accent-text treatment #sf-content mark carries: inside an already
+   tinted line the only readable emphasis is a deeper tint of the same hue. */
+#sf-content .sd-diff-word {
+  background: var(--diff-del-word);
+  color: inherit;
+  font-weight: inherit;
+  border-radius: 2px;
+}
+#sf-content .sd-diff-add .sd-diff-word { background: var(--diff-add-word); }
+
+/* --------------------------------------------------------- layout guards -- */
+
+/* Nested grid/flex children collapse their min-content floor, so wide badges and
+   monospace text cannot blow out an ancestor's width. */
+.sd-row, .sd-grid, .sd-col { min-width: 0; }
+.sd-row > *, .sd-grid > *, .sd-col > * { min-width: 0; }
+
+.sd-grid {
+  display: grid;
+  gap: var(--space);
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+.sd-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sd-col { display: flex; flex-direction: column; gap: var(--space); }
+
+/* Every wide table gets its own scroll container; the page body never scrolls
+   sideways. Templates always emit the wrapper. */
+/* The table draws its own edges; a wrapper border beside them reads as doubled. */
+.sd-tablewrap {
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-base-100);
+  /* differ.js lists this painted-when-empty; with the border gone, height is what paints. */
+  min-height: 2px;
+}
+/* Top edge here, not on th: collapse merges the two, so headerless tables still close. */
+.sd-tablewrap > table {
+  border-collapse: collapse;
+  border-top: 1px solid var(--border);
+  width: 100%;
+  min-width: 480px;
+}
+#sf-content table { color: inherit; }
+#sf-content table tr { background-color: transparent; }
+/* Three weights, not one: a strong rule under the header, a lighter one between
+   rows, and no fill on the header — a flat grid of equal rules reads as noise. */
+.sd-tablewrap th, .sd-tablewrap td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--color-base-content);
+  vertical-align: top;
+}
+.sd-tablewrap th {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted-content);
+  background: var(--color-base-200);
+  /* Rules above and below the header, and one closing the table, matching the
+     reference. The wrapper's own edge is not one of them — it can scroll away. */
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+}
+.sd-tablewrap tr:last-child td { border-bottom: 1px solid var(--border); }
+
+/* A pick row belongs to the content row above it: no separator between them,
+   and its cells stay as short as their buttons. */
+.sd-tablewrap tr:has(+ tr.sd-pick-row) td { border-bottom: 0; }
+.sd-tablewrap tr.sd-pick-row td { padding-top: 0; }
+
+/* A status cell sizes to its label instead of wrapping it. :has keeps this out
+   of the templates — no cell has to be marked up as a status column. */
+.sd-tablewrap td:has(> .sd-badge:only-child),
+.sd-tablewrap td:has(> .sd-tag:only-child),
+.sd-tablewrap td:has(> .sd-flag:only-child) { white-space: nowrap; width: 1%; }
+
+/* Markdown column alignment. A class, not a style attribute — publish drops style. */
+.sd-tablewrap .sd-align-left   { text-align: left; }
+.sd-tablewrap .sd-align-center { text-align: center; }
+.sd-tablewrap .sd-align-right  { text-align: right; }
+
+/* ------------------------------------------------------------ components -- */
+
+.sd-island { margin: 18px 0; }
+.sd-island-frame { display: block; width: 100%; border: 0; }
+
+.sd-card {
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+.sd-card-title { font-weight: 650; margin: 0 0 6px; font-size: 1.02rem; }
+/* Carried on the id so it outranks `#sf-content p`, and applied to descendants
+   because a muted wrapper around markdown holds <p>, not text. */
+.sd-muted,
+#sf-content .sd-muted,
+#sf-content .sd-muted p,
+#sf-content .sd-muted li,
+#sf-content .sd-colophon,
+#sf-content .sd-colophon p,
+#sf-content .sd-colophon li,
+#sf-content .sd-evidence,
+#sf-content .sd-evidence p { color: var(--color-muted-content); }
+.sd-mono { font-family: var(--font-mono); font-size: 0.88em; }
+
+/* Badges size to their text. No fixed height and no fixed line-height in px:
+   that is what clipped descenders and wrapped-label overflow came from. */
+.sd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 0;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid var(--color-base-content);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  /* A label is one token. Wrapping split words mid-character ("Vacuou s
+     green"), which reads as a blob rather than a status. */
+  white-space: nowrap;
+}
+/* Two-voice pill: a filled mono key segment beside a weighted value. */
+.sd-badge:has(.sd-badge-key) { padding: 0; gap: 0; overflow: hidden; }
+.sd-badge-key {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  background: var(--color-base-content);
+  color: var(--color-base-100);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+}
+.sd-badge-value { padding: 1px 10px 1px 9px; }
+/* Status colors are solid fills, never a translucent tint over an unknown
+   backdrop — stacked opacity is what produced the unreadable-contrast page. */
+.sd-badge-success { background: var(--color-success); color: var(--color-status-content); border-color: transparent; }
+.sd-badge-warning { background: var(--color-warning); color: var(--color-status-content); border-color: transparent; }
+.sd-badge-error   { background: var(--color-error);   color: var(--color-status-content); border-color: transparent; }
+.sd-badge-info    { background: var(--color-info);    color: var(--color-status-content); border-color: transparent; }
+/* A two-voice status pill carries its colour on the key segment only. */
+.sd-badge-success:has(.sd-badge-key),
+.sd-badge-warning:has(.sd-badge-key),
+.sd-badge-error:has(.sd-badge-key),
+.sd-badge-info:has(.sd-badge-key) {
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border-color: var(--color-base-content);
+}
+.sd-badge-success .sd-badge-key { background: var(--color-success); color: var(--color-status-content); }
+.sd-badge-warning .sd-badge-key { background: var(--color-warning); color: var(--color-status-content); }
+.sd-badge-error   .sd-badge-key { background: var(--color-error);   color: var(--color-status-content); }
+.sd-badge-info    .sd-badge-key { background: var(--color-info);    color: var(--color-status-content); }
+
+.sd-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
+.sd-metric {
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  min-width: 0;
+}
+.sd-metric-label { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-content); }
+.sd-metric-value { font-size: 1.6rem; font-weight: 660; line-height: 1.2; margin-top: 4px; overflow-wrap: anywhere; }
+.sd-metric-note { font-size: 0.82rem; color: var(--color-muted-content); margin-top: 2px; }
+
+/* ------------------------------------------------- editorial structure -- */
+
+.sd-masthead { padding-bottom: 18px; margin-bottom: 34px; }
+/* The lede: one serif paragraph above body scale, never a second heading.
+   An .sd-intro block gets it on its first paragraph without the author asking. */
+.sd-lede,
+.sd-intro > p:first-child {
+  font-family: var(--font-serif);
+  font-size: clamp(17px, 2.4vw, 20px);
+  line-height: 1.5;
+  color: var(--color-base-content);
+}
+.sd-intro { font-size: 1.04rem; }
+
+.sd-section { margin: 0 0 52px; }
+.sd-section > h2 { padding-top: 40px; border-top: var(--rule); }
+.sd-section:first-of-type > h2 { padding-top: 0; border-top: 0; }
+.sd-count { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 26px; }
+
+/* Section number, mono accent — sits with the heading, carries no link. */
+.sd-secnum {
+  font-family: var(--font-mono);
+  font-size: 0.62em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--color-primary);
+  margin-right: 0.7em;
+  vertical-align: 0.22em;
+}
+
+/* Eyebrow: a mono uppercase kicker. It labels, so it carries no fill and no
+   status colour — a filled treatment here would read as a badge. */
+.sd-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-muted-content);
+  margin: 0 0 8px;
+}
+.sd-eyebrow-strict { color: var(--color-primary); }
+
+.sd-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  padding: 1px 8px;
+  border: var(--rule);
+  border-radius: 999px;
+  color: var(--color-muted-content);
+  background: none;
+  white-space: nowrap;
+}
+.sd-taglist, .sd-badge-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 22px; min-width: 0; }
+.sd-badge-row > * { min-width: 0; }
+
+/* The one filled treatment left in the editorial set: reserved for a hard stop. */
+.sd-flag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------- stepper -- */
+/* A progress rail: ordered nodes on a spine, ticks for done, a terminal node
+   for the failure. States come from classes, never from element position. */
+
+#sf-content ol.sd-stepper, #sf-content ul.sd-stepper { list-style: none; padding: 0; margin: 0 0 30px; }
+.sd-stepper-node {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 14px;
+  padding: 0 0 22px 0;
+  margin: 0;
+}
+/* The spine is drawn by the node, so a stepper of any length has no seam. */
+.sd-stepper-node::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 20px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.sd-stepper-node:last-child { padding-bottom: 0; }
+.sd-stepper-node:last-child::before { display: none; }
+
+.sd-stepper-mark {
+  grid-column: 1;
+  width: 21px;
+  height: 21px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--color-base-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--color-muted-content);
+}
+.sd-stepper-body { grid-column: 2; min-width: 0; }
+.sd-stepper-title { font-weight: 640; color: var(--color-base-content); }
+.sd-stepper-note { font-size: 0.9rem; color: var(--color-muted-content); }
+
+.sd-stepper-done .sd-stepper-mark {
+  background: var(--color-success);
+  border-color: transparent;
+  color: var(--color-status-content);
+}
+.sd-stepper-done .sd-stepper-mark::after { content: "✓"; }
+.sd-stepper-current .sd-stepper-mark { border-color: var(--color-primary); color: var(--color-primary); }
+.sd-stepper-error .sd-stepper-mark {
+  background: var(--color-error);
+  border-color: transparent;
+  color: var(--color-status-content);
+}
+.sd-stepper-error .sd-stepper-mark::after { content: "✕"; }
+.sd-stepper-error .sd-stepper-title { color: var(--color-error); }
+
+/* ------------------------------------------------------------ entries -- */
+
+.sd-steps { display: grid; gap: 0; margin: 26px 0 34px; }
+.sd-step { display: flex; gap: 18px; padding: 14px 0; border-top: var(--rule); }
+.sd-step:last-child { border-bottom: var(--rule); }
+.sd-step-index { font-family: var(--font-mono); font-size: 11px; color: var(--color-muted-content); padding-top: 4px; min-width: 1.4em; }
+.sd-step-body { min-width: 0; }
+.sd-step-title { font-weight: 640; color: var(--color-base-content); margin-bottom: 2px; }
+
+.sd-rules { display: grid; gap: 34px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); margin: 0 0 28px; }
+.sd-rule > p:last-child { margin-bottom: 0; }
+
+.sd-focus { background: var(--color-base-100); border: var(--rule); border-radius: var(--radius); padding: 22px 26px; }
+#sf-content .sd-focus-list { list-style: none; padding: 0; margin: 0; }
+.sd-focus-list li { padding: 9px 0; border-top: var(--rule); }
+.sd-focus-list li:first-child { border-top: 0; padding-top: 0; }
+.sd-focus-list li:last-child { padding-bottom: 0; }
+
+.sd-entries {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  align-items: start;
+  min-width: 0;
+}
+.sd-entries > * { min-width: 0; }
+.sd-entry {
+  background: var(--color-base-100);
+  border: var(--rule);
+  border-radius: 8px;
+  padding: 24px 26px 20px;
+  box-shadow: none;
+  min-width: 0;
+}
+.sd-entry-name { font-family: var(--font-serif); font-size: 1.28rem; line-height: 1.25; color: var(--color-base-content); }
+.sd-entry-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; margin: 4px 0 18px; min-width: 0; }
+.sd-entry-meta > * { min-width: 0; }
+
+.sd-claims { margin: 0 0 22px; }
+#sf-content .sd-claims ul { list-style: none; padding: 0; margin: 0; }
+.sd-claims li { margin: 0 0 14px; }
+.sd-claims li:last-child { margin-bottom: 0; }
+.sd-note { font-size: 0.9rem; margin-top: 2px; }
+
+.sd-evidence {
+  margin: 7px 0 0 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--border);
+  font-size: 0.92rem;
+  color: var(--color-muted-content);
+}
+.sd-evidence-pointer { display: block; font-size: 10.5px; letter-spacing: 0.06em; margin-bottom: 2px; }
+.sd-evidence-text { display: block; color: var(--color-body-content); overflow-wrap: anywhere; }
+
+.sd-code-title { font-weight: 640; color: var(--color-base-content); margin: 22px 0 4px; }
+.sd-colophon { color: var(--color-muted-content); font-size: 0.92rem; }
+
+/* ----------------------------------------------------------- callouts -- */
+/* A block that holds prose. A stretched badge was the wrong primitive: badge
+   colours are sized for a short pill, not a paragraph of text on a fill. */
+
+.sd-callout {
+  padding: 14px 18px;
+  margin: 0 0 18px;
+  border: var(--rule);
+  /* Accent rides the top edge: a coloured left bar means a round-diff mark. */
+  border-top: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-base-100);
+  color: var(--color-body-content);
+  min-width: 0;
+}
+.sd-callout > :last-child { margin-bottom: 0; }
+.sd-callout-title {
+  font-weight: 640;
+  color: var(--color-base-content);
+  margin-bottom: 4px;
+}
+.sd-callout-info    { border-top-color: var(--color-info); }
+.sd-callout-success { border-top-color: var(--color-success); }
+.sd-callout-warning { border-top-color: var(--color-warning); }
+.sd-callout-error   { border-top-color: var(--color-error); }
+
+/* An opt-in edge for telling one entry from the next. Colour rides the border
+   only — a tinted fill would move every contrast pair inside the card. */
+.sd-accent { border-left: 3px solid var(--color-primary); }
+.sd-accent-alt { border-left: 3px solid var(--color-accent-2); }
+
+/* ----------------------------------------------------------- citations -- */
+/* A left gutter carries date and source; the content sits beside it, so the
+   relation is spatial. Inline references read as unrelated interruptions. */
+
+.sd-cites { margin: 0 0 24px; }
+
+.sd-cite {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  padding: 18px 0;
+  border-top: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+.sd-cite:last-child { border-bottom: 1px solid var(--border-subtle); }
+.sd-cite > * { min-width: 0; }
+
+.sd-cite-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-muted-content);
+}
+.sd-cite-date { display: block; }
+.sd-cite-label {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+.sd-cite-body { color: var(--color-body-content); }
+.sd-cite-body > :last-child { margin-bottom: 0; }
+.sd-cite-title { font-weight: 640; color: var(--color-base-content); margin-bottom: 3px; }
+
+/* One column when the gutter no longer fits; the meta keeps its own line so it
+   still reads as the label for what follows. */
+@media (max-width: 720px) {
+  .sd-cite { grid-template-columns: 1fr; gap: 8px; }
+}
+
+/* Collapses are <details>/<summary>. Non-native clickable divs get captured by
+   the annotation layer and never open. */
+details.sd-collapse {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--color-base-100);
+  margin: 0 0 10px;
+}
+details.sd-collapse > summary {
+  cursor: pointer;
+  padding: 11px 16px;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+details.sd-collapse > summary::-webkit-details-marker { display: none; }
+details.sd-collapse > summary::before {
+  content: "▸";
+  color: var(--color-muted-content);
+  transition: transform 0.15s;
+  flex: none;
+}
+details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
+.sd-collapse-body { padding: 0 16px 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+
+.sd-section { margin: 0 0 28px; }
+
+/* ---------------------------------------------------------- diagram/svg --- */
+
+.sd-diagram {
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  overflow-x: auto;
+  margin: 0 0 1em;
+}
+.sd-diagram svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+/* Diagrams bake one SVG per theme at publish; CSS picks the visible one. */
+.sd-diagram-sketch .sd-svg-dark,
+.sd-diagram-themed .sd-svg-dark { display: none; }
+[data-theme$="dark"] .sd-diagram-sketch .sd-svg-dark,
+[data-theme$="dark"] .sd-diagram-themed .sd-svg-dark { display: block; }
+[data-theme$="dark"] .sd-diagram-sketch .sd-svg-light,
+[data-theme$="dark"] .sd-diagram-themed .sd-svg-light { display: none; }
+
+/* Dual-baked diagrams: mermaid pair by default; data-diagram-look="sketch" on
+   the root (the chrome's look toggle) reveals the sketch pair instead. */
+.sd-diagram-dual .sd-svg-dark,
+.sd-diagram-dual .sd-svg-sketch-light,
+.sd-diagram-dual .sd-svg-sketch-dark { display: none; }
+[data-theme$="dark"] .sd-diagram-dual .sd-svg-light { display: none; }
+[data-theme$="dark"] .sd-diagram-dual .sd-svg-dark { display: block; }
+[data-diagram-look="sketch"] .sd-diagram-dual .sd-svg-light,
+[data-diagram-look="sketch"] .sd-diagram-dual .sd-svg-dark { display: none; }
+[data-diagram-look="sketch"] .sd-diagram-dual .sd-svg-sketch-light { display: block; }
+[data-diagram-look="sketch"][data-theme$="dark"] .sd-diagram-dual .sd-svg-sketch-light { display: none; }
+[data-diagram-look="sketch"][data-theme$="dark"] .sd-diagram-dual .sd-svg-sketch-dark { display: block; }
+
+/* Mermaid labels are real HTML inside <foreignObject> and carry data-sid, so the
+   prose rules below reach them and repaint over the SVG's baked-in light fill.
+   Scoped to .sd-diagram so a hand-authored inline SVG keeps its page styling —
+   and still id-prefixed, or #sf-content would out-specify it. */
+#sf-content .sd-diagram svg foreignObject p,
+#sf-content .sd-diagram svg foreignObject li,
+#sf-content .sd-diagram svg foreignObject a {
+  color: inherit;
+}
+
+/* A diagram that failed to render degrades to this small block. Never a bomb. */
+.sd-diagram-error {
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 0 0 1em;
+  background: var(--color-base-100);
+  font-size: 0.86rem;
+}
+.sd-diagram-error-title { font-weight: 650; color: var(--color-error); }
+.sd-diagram-error pre {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  max-height: 12em;
+  overflow: auto;
+  background: var(--color-base-200);
+}
+
+/* ---------------------------------------------------------------- widgets -- */
+/* Markup is emitted by templates; behavior and sf-recorded come from
+   client.js. Options must be native <button> to stay clickable in-session. */
+
+/* Flattened to a rule: the box is gone, so the controls carry the contrast it
+   was spending. .sf-recorded still colours the remaining top border. */
+[data-widget] {
+  border: 0;
+  border-top: var(--rule);
+  border-radius: 0;
+  background: none;
+  padding: 14px 0 0;
+  margin: 20px 0 4px;
+  min-width: 0;
+}
+.sd-widget-prompt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-muted-content);
+  margin-bottom: 4px;
+}
+.sd-widget-help { font-size: 0.85rem; color: var(--color-muted-content); margin-bottom: 10px; }
+.sd-widget-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+/* Inside a table the row separator already rules the line — a second rule
+   from the widget reads as a double border. */
+.sd-tablewrap [data-widget] { border-top: 0; padding-top: 0; margin: 4px 0; }
+
+[data-option] {
+  font: inherit;
+  /* Pinned, not inherited: `font: inherit` alone lets any mono ancestor in the
+     content turn a decision control into what reads as a code sample. */
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  min-height: 2.25rem;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-base-content);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+[data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
+[data-option]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* Recorded state: the widget holds a queued (or sent) value. */
+[data-widget].sf-recorded { border-color: var(--color-primary); }
+[data-widget].sf-recorded [data-option] { opacity: 1; }
+[data-widget].sf-recorded [data-option][aria-pressed="true"],
+[data-widget].sf-recorded [data-option].sf-chosen {
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  border-color: transparent;
+}
+
+/* ------------------------------------------------------- content markers -- */
+
+body.sf-annotating #sf-content [data-sid] { cursor: default; }
+/* summary and links keep their own affordance — the click handler exempts them,
+   so a default cursor here would promise annotation the click does not deliver. */
+body.sf-annotating #sf-content summary[data-sid] { cursor: pointer; }
+body.sf-annotating #sf-content a[href] { cursor: pointer; }
+#sf-content .sf-hover { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 3px; }
+/* Inside the scrollable table wrapper an outward outline clips at the wrapper
+   edge (sides always, top/bottom on the first/last row) — draw it inward. */
+#sf-content .sd-tablewrap :is(tr, td, th).sf-hover,
+#sf-content .sd-tablewrap :is(tr, td, th).sf-annotated { outline-offset: -2px; }
+/* A header anchor stands for its column: body cells echo the mark, softer. */
+#sf-content .sd-tablewrap td.sf-annotated-col {
+  outline: 2px dashed color-mix(in oklch, var(--marker-color) 55%, transparent);
+  outline-offset: -2px;
+}
+[data-marker-hue="0"] { --marker-color: var(--marker-0); }
+[data-marker-hue="1"] { --marker-color: var(--marker-1); }
+[data-marker-hue="2"] { --marker-color: var(--marker-2); }
+[data-marker-hue="3"] { --marker-color: var(--marker-3); }
+[data-marker-hue="4"] { --marker-color: var(--marker-4); }
+[data-marker-hue="5"] { --marker-color: var(--marker-5); }
+
+/* The marker is an inline badge carrying its own 2-char id, NOT a left bar: the
+   legend teaches that a coloured left bar means a diff category. */
+#sf-content .sf-annotated { position: relative; }
+/* Barely bigger than the dot it replaces, and absolutely positioned so it never
+   displaces content: a labelled dot in the gutter, not an inline chip. */
+button.sf-marker, .sf-item-marker {
+  height: 15px;
+  border: 0;
+  border-radius: 7px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  background: var(--marker-color);
+  color: var(--marker-content);
+}
+button.sf-marker {
+  position: absolute;
+  left: -26px;
+  top: calc(0.2em + var(--marker-stack, 0) * 17px);
+  width: 17px;
+  padding: 0;
+  font-size: 0.58rem;
+  cursor: pointer;
+}
+button.sf-marker:hover { filter: brightness(1.12); }
+/* The panel's copy of the same id — inline here, where it labels its row. */
+.sf-item-marker {
+  display: inline-block;
+  font-size: 0.62rem;
+  min-width: 17px;
+  padding: 0 4px;
+}
+/* A scroll container clips a gutter marker, so its badge tucks inside and a
+   dashed outline carries the mark; nested anchors nest their outlines. */
+#sf-content pre.sf-annotated,
+#sf-content .sd-diagram.sf-annotated,
+#sf-content .sd-tablewrap.sf-annotated,
+#sf-content .sd-tablewrap .sf-annotated {
+  outline: 2px dashed var(--marker-color);
+  outline-offset: -2px;
+}
+#sf-content pre.sf-annotated > .sf-marker,
+#sf-content .sd-diagram.sf-annotated > .sf-marker,
+#sf-content .sd-tablewrap.sf-annotated > .sf-marker {
+  left: 3px;
+  top: calc(3px + var(--marker-stack, 0) * 17px);
+}
+/* Row anchors host the badge in their first cell, which becomes its origin;
+   the cell pads left so the badge sits beside the text, never over it. */
+#sf-content .sf-annotated td:has(> .sf-marker),
+#sf-content .sf-annotated th:has(> .sf-marker) { position: relative; padding-left: 27px; }
+#sf-content .sf-annotated td > .sf-marker,
+#sf-content .sf-annotated th > .sf-marker {
+  left: calc(5px + var(--marker-stack, 0) * 20px);
+  top: 50%;
+  margin-top: -7px;
+}
+/* Two badges in one cell need room for both. */
+#sf-content .sf-annotated td:has(> .sf-marker + .sf-marker),
+#sf-content .sf-annotated th:has(> .sf-marker + .sf-marker) { padding-left: 47px; }
+/* A cell anchored in its own right (row × column select) hosts its badge the
+   same way a row anchor's first cell does. */
+#sf-content :is(td, th).sf-annotated:has(> .sf-marker) { padding-left: 27px; }
+#sf-content :is(td, th).sf-annotated > .sf-marker {
+  left: calc(5px + var(--marker-stack, 0) * 20px);
+  top: 50%;
+  margin-top: -7px;
+}
+/* A wrapper's own badge sits at its top-left, where a first-row cell badge also
+   lands; push the wrapper's to the right edge so the two never collide. */
+#sf-content .sd-tablewrap.sf-annotated > .sf-marker { left: auto; right: 3px; }
+/* A list bullet owns the near gutter; sit fully outside it. */
+#sf-content li.sf-annotated > .sf-marker { left: -44px; }
+
+/* Panel row and page anchor point at each other on hover. */
+/* Widget rows anchor to a sid but carry no marker hue, so these fall back. */
+#sf-content .sf-linked { background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent); }
+.sf-queue-item.sf-linked { border-color: var(--marker-color, var(--color-primary)); }
+/* Tints an overlay child, not the element: animating background would blank the
+   element's own for the whole run, and box-shadow is the diff marks' channel. */
+@keyframes sf-flash {
+  0%, 100% { opacity: 0; }
+  30%      { opacity: 1; }
+}
+/* The overlay resolves against its own cell, not some positioned ancestor. */
+#sf-content :is(td, th).sf-flash { position: relative; }
+#sf-content .sf-flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 22%, transparent);
+  animation: sf-flash 1.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  #sf-content .sf-flash::after { animation-duration: 0.01s; }
+}
+
+#sf-content .sf-diff-added    { box-shadow: inset 3px 0 0 var(--color-success); }
+#sf-content .sf-diff-modified { box-shadow: inset 3px 0 0 var(--color-warning); }
+#sf-content .sf-diff-moved    { box-shadow: inset 3px 0 0 var(--color-info); }
+#sf-content .sf-diff-removed  { box-shadow: inset 3px 0 0 var(--color-error); }
+/* In-place ghosts from diff.removedDetail; hidden until the Removed toggle. */
+.sf-ghost-item { display: none; }
+#sf-content.sf-show-removed .sf-ghost-item {
+  display: block;
+  padding: 6px 14px;
+  margin: 4px 0;
+  font-size: 0.88rem;
+  color: var(--color-muted-content);
+  opacity: 0.7;
+  text-decoration: line-through;
+  overflow-wrap: anywhere;
+  box-shadow: inset 3px 0 0 var(--color-error);
+}
+#sf-content.sf-wip { border-top: 2px dashed var(--color-warning); }
+
+/* ----------------------------------------------------------------- chrome -- */
+
+/* Sticky lives here, not on .sf-topbar: a sticky child of a wrapper exactly as
+   tall as itself has no travel and never sticks. */
+#sf-chrome {
+  position: sticky;
+  top: 0;
+  z-index: var(--chrome-z);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-base-content);
+}
+/* Component rules below set explicit display, which would otherwise beat the
+   UA's [hidden] rule and strand a hidden element visible. */
+[hidden] { display: none !important; }
+
+#sf-chrome button { font: inherit; cursor: pointer; }
+#sf-chrome :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+.sf-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 9px 16px;
+  min-width: 0;
+  background: var(--color-base-100);
+  border-bottom: 1px solid var(--border);
+}
+.sf-brand { font-weight: 700; letter-spacing: -0.01em; color: var(--color-base-content); text-decoration: none; flex: none; }
+.sf-title { font-weight: 560; color: var(--color-muted-content); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sf-wip-marker {
+  flex: none;
+  font-size: 0.76rem;
+  font-weight: 620;
+  padding: 2px 9px;
+  min-height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--color-warning);
+  color: var(--color-status-content);
+}
+
+.sf-agent { display: inline-flex; align-items: center; gap: 7px; flex: none; color: var(--color-muted-content); font-size: 0.85rem; }
+.sf-agent.sf-agent-waiting { color: var(--color-base-content); }
+.sf-agent.sf-agent-waiting::before {
+  content: "";
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  animation: sf-spin 0.8s linear infinite;
+}
+@keyframes sf-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .sf-agent.sf-agent-waiting::before { animation-duration: 3s; }
+}
+button.sf-cancel-wait {
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: var(--radius-sm);
+  padding: 3px 9px;
+  min-height: 1.75rem;
+  font-size: 0.8rem;
+}
+button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--color-error); }
+
+.sf-status { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: 0.82rem; color: var(--color-muted-content); }
+.sf-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-muted-content); flex: none; }
+.sf-status-dot.sf-connected { background: var(--color-success); }
+.sf-status-dot.sf-reconnecting { background: var(--color-warning); animation: sf-pulse 1.2s ease-in-out infinite; }
+@keyframes sf-pulse { 50% { opacity: 0.3; } }
+
+button.sf-theme-toggle,
+button.sf-annotate-toggle {
+  flex: none;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  min-height: 2rem;
+  font-weight: 560;
+}
+button.sf-annotate-toggle.sf-on { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+/* Page-width control: slider drives --content-max live, E/R nudge it,
+   double-click resets. */
+.sf-width { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+input.sf-width-slider { flex: none; width: 90px; accent-color: var(--color-primary); cursor: ew-resize; }
+.sf-width-keys {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted-content);
+  cursor: default;
+}
+
+/* Theme picker: family buttons at the left end of the topbar; the gear opens
+   the tuner popup. */
+.sf-theme-pick { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+button.sf-theme-pick-btn, button.sf-tuner-toggle {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-muted-content);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+button.sf-theme-pick-btn:hover, button.sf-tuner-toggle:hover { color: var(--color-base-content); }
+button.sf-theme-pick-btn.sf-on {
+  border-color: var(--border);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+}
+button.sf-tuner-toggle { padding: 3px 6px; }
+button.sf-tuner-toggle.sf-on { color: var(--color-primary); }
+
+/* Theme tuner popup (gear button, or ?tuner=1 to open on load). */
+.sf-tuner {
+  display: none;
+  position: fixed;
+  top: 70px;
+  right: 14px;
+  z-index: var(--chrome-z);
+  width: 210px;
+  padding: 12px 14px;
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  font-size: 12.5px;
+  color: var(--color-base-content);
+}
+.sf-tuner.sf-open { display: block; }
+.sf-tuner-title { font-weight: 650; margin-bottom: 8px; }
+.sf-tuner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 5px 0;
+  color: var(--color-body-content);
+}
+input.sf-tuner-color { width: 34px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 4px; background: none; flex: none; }
+select.sf-tuner-select { max-width: 118px; font-size: 11.5px; }
+input.sf-tuner-range { width: 110px; accent-color: var(--color-primary); }
+.sf-tuner-actions { display: flex; gap: 8px; margin-top: 10px; }
+button.sf-tuner-send, button.sf-tuner-reset {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+}
+button.sf-tuner-send { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+
+/* Drafts are only sendable from inside the panel, which is closed by default —
+   this surfaces the action in the topbar whenever drafts exist. */
+button.sf-send-now {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  min-height: 2rem;
+  font-weight: 640;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+}
+button.sf-send-now:hover { filter: brightness(1.06); }
+
+button.sf-end-session {
+  flex: none;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-muted-content);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  min-height: 2rem;
+  font-weight: 560;
+}
+button.sf-end-session:hover { border-color: var(--color-error); color: var(--color-error); }
+
+/* rounds ---------------------------------------------------------------- */
+
+.sf-rounds {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 9px 16px;
+  min-width: 0;
+  background: var(--color-base-100);
+  border-bottom: 1px solid var(--border);
+}
+.sf-round-keys {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted-content);
+  cursor: default;
+}
+button.sf-round-pill {
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: 999px;
+  padding: 3px 12px;
+  min-height: 1.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+button.sf-round-pill.sf-round-current { border-color: var(--color-primary); }
+button.sf-round-pill.sf-round-active { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+
+button.sf-removed-toggle {
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: 999px;
+  padding: 3px 12px;
+  min-height: 1.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+button.sf-removed-toggle.sf-on { background: var(--color-error); color: var(--color-status-content); border-color: transparent; }
+
+.sf-diff-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 0.78rem; color: var(--color-muted-content); min-width: 0; }
+.sf-diff-legend > * { display: inline-flex; align-items: center; gap: 5px; }
+.sf-diff-legend > *::before { content: ""; width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.sf-legend-added::before    { background: var(--color-success); }
+.sf-legend-removed::before  { background: var(--color-error); }
+.sf-legend-modified::before { background: var(--color-warning); }
+.sf-legend-moved::before    { background: var(--color-info); }
+/* Shows a real badge instead of a swatch: the colour cycles per annotation, so a
+   single swatch would name a colour that no particular mark has. */
+.sf-legend-annotated::before { display: none; }
+.sf-legend-annotated { --marker-color: var(--marker-0); gap: 6px; }
+
+/* side panels ----------------------------------------------------------- */
+
+.sf-queue, .sf-chat {
+  position: fixed;
+  bottom: 0;
+  width: min(380px, 100vw);
+  max-height: 70vh;
+  flex-direction: column;
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow-card);
+  z-index: 4;
+  /* Closed panels are display:none, not translated off-canvas: a parked panel
+     still reads as clipped content to a layout audit. */
+  display: none;
+}
+.sf-queue { right: 16px; }
+.sf-chat { right: 412px; }
+/* Below 900px there is no room for two side-by-side panels, so they stack:
+   chat above, queue below, each capped so both stay fully readable. */
+@media (max-width: 900px) {
+  .sf-queue, .sf-chat { width: calc(100vw - 32px); max-height: 42vh; }
+  .sf-chat { right: 16px; bottom: calc(42vh + 8px); }
+}
+.sf-queue.sf-open, .sf-chat.sf-open { display: flex; }
+
+.sf-queue-header, .sf-chat-log { min-width: 0; }
+.sf-queue-header, .sf-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  font-weight: 640;
+  border-bottom: 1px solid var(--border);
+}
+.sf-queue-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.sf-queue-list { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+.sf-queue-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  background: var(--color-base-200);
+  min-width: 0;
+  position: relative;
+}
+/* Border-left carries state, background carries kind — a widget row has both
+   classes, so sharing one property would hide draft-vs-sent on widgets. */
+.sf-item-draft     { border-left: 3px solid var(--color-warning); padding-right: 42px; }
+.sf-item-submitted { border-left: 3px solid var(--color-success); }
+.sf-item-widget    { background: var(--color-base-300); }
+.sf-item-excerpt {
+  font-size: 0.8rem;
+  color: var(--color-muted-content);
+  font-family: var(--font-mono);
+  /* excerpts are arbitrary page text — clamp instead of letting them run */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.sf-item-comment { margin-top: 5px; overflow-wrap: anywhere; }
+.sf-item-round { font-size: 0.72rem; font-weight: 700; color: var(--color-muted-content); text-transform: uppercase; }
+/* Reads as a button, not a glyph: the bare × was mistaken for decoration and
+   left users believing queued feedback could not be removed. */
+button.sf-item-remove, button.sf-draft-remove {
+  border: 1px solid var(--border);
+  background: var(--color-base-100);
+  color: var(--color-muted-content);
+  line-height: 1;
+  border-radius: var(--radius-sm);
+}
+button.sf-item-remove:hover, button.sf-draft-remove:hover {
+  color: var(--color-status-content);
+  background: var(--color-error);
+  border-color: transparent;
+}
+button.sf-item-remove {
+  position: absolute;
+  top: 6px; right: 6px;
+  font-size: 0.95rem;
+  padding: 3px 7px;
+}
+
+button.sf-queue-send {
+  margin: 8px;
+  padding: 9px 14px;
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-weight: 640;
+}
+button.sf-queue-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sf-chat-log { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+.sf-chat-msg { padding: 8px 11px; border-radius: var(--radius); max-width: 85%; overflow-wrap: anywhere; }
+.sf-msg-user  { align-self: flex-end; background: var(--color-primary); color: var(--color-primary-content); }
+.sf-msg-agent { align-self: flex-start; background: var(--color-base-200); border: 1px solid var(--border); }
+/* Several agents can share one board's chat, so a bubble names its author. */
+.sf-msg-agent-id {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-muted-content);
+  margin-bottom: 3px;
+}
+
+.sf-chat-working { display: flex; align-items: center; gap: 9px; padding: 8px 12px; color: var(--color-muted-content); font-size: 0.85rem; }
+.sf-chat-working::before {
+  content: "";
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  animation: sf-spin 0.8s linear infinite;
+  flex: none;
+}
+button.sf-chat-cancel {
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--color-muted-content);
+  border-radius: var(--radius-sm);
+  padding: 2px 9px;
+  min-height: 1.7rem;
+  font-size: 0.8rem;
+}
+button.sf-chat-cancel:hover { color: var(--color-error); border-color: var(--color-error); }
+
+.sf-chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); min-width: 0; }
+.sf-chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  resize: vertical;
+  min-height: 2.5rem;
+  max-height: 8rem;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+}
+button.sf-chat-submit {
+  flex: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  padding: 0 14px;
+  min-height: 2.5rem;
+  font-weight: 640;
+}
+
+/* popover --------------------------------------------------------------- */
+
+/* Fixed, not absolute: client.js positions from event.clientX/clientY, which are
+   viewport coords. Absolute inside #sf-chrome anchored them to the document top. */
+.sf-popover {
+  position: fixed;
+  z-index: 6;
+  width: min(340px, calc(100vw - 32px));
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 12px;
+  min-width: 0;
+}
+.sf-popover-excerpt {
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--color-muted-content);
+  background: var(--color-base-200);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  margin-bottom: 9px;
+  max-height: 5em;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.sf-popover-text {
+  width: 100%;
+  font: inherit;
+  min-height: 5rem;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+}
+.sf-draft-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 8px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-base-200);
+}
+.sf-draft-comment { flex: 1; min-width: 0; font-size: 0.85rem; overflow-wrap: anywhere; }
+button.sf-draft-remove {
+  flex: none;
+  padding: 3px 9px;
+  font-size: 0.8rem;
+}
+.sf-popover-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+button.sf-popover-queue {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  padding: 7px 14px;
+  min-height: 2.2rem;
+  font-weight: 640;
+}
+button.sf-popover-cancel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted-content);
+  padding: 7px 12px;
+  min-height: 2.2rem;
+}
+
+/* audit — advisory only, never a blocking banner ------------------------ */
+
+.sf-audit { position: fixed; left: 16px; bottom: 16px; z-index: 4; min-width: 0; }
+button.sf-audit-badge {
+  border: 1px solid var(--border);
+  background: var(--color-base-100);
+  color: var(--color-muted-content);
+  border-radius: 999px;
+  padding: 5px 12px;
+  min-height: 2rem;
+  font-size: 0.82rem;
+  box-shadow: var(--shadow-card);
+}
+.sf-audit-list {
+  display: none;
+  margin-top: 8px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: 40vh;
+  overflow-y: auto;
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 8px;
+}
+.sf-audit.sf-open .sf-audit-list { display: block; }
+.sf-audit-finding { font-size: 0.83rem; padding: 6px 8px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+.sf-sev-warn  { border-left: 3px solid var(--color-warning); }
+.sf-sev-error { border-left: 3px solid var(--color-error); }
+
+/* layout gate ----------------------------------------------------------- */
+/* The shell ships #sf-content empty and client.js paints it, so without this
+   every board opens on a blank page. */
+
+body.sf-gated #sf-content,
+body.sf-gated #sf-chrome { visibility: hidden; }
+
+.sf-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: var(--color-base-200);
+}
+body:not(.sf-gated) .sf-gate { display: none; }
+
+.sf-gate-card { text-align: center; padding: 24px; max-width: min(90vw, 420px); }
+.sf-gate-title { font-size: 1.25rem; font-weight: 640; line-height: 1.3; color: var(--color-base-content); }
+.sf-gate-copy { margin-top: 8px; font-size: 0.9rem; color: var(--color-muted-content); }
+.sf-gate-card.sf-gate-held .sf-gate-title { color: var(--color-warning); }
+.sf-gate-card.sf-gate-stalled .sf-gate-title { color: var(--color-error); }
+
+button.sf-gate-show {
+  margin-top: 18px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 560;
+  cursor: pointer;
+  padding: 7px 16px;
+  min-height: 2.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+}
+button.sf-gate-show:hover { border-color: var(--color-primary); }
+
+.sf-gate-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 6;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-card);
+  max-width: min(90vw, 560px);
+}
+
+/* ended ----------------------------------------------------------------- */
+/* Reports the state without covering the content: an ended board stays
+   readable, and the disabled controls are what actually stop a write. */
+
+.sf-ended-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 6;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-card);
+  max-width: min(90vw, 560px);
+}
+/* Fixed chrome overlaps whatever is under it, so the page makes room for the
+   banner and the toasts clear it. */
+body.sf-ended #sf-content { padding-bottom: 140px; }
+body.sf-ended .sf-toasts { bottom: 68px; }
+body.sf-ended #sf-content [data-widget] [data-option][disabled] { opacity: 0.55; cursor: not-allowed; }
+.sf-topbar button[disabled], .sf-queue-send[disabled], .sf-chat-submit[disabled] { opacity: 0.5; cursor: not-allowed; }
+button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--color-error); font-weight: 640; }
+.sf-chat-input[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+/* toasts ---------------------------------------------------------------- */
+
+.sf-toasts {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.sf-toast {
+  background: var(--color-base-content);
+  color: var(--color-base-100);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  font-weight: 560;
+  box-shadow: var(--shadow-card);
+  max-width: min(90vw, 520px);
+  overflow-wrap: anywhere;
+}
+
+/* whiteboard ------------------------------------------------------------ */
+
+.sd-diagram, .sd-diagram-error { position: relative; }
+
+.sf-wb-open {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 560;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  cursor: pointer;
+  opacity: 0.75;
+}
+.sf-wb-open:hover, .sf-wb-open:focus-visible { opacity: 1; border-color: var(--color-primary); }
+
+/* Same visual as .sf-wb-open, parked top-left so the two never overlap. */
+.sf-diagram-look {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 560;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  cursor: pointer;
+  opacity: 0.75;
+}
+.sf-diagram-look:hover, .sf-diagram-look:focus-visible { opacity: 1; border-color: var(--color-primary); }
+
+.sf-wb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--chrome-z) + 10);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-base-100);
+}
+.sf-wb-frame { flex: 1; width: 100%; border: 0; min-height: 0; }
+.sf-wb-error {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  background: var(--color-error, #fdecec);
+  color: var(--color-error-content, #8a1c1c);
+}
+
+@media print {
+  .sf-wb-open, .sf-diagram-look, .sf-wb-overlay { display: none; }
+}
+
+/* print ----------------------------------------------------------------- */
+
+@media print {
+  #sf-chrome { display: none; }
+  #sf-content { max-width: none; padding: 0; }
+}

@@ -1,0 +1,42 @@
+/* Frame chrome around the excalidraw canvas. Served as /whiteboard-assets/frame.css. */
+
+/* Theme comes from the parent's data-theme, mirrored onto <html> by the frame —
+   NOT from prefers-color-scheme, which is the OS and can disagree with it. */
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+
+html, body { height: 100%; margin: 0; }
+body { font: 13px/1.5 -apple-system, system-ui, sans-serif; background: Canvas; color: CanvasText; }
+
+.wb-root { display: flex; flex-direction: column; height: 100vh; }
+.wb-canvas { flex: 1; min-height: 0; }
+
+.wb-banner { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid rgb(0 0 0 / 0.12); }
+.wb-stale { background: #fdf3d8; color: #6b4a00; }
+.wb-blank, .wb-loading, .wb-ended { background: #f0ece3; color: #4a4235; }
+.wb-error, .wb-conflict { background: #fdecec; color: #8a1c1c; }
+
+.wb-bar {
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px 14px; border-top: 1px solid rgb(0 0 0 / 0.12); background: Canvas;
+}
+.wb-note {
+  flex: 1; padding: 7px 10px; font: inherit; color: inherit;
+  background: color-mix(in srgb, CanvasText 5%, Canvas);
+  border: 1px solid rgb(0 0 0 / 0.18); border-radius: 7px;
+}
+.wb-bar button {
+  padding: 7px 14px; font: inherit; font-weight: 500;
+  border-radius: 7px; border: 1px solid rgb(0 0 0 / 0.2); cursor: pointer;
+}
+.wb-send { background: #b4531f; border-color: #b4531f; color: #fff; }
+.wb-send[disabled] { opacity: 0.6; cursor: default; }
+.wb-close, .wb-fit { background: color-mix(in srgb, CanvasText 7%, Canvas); color: inherit; }
+
+html[data-theme="dark"] .wb-stale { background: #4a3c12; color: #f2dfae; }
+html[data-theme="dark"] .wb-blank,
+html[data-theme="dark"] .wb-loading,
+html[data-theme="dark"] .wb-ended { background: #262119; color: #cfc5b4; }
+html[data-theme="dark"] .wb-error,
+html[data-theme="dark"] .wb-conflict { background: #4a1f1f; color: #f3c9c9; }
+html[data-theme="dark"] .wb-send { background: #e0824b; border-color: #e0824b; color: #1a1207; }

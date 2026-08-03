@@ -1,0 +1,4 @@
+node_modules/
+render/.gen/
+test/out/
+test/shots/
