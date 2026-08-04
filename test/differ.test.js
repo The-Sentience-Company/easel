@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { annotateAndDiff, excerptForSid } from '../daemon/differ.js'
+import { annotateAndDiff, contextForSid, excerptForSid } from '../daemon/differ.js'
 
 const sidOf = (html, marker) => html.match(new RegExp(`data-sid="(s-[0-9a-f]+)"[^>]*>${marker}`))?.[1]
 
@@ -174,6 +174,34 @@ test('excerptForSid finds node text, clips, and returns null for unknown sid', (
   const sid = html.match(/data-sid="([^"]+)"/)[1]
   assert.equal(excerptForSid(html, sid).length, 200)
   assert.equal(excerptForSid(html, 's-doesnotexist'), null)
+})
+
+test('contextForSid: nearest preceding heading and dup ordinal', () => {
+  const { html } = annotateAndDiff(
+    '<h2>aleks — dump 1</h2><table><thead><tr><th>final page entry</th></tr></thead></table>' +
+    '<h2>ben — dump 2</h2><table><thead><tr><th>final page entry</th></tr></thead></table>'
+  )
+  const sids = [...html.matchAll(/data-sid="([^"]+)"[^>]*>final page entry/g)].map((m) => m[1])
+  assert.equal(sids.length, 2)
+  assert.deepEqual(contextForSid(html, sids[0]), { heading: 'aleks — dump 1', nth: 1, of: 2 })
+  assert.deepEqual(contextForSid(html, sids[1]), { heading: 'ben — dump 2', nth: 2, of: 2 })
+})
+
+test('contextForSid: enclosing card title; a heading is not its own context', () => {
+  const { html } = annotateAndDiff(
+    '<h1>Page</h1><div class="sd-card"><div class="sd-card-title">Fix 1</div><p>body</p></div>'
+  )
+  const bodySid = html.match(/data-sid="([^"]+)"[^>]*>body/)[1]
+  assert.deepEqual(contextForSid(html, bodySid), { heading: 'Page', card: 'Fix 1' })
+  const h1Sid = html.match(/data-sid="([^"]+)"[^>]*>Page/)[1]
+  assert.equal(contextForSid(html, h1Sid), null)
+})
+
+test('contextForSid: unique unheaded node has no context; unknown sid is null', () => {
+  const { html } = annotateAndDiff('<p>alone</p>')
+  const sid = html.match(/data-sid="([^"]+)"/)[1]
+  assert.equal(contextForSid(html, sid), null)
+  assert.equal(contextForSid(html, 's-doesnotexist'), null)
 })
 
 test('a round-1 annotation sid re-anchors on round 2 after edits around it', () => {

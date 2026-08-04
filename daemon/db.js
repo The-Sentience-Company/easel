@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   widget_value TEXT,
   text         TEXT,                 -- chat-kind payload
   payload_json TEXT,                 -- whiteboard-kind: {diagramIndex,scenePath,svgPath,...}
+  context_json TEXT,                 -- anchor section context: {heading,card,nth,of}
   created_at   TEXT NOT NULL,
   submitted_at TEXT
 );
@@ -112,6 +113,8 @@ function migrate(db) {
   // seed them from the last round, which is the wrong diagram.
   if (!has('surfaces', 'wip_diagrams_json')) db.exec(`ALTER TABLE surfaces ADD COLUMN wip_diagrams_json TEXT`)
   if (!has('feedback', 'payload_json')) db.exec(`ALTER TABLE feedback ADD COLUMN payload_json TEXT`)
+  // Items stored before anchor context existed simply carry none.
+  if (!has('feedback', 'context_json')) db.exec(`ALTER TABLE feedback ADD COLUMN context_json TEXT`)
   // Scenes stored before versioning start at 0, which is what a first-open reads.
   if (!has('whiteboards', 'version')) {
     db.exec(`ALTER TABLE whiteboards ADD COLUMN version INTEGER NOT NULL DEFAULT 0`)

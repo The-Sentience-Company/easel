@@ -97,12 +97,15 @@ const commands = {
   async publish() {
     const { values, positionals } = parseArgs({
       args: rest,
-      options: { note: { type: 'string' }, json: { type: 'boolean' } },
+      options: { note: { type: 'string' }, agent: { type: 'string' }, json: { type: 'boolean' } },
       allowPositionals: true,
     })
     const key = positionals[0] || fail(USAGE)
-    const data = await call('POST', `/api/b/${key}/publish`, { note: values.note })
+    // Identify the publisher so the daemon drops their own parked listener in-turn.
+    const agent = values.agent || process.env.CLAUDE_SESSION_ID || null
+    const data = await call('POST', `/api/b/${key}/publish`, { note: values.note, agent })
     output(data, values.json, (d) => `published round ${d.round}` +
+      (d.listenerDropped ? `\nyour parked listener was dropped — relaunch \`easel await\`` : '') +
       (d.audit?.findings?.length ? `\naudit (advisory): ${JSON.stringify(d.audit.findings)}` : ''))
   },
 
@@ -152,7 +155,9 @@ const commands = {
       backoff = 1000
       if (data.timedOut) continue // window expired — re-attach with the same cursor
       output(data, values.json)
-      if (data.superseded) fail('superseded by a newer await from this agent')
+      // Both are normal lifecycle events, not failures — exit 0.
+      if (data.superseded) console.error('superseded by a newer await from this agent')
+      if (data.dropped) console.error('dropped by a publish from this agent — relaunch after the round')
       return
     }
   },

@@ -534,6 +534,50 @@ export function annotateAndDiff(html, prevHtml = null) {
 }
 
 // Text of the node carrying `sid` in stored round html, clipped for excerpts.
+// Section context for an anchor: nearest preceding heading, enclosing card title,
+// and an ordinal among identically-texted sids — disambiguates repeated anchors.
+export function contextForSid(html, sid, max = 120) {
+  const tree = parseFragment(html)
+  let target = null
+  let heading = null
+  let card = null
+  let lastHeading = null
+  const texts = [] // [sid, tag, normalized text] in document order
+  ;(function walk(node, chain) {
+    if (!node.childNodes) return
+    for (const child of node.childNodes) {
+      if (isElement(child)) {
+        const childSid = getAttr(child, 'data-sid')
+        if (childSid) texts.push([childSid, child.tagName, norm(textOf(child))])
+        if (childSid === sid && !target) {
+          target = child
+          heading = lastHeading
+          const cardEl = [...chain].reverse().find((a) => /\bsd-card\b/.test(getAttr(a, 'class') ?? ''))
+          const titleEl = cardEl?.childNodes?.find(
+            (t) => isElement(t) && /\bsd-card-title\b/.test(getAttr(t, 'class') ?? '')
+          )
+          if (titleEl) card = norm(textOf(titleEl)).slice(0, max)
+        }
+        // The target's own text is the excerpt; its heading context is the previous one.
+        if (/^h[1-6]$/.test(child.tagName) && !target) lastHeading = norm(textOf(child)).slice(0, max)
+      }
+      walk(child, chain.concat(isElement(child) ? [child] : []))
+    }
+  })(tree, [])
+  if (!target) return null
+  const own = norm(textOf(target))
+  // Same tag only: a one-cell table's table/thead/tr ancestors share the th's text.
+  const dups = texts.filter(([, tag, t]) => tag === target.tagName && t === own)
+  const context = {}
+  if (heading) context.heading = heading
+  if (card && card !== own.slice(0, max)) context.card = card
+  if (dups.length > 1) {
+    context.nth = dups.findIndex(([s]) => s === sid) + 1
+    context.of = dups.length
+  }
+  return Object.keys(context).length ? context : null
+}
+
 export function excerptForSid(html, sid, max = 200) {
   const tree = parseFragment(html)
   let found = null

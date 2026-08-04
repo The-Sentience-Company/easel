@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { HttpError, readBody } from './body.js'
 import { createStore } from './store.js'
 import { now, DATA_DIR } from './db.js'
-import { annotateAndDiff, excerptForSid, extractIslands } from './differ.js'
+import { annotateAndDiff, contextForSid, excerptForSid, extractIslands } from './differ.js'
 import { ROUTES } from './routes.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
@@ -328,6 +328,16 @@ function cancelWaiters(key) {
   for (const waiter of set) waiter.cancel()
   clearWaitingNow(key)
   return set.length
+}
+
+// Publish drops the publisher's own parked waiter synchronously — the exit lands
+// in-turn, never as a wake after the agent stops. Other agents are untouched.
+function dropAgentWaiter(key, agent) {
+  if (!agent) return false
+  const waiter = [...(waiters.get(key) ?? [])].find((w) => w.agent === agent)
+  if (!waiter) return false
+  waiter.drop()
+  return true
 }
 
 // ---------------------------------------------------------------- file watching
@@ -758,7 +768,8 @@ async function handlePublish(req, res, match) {
   store.setWip(board.key, null)
   broadcast(board.key, 'round', { seq })
   maybeAutoOpen(board.key)
-  json(res, 200, { round: seq, diff: diff ?? { added: [], removed: [], modified: [], moved: [] }, audit })
+  const listenerDropped = dropAgentWaiter(board.key, body.agent)
+  json(res, 200, { round: seq, listenerDropped, diff: diff ?? { added: [], removed: [], modified: [], moved: [] }, audit })
 }
 
 async function handleAwait(req, res, match) {
@@ -783,6 +794,7 @@ async function handleAwait(req, res, match) {
       timedOut: false,
       cancelled: false,
       superseded: false,
+      dropped: false,
       ...flags,
     })
   }
@@ -815,6 +827,10 @@ async function handleAwait(req, res, match) {
     supersede() {
       cleanup()
       respond([], { superseded: true })
+    },
+    drop() {
+      cleanup()
+      respond([], { dropped: true })
     },
   }
   const timer = setTimeout(() => {
@@ -945,6 +961,7 @@ const handlers = {
     const excerpt = excerptForSid(source, anchor.sid) ?? excerptForSid(roundRow?.html ?? '', anchor.sid)
     // A sid absent from the annotated round would store an unanchorable orphan row.
     if (excerpt == null) return json(res, 400, { error: `no such anchor in round ${roundRow.seq}: ${anchor.sid}` })
+    const context = contextForSid(source, anchor.sid) ?? contextForSid(roundRow?.html ?? '', anchor.sid)
     const item = store.addFeedback({
       surface_key: board.key,
       round_seq: roundRow?.seq ?? null,
@@ -956,6 +973,7 @@ const handlers = {
       prefix: anchor.prefix ?? null,
       suffix: anchor.suffix ?? null,
       excerpt: excerpt ?? null,
+      context_json: context ? JSON.stringify(context) : null,
       comment,
     })
     broadcast(board.key, 'feedback', { id: item.id })
@@ -997,12 +1015,14 @@ const handlers = {
     if (!widgetId || value == null) return json(res, 400, { error: 'widgetId and value required' })
     const roundRow = round != null ? store.round(board.key, round) : store.lastRound(board.key)
     if (!roundRow) return json(res, 404, { error: `no such round: ${round}` })
+    const context = sid ? contextForSid(roundRow?.html ?? '', sid) : null
     const item = store.upsertWidgetDraft({
       surface_key: board.key,
       round_seq: roundRow?.seq ?? null,
       client_id: clientId,
       sid: sid ?? null,
       excerpt: sid ? excerptForSid(roundRow?.html ?? '', sid) : null,
+      context_json: context ? JSON.stringify(context) : null,
       widget_id: widgetId,
       widget_value: String(value),
     })

@@ -93,7 +93,7 @@ test('a new attach from the same agent supersedes the old waiter', async () => {
   const second = await cliAwait(['--agent', 'same-agent', '--timeout-s', '1'])
   const firstRes = await Promise.race([first.done, sleep(3000).then(() => null)])
   assert.ok(firstRes, 'old waiter was not superseded by the new attach')
-  assert.notEqual(firstRes.code, 0)
+  assert.equal(firstRes.code, 0, 'supersede is a lifecycle event, not a failure')
   assert.match(firstRes.stderr + firstRes.stdout, /supersed/i)
   // The new waiter is live and still delivers.
   assert.equal((await api('GET', `/api/b/${key}/state`)).data.agentWaiting, true)
@@ -142,6 +142,23 @@ test('the fast path also supersedes a stale same-agent waiter', async () => {
   const staleRes = await Promise.race([stale.done, sleep(3000).then(() => null)])
   assert.ok(staleRes, 'stale waiter survived a fast-path attach from the same agent')
   assert.match(staleRes.stderr + staleRes.stdout, /supersed/i)
+})
+
+test('a publish drops the publisher\'s own waiter (exit 0) and spares other agents', async () => {
+  const mine = await cliAwait(['--agent', 'publisher', '--timeout-s', '30'])
+  const other = await cliAwait(['--agent', 'bystander', '--timeout-s', '30'])
+  await sleep(700)
+  const pub = await api('POST', `/api/b/${key}/publish`, { agent: 'publisher' })
+  assert.equal(pub.status, 200)
+  assert.equal(pub.data.listenerDropped, true)
+  const mineRes = await Promise.race([mine.done, sleep(3000).then(() => null)])
+  assert.ok(mineRes, 'publish did not drop the publisher\'s waiter')
+  assert.equal(mineRes.code, 0)
+  assert.equal(JSON.parse(mineRes.stdout).dropped, true)
+  const otherEarly = await Promise.race([other.done.then(() => 'exited'), sleep(500).then(() => null)])
+  assert.equal(otherEarly, null, 'publish killed a bystander agent\'s waiter')
+  await api('POST', `/api/b/${key}/cancel-waiting`, {})
+  await other.done
 })
 
 test('ending the board mid-wait resolves the attached waiter as cancelled', async () => {
