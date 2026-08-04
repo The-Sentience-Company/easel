@@ -141,15 +141,19 @@ function lineHtml(kind, line, ordinal, wordHtml) {
 
 /* N removals then N additions pair by position — the shape an edited list makes.
    One removal pairs with the first add; the rest of that run is wholly new. */
-function pairedBlock(kinds, i) {
+function pairedBlock(kinds, lines, i) {
   if (kinds[i] !== 'del' || kinds[i - 1] === 'del') return null
   let dels = 0
   while (kinds[i + dels] === 'del') dels++
+  // A hand-authored diff often sets the runs apart with a blank line; it
+  // separates them visually, not semantically, so pairing reads across it.
+  let gap = 0
+  while (kinds[i + dels + gap] === 'ctx' && !(lines[i + dels + gap] ?? 'x').trim()) gap++
   let adds = 0
-  while (kinds[i + dels + adds] === 'add') adds++
+  while (kinds[i + dels + gap + adds] === 'add') adds++
   if (!adds) return null
-  if (dels === adds) return { dels, pairs: dels }
-  return dels === 1 ? { dels: 1, pairs: 1 } : null
+  if (dels === adds) return { dels, gap, pairs: dels }
+  return dels === 1 ? { dels: 1, gap, pairs: 1 } : null
 }
 
 export function renderDiffBody(source) {
@@ -160,18 +164,20 @@ export function renderDiffBody(source) {
   const out = []
 
   for (let i = 0; i < lines.length; i++) {
-    const block = pairedBlock(kinds, i)
+    const block = pairedBlock(kinds, lines, i)
     if (block) {
-      const { dels, pairs } = block
+      const { dels, gap, pairs } = block
+      const addAt = i + dels + gap
       for (let k = 0; k < dels; k++) out[i + k] = lineHtml('del', lines[i + k], i + k)
+      for (let k = 0; k < gap; k++) out[i + dels + k] = lineHtml('ctx', lines[i + dels + k], i + dels + k)
       for (let k = 0; k < pairs; k++) {
         const del = tokenize(lines[i + k].slice(1))
-        const add = tokenize(lines[i + dels + k].slice(1))
+        const add = tokenize(lines[addAt + k].slice(1))
         const flags = changedFlags(del, add)
         out[i + k] = lineHtml('del', lines[i + k], i + k, markRuns(del, flags && flags[0]))
-        out[i + dels + k] = lineHtml('add', lines[i + dels + k], i + dels + k, markRuns(add, flags && flags[1]))
+        out[addAt + k] = lineHtml('add', lines[addAt + k], addAt + k, markRuns(add, flags && flags[1]))
       }
-      i += dels + pairs - 1
+      i += dels + gap + pairs - 1
       continue
     }
     out[i] = lineHtml(kinds[i], lines[i], i)

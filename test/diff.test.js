@@ -97,6 +97,13 @@ describe('word-level emphasis stays inside an unambiguous pair', () => {
     assert.deepEqual(marks(html), ['x', 'y', 'one', 'two'])
   })
 
+  test('a blank line between the runs does not break the pair', () => {
+    // Hand-authored prose diffs set the − and + apart with a blank line.
+    const html = body('-the quick brown fox', '', '+the quick red fox')
+    assert.deepEqual(marks(html), ['brown', 'red'])
+    assert.deepEqual(kinds(html), ['del', 'ctx', 'add'])
+  })
+
   test('a pair sharing no edge words is left to the line tint', () => {
     assert.deepEqual(marks(body('-alpha beta', '+gamma delta')), [])
   })
