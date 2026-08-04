@@ -17,6 +17,7 @@ const CHROME_CLASSES = [
   'sf-diff-added', 'sf-diff-modified', 'sf-diff-moved', 'sf-diff-removed',
   'sf-ghost-item', 'sf-removed-toggle', 'sf-show-removed',
   'sf-wb-open', 'sf-wb-overlay', 'sf-wb-frame', 'sf-wb-error', 'sf-diagram-look',
+  'sf-wrap-toggle', 'sf-wrappable',
   'sf-gate', 'sf-gate-card', 'sf-gate-title', 'sf-gate-copy', 'sf-gate-show',
   'sf-gate-banner', 'sf-gated', 'sf-end-session', 'sf-gate-stalled',
   'sf-theme-toggle', 'sf-width', 'sf-width-slider', 'sf-width-keys',

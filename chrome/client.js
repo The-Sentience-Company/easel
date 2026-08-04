@@ -86,6 +86,7 @@ const ui = {}
 const THEME_STORAGE = 'sf-theme'
 const FAMILY_STORAGE = 'sf-theme-family'
 const LOOK_STORAGE = 'sf-diagram-look'
+const WRAP_STORAGE = 'sf-wrap-code'
 const WIDTH_STORAGE = 'sf-width'
 const THEME_FAMILIES = [
   ['', 'Default'],
@@ -412,6 +413,7 @@ function render() {
   }
   markRecordedWidgets(roundFeedback)
   attachWhiteboardButtons()
+  attachWrapButtons()
   mountIslands(d, showWip)
 }
 
@@ -851,7 +853,7 @@ function closePopover() {
 }
 
 // Chrome-injected controls inside content act, never annotate.
-const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look'
+const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle'
 
 CONTENT.addEventListener('mouseover', (e) => {
   if (!state.annotating || popover) return
@@ -1340,6 +1342,46 @@ function toggleDiagramLook() {
   if (diagramLook() === 'sketch') localStorage.removeItem(LOOK_STORAGE)
   else localStorage.setItem(LOOK_STORAGE, 'sketch')
   applyDiagramLook()
+}
+
+/* Only a block that overflows gets the chip, so wrap is cleared before the
+   widths are read and re-applied after — one pass, no paint between. */
+function attachWrapButtons() {
+  delete document.documentElement.dataset.wrapCode
+  const wide = []
+  for (const node of CONTENT.querySelectorAll('pre:not(.sd-diff)')) {
+    // Inside a closed <details> both widths read 0; offer the chip rather than
+    // conclude it fits.
+    if (node.scrollWidth > node.clientWidth + 1 || node.offsetParent === null) wide.push(node)
+  }
+  for (const node of wide) {
+    // The class reserves the corner the chip sits in, so it never covers code.
+    node.classList.add('sf-wrappable')
+    const button = el('button', 'sf-wrap-toggle')
+    button.type = 'button'
+    button.title = 'Wrap long lines (applies to every code block)'
+    button.onclick = toggleWrapCode
+    node.appendChild(button)
+  }
+  applyWrapCode()
+}
+
+const wrapCode = () => localStorage.getItem(WRAP_STORAGE) === 'on'
+
+function applyWrapCode() {
+  const on = wrapCode()
+  if (on) document.documentElement.dataset.wrapCode = 'on'
+  else delete document.documentElement.dataset.wrapCode
+  // The label names the state a click switches TO.
+  for (const btn of CONTENT.querySelectorAll('.sf-wrap-toggle')) {
+    btn.textContent = on ? 'No wrap' : 'Wrap'
+  }
+}
+
+function toggleWrapCode() {
+  if (wrapCode()) localStorage.removeItem(WRAP_STORAGE)
+  else localStorage.setItem(WRAP_STORAGE, 'on')
+  applyWrapCode()
 }
 
 function postToWhiteboard(message) {

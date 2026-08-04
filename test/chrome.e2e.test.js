@@ -442,3 +442,51 @@ describe('tuner and family picker', () => {
     await pg.close()
   })
 })
+
+/* A wide <pre> can be read as prose instead of scrolled sideways. */
+describe('code wrap toggle', () => {
+  const LONG = 'x'.repeat(400)
+  const PAGE = join(DATA_DIR, 'wrap.html')
+  let key
+
+  before(async () => {
+    writeFileSync(PAGE, `<pre>${LONG}</pre><pre>short</pre><pre class="sd-diff">+${LONG}</pre>`)
+    key = await open(PAGE, 'code wrap')
+  })
+
+  const fits = (pg) => pg.evaluate(`(() => {
+    const n = document.querySelector('#sf-content pre')
+    return n.scrollWidth <= n.clientWidth + 1
+  })()`)
+  const chips = (pg) => pg.evaluate(
+    `[...document.querySelectorAll('.sf-wrap-toggle')].map((b) => b.textContent)`)
+
+  test('only an overflowing block gets a chip, and it wraps the block', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+
+    assert.deepEqual(await chips(pg), ['Wrap'], 'the short pre and the diff must stay clean')
+    assert.equal(await fits(pg), false, 'the long pre must overflow before the toggle')
+
+    await pg.click('.sf-wrap-toggle')
+    assert.equal(await fits(pg), true, 'wrap on must remove the sideways scroll')
+    assert.deepEqual(await chips(pg), ['No wrap'], 'the label names the state a click returns to')
+
+    await pg.click('.sf-wrap-toggle')
+    assert.equal(await fits(pg), false, 'the chip must turn wrap back off')
+    await pg.close()
+  })
+
+  test('the preference survives a re-render, which wipes the chips', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.click('.sf-wrap-toggle')
+
+    await api('POST', `/api/b/${key}/publish`, { note: 'round 2' })
+    await pg.waitForFunction("document.querySelectorAll('.sf-round-pill').length === 2", { timeout: 5000 })
+
+    assert.deepEqual(await chips(pg), ['No wrap'], 'the chip must come back reading its stored state')
+    assert.equal(await fits(pg), true, 'wrap must still apply after the re-render')
+    await pg.close()
+  })
+})

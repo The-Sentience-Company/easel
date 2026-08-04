@@ -288,8 +288,40 @@ body.sf-shell {
   padding: 14px 16px;
   overflow-x: auto;
   margin: 0 0 1em;
+  /* origin for the wrap chip; .sf-annotated already sets this where a marker sits */
+  position: relative;
 }
 #sf-content pre code { background: none; padding: 0; }
+
+/* The chip is opt-in per reader and remembered, so a wide prompt or log reads
+   as prose instead of scrolling sideways. */
+#sf-content pre.sf-wrappable { padding-top: 40px; }
+:root[data-wrap-code] #sf-content pre:not(.sd-diff) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sf-wrap-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 560;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  /* Opaque, unlike the diagram chips: this one sits over code, and a faded
+     background lets the line beneath show through it. */
+  background: var(--color-base-100);
+  color: var(--color-muted-content);
+  cursor: pointer;
+  /* keeps the label out of a copied selection of the block */
+  user-select: none;
+}
+.sf-wrap-toggle:hover, .sf-wrap-toggle:focus-visible {
+  color: var(--color-base-content);
+  border-color: var(--color-primary);
+}
 
 /* ------------------------------------------------------------------ diff -- */
 
@@ -1774,7 +1806,7 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 }
 
 @media print {
-  .sf-wb-open, .sf-diagram-look, .sf-wb-overlay { display: none; }
+  .sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-wb-overlay { display: none; }
 }
 
 /* print ----------------------------------------------------------------- */
