@@ -17,6 +17,8 @@ export function createStore(db = openDb()) {
     ),
     allBoards: db.prepare(`SELECT * FROM surfaces WHERE status != 'archived' ORDER BY updated_at DESC`),
     touchBoard: db.prepare(`UPDATE surfaces SET updated_at = ? WHERE key = ?`),
+    // Only fills a blank: an explicit --title is the author's, not the data's.
+    fillTitle: db.prepare(`UPDATE surfaces SET title = ? WHERE key = ? AND (title IS NULL OR title = '')`),
     setStatus: db.prepare(`UPDATE surfaces SET status = ?, updated_at = ? WHERE key = ?`),
     setWip: db.prepare(
       `UPDATE surfaces SET wip_html = ?, wip_updated_at = ?, wip_diagrams_json = ?, wip_islands_json = ?, updated_at = ? WHERE key = ?`
@@ -159,6 +161,7 @@ export function createStore(db = openDb()) {
     },
     allBoards: () => q.allBoards.all(),
     touch: (key) => q.touchBoard.run(now(), key),
+    fillTitle: (key, title) => q.fillTitle.run(title, key),
     setStatus: (key, status) => q.setStatus.run(status, now(), key),
     setWip: (key, html, diagrams, islands) =>
       q.setWip.run(

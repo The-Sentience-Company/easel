@@ -680,6 +680,17 @@ function stateFor(board, { clientId, round } = {}) {
 
 // ---------------------------------------------------------------- handlers
 
+/** Every template's data names the board; without --title the index fell back to
+    the key, which names nothing. Unreadable or titleless data is not an error here. */
+async function titleFromData(path) {
+  try {
+    const title = JSON.parse(await readFile(path, 'utf8'))?.title
+    return typeof title === 'string' && title.trim() ? title.trim().slice(0, 200) : null
+  } catch {
+    return null
+  }
+}
+
 async function handleOpen(req, res) {
   const body = await readBody(req)
   const { file, template, data, title } = body
@@ -699,7 +710,7 @@ async function handleOpen(req, res) {
   const key = randomBytes(4).toString('hex')
   const board = store.createBoard({
     key,
-    title: title ?? null,
+    title: title ?? (data ? await titleFromData(data) : null),
     file: file ?? null,
     template: template ?? null,
     data_file: data ?? null,
@@ -730,6 +741,12 @@ async function handlePublish(req, res, match) {
     rendered = await renderSource(board)
   } catch (err) {
     return json(res, 422, { error: `render failed: ${err.message}` })
+  }
+  // Boards opened before the data title was read stay nameless otherwise, and a
+  // source that gains a title should get to use it.
+  if (board.data_file && !board.title) {
+    const fromData = await titleFromData(board.data_file)
+    if (fromData) store.fillTitle(board.key, fromData)
   }
   const last = store.lastRound(board.key)
   const { html: hostHtml, islands } = extractIslands(rendered.html)
