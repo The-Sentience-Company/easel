@@ -1079,7 +1079,9 @@ button.sf-marker:hover { filter: brightness(1.12); }
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
   content: "";
   position: absolute;
-  left: 0;
+  /* In the gutter, not at left 0: a bare p or heading starts its text at the
+     content edge, and a bar drawn there slices the first glyph. */
+  left: -10px;
   top: 0;
   bottom: 0;
   width: 3px;
@@ -1088,6 +1090,11 @@ button.sf-marker:hover { filter: brightness(1.12); }
   pointer-events: none;
   /* Above a positioned child — an annotated card, a diagram — that paints its own. */
   z-index: 1;
+}
+/* An overflow wrapper would clip a gutter bar to nothing; cells carry their own
+   padding, so inside one the bar hugs the edge without touching a glyph. */
+#sf-content .sd-tablewrap :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
+  left: 0;
 }
 #sf-content .sf-diff-added    { --diff-edge: var(--color-success); }
 #sf-content .sf-diff-modified { --diff-edge: var(--color-warning); }
