@@ -96,11 +96,11 @@ test('gc archives only stale ended boards', () => {
 })
 
 test('chat carries an optional agent callsign', () => {
-  store.addChat(K, 'agent', 'with callsign', 'a3-executor')
+  store.addChat(K, 'agent', 'with callsign', 'reviewer-agent')
   store.addChat(K, 'agent', 'no callsign')
   store.addChat(K, 'user', 'from the human')
   const [withId, withoutId, user] = store.chatFor(K)
-  assert.equal(withId.agent, 'a3-executor')
+  assert.equal(withId.agent, 'reviewer-agent')
   assert.equal(withoutId.agent, null)
   assert.equal(user.agent, null)
 })
@@ -129,6 +129,6 @@ test('opening a db that predates agent_id backfills the column', () => {
   assert.equal(rows.length, 1, 'pre-existing chat survives the migration')
   assert.equal(rows[0].text, 'pre-migration message')
   assert.equal(rows[0].agent, null)
-  migrated.addChat('old1', 'agent', 'post-migration', 'a3')
-  assert.equal(migrated.chatFor('old1')[1].agent, 'a3')
+  migrated.addChat('old1', 'agent', 'post-migration', 'agent-1')
+  assert.equal(migrated.chatFor('old1')[1].agent, 'agent-1')
 })

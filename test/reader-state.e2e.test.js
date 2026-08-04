@@ -112,8 +112,8 @@ test('removing a draft leaves every <details> as the reader left it', SLOW, asyn
   await page.close()
 })
 
-/* The jump Aleks reported. A collapsible above the viewport springing back to its
-   authored height is what moves the page; 8px covers the annotation marker. */
+/* Guard: a collapsible above the viewport springing back to its authored height
+   is what moves the page; 8px covers the annotation marker. */
 const JUMP_TOLERANCE = 8
 
 test('queuing a comment does not move the page under the reader', SLOW, async () => {

@@ -46,7 +46,7 @@ describe('install.sh: subst_value', () => {
   })
 
   test('leaves an ordinary path untouched', () => {
-    assert.equal(esc('/Users/x/repos/dev_workflows/easel'), '/Users/x/repos/dev_workflows/easel')
+    assert.equal(esc('/Users/x/repos/easel'), '/Users/x/repos/easel')
   })
 
   test('a hostile path survives the real sed substitution as valid plist text', () => {
@@ -77,7 +77,7 @@ describe('install.sh: plist generation', () => {
   const generate = (helper, nodeEnvXml = '') => runBash(`
     LABEL=com.sentience.easeld
     NODE_BIN=/opt/homebrew/bin/node
-    ROOT=/Users/x/repos/dev_workflows/easel
+    ROOT=/Users/x/repos/easel
     PORT=4400
     STATE_DIR=/Users/x/.easel
     NODE_ENV_XML=$(printf %s ${JSON.stringify(Buffer.from(nodeEnvXml).toString('base64'))} | base64 -d)

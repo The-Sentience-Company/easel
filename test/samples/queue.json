@@ -3,7 +3,7 @@
   "entries": [
     {
       "id": "design-note-extraction-table",
-      "pane": "a3",
+      "pane": "reviewer",
       "kind": "decision",
       "question": "The extraction pipeline card adds a new database table for intermediate results. Its design note is ready — approve building it?",
       "context_link": "http://127.0.0.1:4400/b/abc12345",
@@ -21,7 +21,7 @@
     },
     {
       "id": "answer-key-round-2",
-      "pane": "a3",
+      "pane": "reviewer",
       "kind": "review",
       "question": "Round 2 of the eval answer key is on its board and needs your review.",
       "filed_at": "2026-08-02T09:00:00Z",

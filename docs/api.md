@@ -1,8 +1,8 @@
 # easel daemon API (authoritative)
 
-Owner: a2. This document is the contract the chrome (`client.js`), the CLI, and a3's templates/styles code against. Concepts are pinned in `/tmp/peer-chat/surface-contract.md`; exact shapes live here. If code and this doc disagree, this doc wins until the code is fixed.
+Authoritative API reference for the easel daemon: routes, payloads, and event shapes that `client.js`, the CLI, and templates/styles code against. If code and this doc disagree, this doc wins until the code is fixed.
 
-Daemon listens on `http://127.0.0.1:4400`. All API request/response bodies are JSON (`Content-Type: application/json`). Errors return a non-2xx status with `{"error": "<readable message>"}`.
+Daemon listens on `http://127.0.0.1:4400` (default; override with `EASEL_PORT`). All API request/response bodies are JSON (`Content-Type: application/json`). Errors return a non-2xx status with `{"error": "<readable message>"}`.
 
 ## Identifiers and conventions
 
@@ -19,8 +19,8 @@ Daemon listens on `http://127.0.0.1:4400`. All API request/response bodies are J
 |---|---|
 | `GET /` | HTML session index (connected tabs first, then recency; ended sessions folded). |
 | `GET /b/:key` | The board page: shell HTML wrapping the current round's body. |
-| `GET /assets/client.js` | Chrome runtime (a2). |
-| `GET /assets/easel.css` | Design system + chrome styles (a3). |
+| `GET /assets/client.js` | Chrome runtime. |
+| `GET /assets/easel.css` | Design system + chrome styles. |
 | `GET /health` | `{"ok": true, "app": "easel", "version": "0.1.0"}` |
 | `GET /island-frame?key&index&round` | Sandboxed document for one island (below). `round` is a seq or `wip`; 404 when that round has no such island. Readable on ended boards — it is a read. |
 
@@ -48,7 +48,7 @@ The shell page emitted by `GET /b/:key`:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{board title}</title>
   <script>/* inline, before CSS: sets data-theme on <html> from prefers-color-scheme,
-     and re-syncs on change. Theme values documented at the top of easel.css (a3). */</script>
+     and re-syncs on change. Theme values documented at the top of easel.css. */</script>
   <link rel="stylesheet" href="/assets/easel.css">
 </head>
 <body class="sf-shell" data-key="{key}">
@@ -125,7 +125,7 @@ One stream for the whole origin. Browsers cap HTTP/1.1 at 6 connections per orig
 
 ### Feedback item shape
 
-Payload discipline (Aleks ruling): **stable node id + short excerpt only. No DOM snapshots. No selector chains.** `excerpt` is the anchored node's text clipped to 200 chars; `quote` is the exact user selection (absent for element-level annotations).
+Payload discipline: **stable node id + short excerpt only. No DOM snapshots. No selector chains.** `excerpt` is the anchored node's text clipped to 200 chars; `quote` is the exact user selection (absent for element-level annotations).
 
 ```json
 {
@@ -144,7 +144,7 @@ Payload discipline (Aleks ruling): **stable node id + short excerpt only. No DOM
 
 **Agent-facing reads (`/await`, `/feedback`) drop `key`, `state`, `createdAt` and `submittedAt`** — the agent named the board in the request, everything it collects is submitted, and it reads no timestamps. `id` (its cursor) and `round` (which change a comment predates) stay. The browser's `/state` keeps the full shape, since the queue panel draws drafts from `state`. The saving is per item, so it scales with the batch, not with the board.
 
-Widget items: `"kind": "widget"`, plus `"widgetId": "verdict-case-3"`, `"value": "approve"`, `anchor.sid` of the widget node, no `comment`/`quote`. Widget clicks are born `draft` and ride the same queue as annotations (Aleks ruling: everything waits for Send). At most one live draft exists per (widget, client) — a reclick replaces its value in place; only Send freezes it.
+Widget items: `"kind": "widget"`, plus `"widgetId": "verdict-case-3"`, `"value": "approve"`, `anchor.sid` of the widget node, no `comment`/`quote`. Widget clicks are born `draft` and ride the same queue as annotations (by design: everything waits for Send). At most one live draft exists per (widget, client) — a reclick replaces its value in place; only Send freezes it.
 
 ### Browser-facing routes
 
@@ -224,7 +224,7 @@ Round html renders on the daemon's own origin (`127.0.0.1:4400`), where the whol
 
 Residual risk, stated plainly: Boards are assumed to show locally-authored or agent-authored documents, not hostile ones. The allowlist closes script execution on the privileged origin (including the `iframe srcdoc` bypass), the CSS fetch vectors (`url()`, `@import`, and string-bearing functions such as `image-set()`), and protocol-relative URLs, but is not a substitute for origin isolation. Two known limits: mermaid's in-SVG `<style>` is permitted and is **not** scoped to the diagram in browsers, so its (fetch-scrubbed) CSS still applies document-wide; and mutation-XSS via parser-context confusion is not specifically defended. Rendering content in a sandboxed iframe on an opaque origin (with token-authenticated API calls) is the documented extension point if untrusted documents ever become an input.
 
-## Chrome DOM vocabulary (a3 styles against this)
+## Chrome DOM vocabulary
 
 Everything the chrome creates uses the `sf-` prefix; templates never use `sf-` classes. All chrome lives inside `#sf-chrome` except content-layer marker classes, which client.js applies to nodes inside `#sf-content`.
 
@@ -316,6 +316,6 @@ body.sf-shell
 | `sf-gated` | `body` | The layout gate is up: `#sf-content` and `#sf-chrome` are `visibility: hidden` and `.sf-gate` covers the page. Set by the server in the shell, removed on reveal. |
 | `sf-ended` | `body` | Board is no longer open. Annotate, Send, chat and every `[data-option]` are `disabled`; the server refuses those writes too, so a stale tab cannot bypass it. |
 
-### Widget protocol (recap; markup is a3's, behavior is a2's)
+### Widget protocol
 
 Template emits `data-widget="vote|decision|approve|rating"`, unique `data-widget-id`, options as descendants with `data-option="<value>"`. client.js binds click on `[data-option]` → `POST /api/b/:key/widget` (queues a draft, reclick replaces it) → adds `sf-recorded` to the widget node. Everything not inside a `[data-widget]` is annotatable by the generic layer.

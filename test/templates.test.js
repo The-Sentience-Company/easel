@@ -252,7 +252,7 @@ describe('markdown', () => {
 })
 
 describe('widgets', () => {
-  test('emits the declarative protocol a2 binds against', () => {
+  test('emits the declarative protocol the chrome binds against', () => {
     const html = widget({ type: 'vote', id: 'w1', prompt: 'Ship?', options: ['yes', 'no'] })
     assert.match(html, /data-widget="vote"/)
     assert.match(html, /data-widget-id="w1"/)
@@ -315,7 +315,7 @@ describe('eval', () => {
     cases: [{
       id: 'ahmet',
       items: [
-        { label: 'Job', note: 'B drops the title', candidates: { B: 'Works at Sentience.', C: 'Works as an Engineer at Sentience.' } },
+        { label: 'Job', note: 'B drops the title', candidates: { B: 'Works at Acme.', C: 'Works as an Engineer at Acme.' } },
         { label: 'Habits', candidates: { B: 'Drinks alcohol.', C: 'Drinks alcohol.' } },
       ],
     }],

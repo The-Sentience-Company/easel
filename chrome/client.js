@@ -1,5 +1,5 @@
 // easel chrome runtime. Owns all sf-* DOM (vocabulary documented in docs/api.md);
-// styling lives in easel.css (a3). No framework, no build step.
+// styling lives in easel.css. No framework, no build step.
 
 import { WB } from './whiteboard-protocol.js'
 

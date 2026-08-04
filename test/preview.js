@@ -113,7 +113,7 @@ function chromeFixture(title) {
   </aside>
   <aside class="sf-chat sf-open">
     <div class="sf-chat-log">
-      <div class="sf-chat-msg sf-msg-agent"><span class="sf-msg-agent-id" title="a2-executor">a2-execu</span><span class="sf-msg-text">Round 2 is up — the metrics grid is new.</span></div>
+      <div class="sf-chat-msg sf-msg-agent"><span class="sf-msg-agent-id" title="reviewer-agent">reviewer</span><span class="sf-msg-text">Round 2 is up — the metrics grid is new.</span></div>
       <div class="sf-chat-msg sf-msg-user"><span class="sf-msg-text">Looks right. One note on the verdict widget.</span></div>
     </div>
     <div class="sf-chat-working">working<button class="sf-chat-cancel">cancel</button></div>

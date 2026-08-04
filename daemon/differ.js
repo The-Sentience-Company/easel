@@ -204,7 +204,7 @@ export function extractIslands(html) {
   return { html: islands.length ? serialize(tree) : html, islands }
 }
 
-// Ordinary document markup + a3's sd- design system (class-based) + widget button.
+// Ordinary document markup + the sd- design system (class-based) + widget button.
 const HTML_ELEMENTS = new Set([
   'a', 'abbr', 'address', 'article', 'aside', 'b', 'bdi', 'bdo', 'blockquote', 'br',
   'button', 'caption', 'cite', 'code', 'col', 'colgroup', 'dd', 'del', 'details', 'dfn',

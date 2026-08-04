@@ -214,7 +214,7 @@ describe('highlight is accent text, not a painted block', { timeout: 120000 }, (
   })
 })
 
-describe('the components Aleks asked for', { timeout: 120000 }, () => {
+describe('callout and inline-code components', { timeout: 120000 }, () => {
   test('a callout holds prose at readable contrast, unlike a stretched badge', async () => {
     await render('<div class="sd-callout sd-callout-warning"><div class="sd-callout-title" id="t">Heads up</div><p id="b">A whole paragraph of explanation.</p></div>', 'dark')
     const got = await page.evaluate(`(() => {

@@ -77,19 +77,6 @@ These are the whole list. Everything else the old workflow required is now handl
 - **Mermaid goes in a ` ```mermaid ` fence** (or a `<pre class="mermaid">` for `page`). It is rendered to inline SVG at publish time — write a normal `<br/>` in a node label, no entity escaping needed.
 - **Widgets are declarative**: `data-widget="vote|decision|approve|rating"`, a unique `data-widget-id`, and options carrying `data-option="<value>"`. The daemon binds the behavior.
 
-## What went away
+## What the daemon handles for you
 
-Round tagging (the server diffs rounds and renders the pills), the change-tracker snippet, layout-audit fix rounds (the audit is advisory and never blocks the reveal), poller processes, supply-chain patch verification, and the design-direction decision tree — there is one design system and it ships with the daemon.
-
-## Size
-
-This doc replaces the gotcha section of the old lavish skill. Measured on disk at the time of writing:
-
-| File | Bytes |
-|---|---|
-| `aleks/.claude/skills/lavish/SKILL.md` | 21,960 |
-| `aleks/.claude/skills/lavish/references/change-tracker.md` | 8,919 |
-| **Old total** | **30,879** |
-| `easel/docs/usage.md` (this file) | see `wc -c` |
-
-The three template docs replace the old `playbook` subcommand.
+Round tagging (the server diffs rounds and renders the pills), change tracking between rounds, the layout audit (advisory — it never blocks the reveal), and the design system, which ships with the daemon rather than being chosen per board. None of it needs a helper process or a snippet pasted into the page.
