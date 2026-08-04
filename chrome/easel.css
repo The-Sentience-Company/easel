@@ -300,6 +300,17 @@ body.sf-shell {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* Parked in the block's right padding, one per line box that continues below,
+   so a wrapped line is told apart from a real one at a glance. */
+.sf-wrap-mark {
+  position: absolute;
+  right: 3px;
+  /* inherits the pre's line-height, so the glyph sits on the line it marks */
+  color: var(--color-muted-content);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
 .sf-wrap-toggle {
   position: absolute;
   top: 8px;

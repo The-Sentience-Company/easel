@@ -1363,8 +1363,14 @@ function attachWrapButtons() {
     button.onclick = toggleWrapCode
     node.appendChild(button)
   }
+  // A narrower column rewraps every line, so the marks are re-measured on resize.
+  wrapObserver?.disconnect()
+  wrapObserver = new ResizeObserver((entries) => entries.forEach((e) => markWrapPoints(e.target)))
+  for (const node of wide) wrapObserver.observe(node)
   applyWrapCode()
 }
+
+let wrapObserver
 
 const wrapCode = () => localStorage.getItem(WRAP_STORAGE) === 'on'
 
@@ -1375,6 +1381,54 @@ function applyWrapCode() {
   // The label names the state a click switches TO.
   for (const btn of CONTENT.querySelectorAll('.sf-wrap-toggle')) {
     btn.textContent = on ? 'No wrap' : 'Wrap'
+  }
+  for (const pre of CONTENT.querySelectorAll('pre.sf-wrappable')) markWrapPoints(pre)
+}
+
+/* A soft wrap breaks no element, so there is nothing to style: each logical line
+   is measured and a glyph parked at the right margin of every line box but its last. */
+function markWrapPoints(pre) {
+  for (const old of pre.querySelectorAll('.sf-wrap-mark')) old.remove()
+  if (!wrapCode()) return
+
+  // The chip and any annotation badge are children of the pre; their labels are
+  // not code and measuring them invents a wrap on the last line.
+  const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT, (n) =>
+    n.parentElement.closest(`${CHROME_CONTROLS}, .sf-marker`)
+      ? NodeFilter.FILTER_REJECT
+      : NodeFilter.FILTER_ACCEPT)
+  const nodes = []
+  let text = ''
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    nodes.push({ node: n, at: text.length })
+    text += n.data
+  }
+  if (!nodes.length) return
+
+  const top = pre.getBoundingClientRect().top
+  const range = document.createRange()
+  const tops = []
+  let start = 0
+  let k = 0
+  for (const line of text.split('\n')) {
+    const end = start + line.length
+    if (line.length) {
+      while (k + 1 < nodes.length && nodes[k + 1].at <= start) k++
+      let j = k
+      while (j + 1 < nodes.length && nodes[j + 1].at <= end) j++
+      range.setStart(nodes[k].node, start - nodes[k].at)
+      range.setEnd(nodes[j].node, end - nodes[j].at)
+      const rects = range.getClientRects()
+      for (let i = 0; i < rects.length - 1; i++) tops.push(rects[i].top - top)
+    }
+    start = end + 1
+  }
+
+  for (const y of tops) {
+    const mark = el('span', 'sf-wrap-mark', '↵')
+    mark.setAttribute('aria-hidden', 'true')
+    mark.style.top = `${y}px`
+    pre.appendChild(mark)
   }
 }
 

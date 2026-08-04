@@ -450,7 +450,8 @@ describe('code wrap toggle', () => {
   let key
 
   before(async () => {
-    writeFileSync(PAGE, `<pre>${LONG}</pre><pre>short</pre><pre class="sd-diff">+${LONG}</pre>`)
+    writeFileSync(PAGE, `<pre><code>${LONG}\nshort last line</code></pre>` +
+      `<pre>short</pre><pre class="sd-diff">+${LONG}</pre>`)
     key = await open(PAGE, 'code wrap')
   })
 
@@ -461,9 +462,17 @@ describe('code wrap toggle', () => {
   const chips = (pg) => pg.evaluate(
     `[...document.querySelectorAll('.sf-wrap-toggle')].map((b) => b.textContent)`)
 
-  test('only an overflowing block gets a chip, and it wraps the block', async () => {
+  // The preference is per-origin, so a tab inherits whatever the last test left.
+  const unwrapped = async () => {
     const pg = await browser.newPage()
     await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.evaluate("localStorage.removeItem('sf-wrap-code')")
+    await pg.reload({ waitUntil: 'networkidle0' })
+    return pg
+  }
+
+  test('only an overflowing block gets a chip, and it wraps the block', async () => {
+    const pg = await unwrapped()
 
     assert.deepEqual(await chips(pg), ['Wrap'], 'the short pre and the diff must stay clean')
     assert.equal(await fits(pg), false, 'the long pre must overflow before the toggle')
@@ -478,8 +487,7 @@ describe('code wrap toggle', () => {
   })
 
   test('the preference survives a re-render, which wipes the chips', async () => {
-    const pg = await browser.newPage()
-    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    const pg = await unwrapped()
     await pg.click('.sf-wrap-toggle')
 
     await api('POST', `/api/b/${key}/publish`, { note: 'round 2' })
@@ -487,6 +495,29 @@ describe('code wrap toggle', () => {
 
     assert.deepEqual(await chips(pg), ['No wrap'], 'the chip must come back reading its stored state')
     assert.equal(await fits(pg), true, 'wrap must still apply after the re-render')
+    await pg.close()
+  })
+
+  test('one mark per line box that continues below, and none once wrap is off', async () => {
+    const pg = await unwrapped()
+    const marks = () => pg.evaluate("document.querySelectorAll('.sf-wrap-mark').length")
+
+    assert.equal(await marks(), 0, 'an unwrapped block has no continuations to mark')
+    await pg.click('.sf-wrap-toggle')
+
+    // Measured off the rendered height, not off the marks — the chip's own label
+    // is a text node inside the pre, and counting it invents a mark on the last line.
+    const expected = await pg.evaluate(`(() => {
+      const pre = document.querySelector('#sf-content pre')
+      const code = pre.querySelector('code')
+      const boxes = Math.round(code.getBoundingClientRect().height / parseFloat(getComputedStyle(pre).lineHeight))
+      return boxes - code.textContent.split('\\n').length
+    })()`)
+    assert.ok(expected > 0, 'the fixture must actually wrap')
+    assert.equal(await marks(), expected, 'a mark belongs on every line box but each logical line\'s last')
+
+    await pg.click('.sf-wrap-toggle')
+    assert.equal(await marks(), 0, 'turning wrap off must clear the marks')
     await pg.close()
   })
 })
