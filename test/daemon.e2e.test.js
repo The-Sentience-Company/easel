@@ -254,9 +254,9 @@ test('await without ack re-delivers the same batch verbatim; ack stops re-delive
 test('await payload carries node id + excerpt only — no DOM snapshot, no selector chain', async () => {
   const { data } = await api('GET', `/api/b/${key}/feedback?since=0`)
   const allowed = new Set([
-    'id', 'key', 'round', 'kind', 'state', 'anchor', 'excerpt', 'comment',
-    'widgetId', 'value', 'text', 'createdAt', 'submittedAt',
+    'id', 'round', 'kind', 'anchor', 'excerpt', 'comment', 'widgetId', 'value', 'text',
   ])
+  assert.ok(data.items.length, 'the fixture must have produced feedback')
   for (const item of data.items) {
     for (const field of Object.keys(item)) assert.ok(allowed.has(field), `unexpected field ${field}`)
     if (item.anchor) {
@@ -266,6 +266,28 @@ test('await payload carries node id + excerpt only — no DOM snapshot, no selec
     }
     assert.ok(!JSON.stringify(item).includes('<html'), 'payload contains a DOM snapshot')
   }
+})
+
+/* The trim is per item, so it scales with the batch — but only the agent may lose
+   these: the queue panel draws drafts from `state`. */
+test('an agent read drops the fields it cannot use; the browser read keeps them', async () => {
+  const dropped = ['key', 'state', 'createdAt', 'submittedAt']
+  for (const route of [`/api/b/${key}/feedback?since=0`, `/api/b/${key}/state`]) {
+    const items = route.includes('feedback')
+      ? (await api('GET', route)).data.items
+      : (await api('GET', route)).data.feedback
+    const seen = new Set(items.flatMap((i) => Object.keys(i)))
+    for (const field of dropped) {
+      assert.equal(seen.has(field), !route.includes('feedback'), `${field} on ${route}`)
+    }
+  }
+
+  const waited = await api('POST', `/api/b/${key}/await`, { agent: 'trim-agent', timeoutS: 5 })
+  assert.ok(waited.data.items.length, 'a fresh agent id must replay the backlog')
+  for (const field of dropped) {
+    assert.ok(!(field in waited.data.items[0]), `await still sends ${field}`)
+  }
+  assert.ok(waited.data.upto > 0, 'upto still reads the id the trim keeps')
 })
 
 test('drafts survive a daemon restart; cursor state survives too', async () => {
@@ -296,8 +318,11 @@ test('chat with withDrafts submits queued drafts and chat as one batch', async (
   const batch = await api('POST', `/api/b/${key}/await`, { agent: 'e2e-with-drafts', cursor, timeoutS: 5 })
   assert.equal(batch.data.items.length, 2, 'one batch: draft + chat')
   assert.equal(batch.data.items[0].kind, 'widget')
-  assert.equal(batch.data.items[0].state, 'submitted')
   assert.equal(batch.data.items[1].kind, 'chat')
+  // await only ever delivers submitted items, so the browser read is where the
+  // draft's flip is still visible.
+  const shown = (await api('GET', `/api/b/${key}/state?clientId=c-wd`)).data.feedback
+  assert.equal(shown.find((i) => i.widgetId === 'w-wd').state, 'submitted')
   const empty = await api('POST', `/api/b/${key}/chat`, { clientId: 'c-wd', text: 'nothing queued', withDrafts: true })
   assert.deepEqual(empty.data.submitted, [], 'withDrafts with no drafts is a plain chat')
 })

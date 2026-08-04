@@ -777,7 +777,7 @@ async function handleAwait(req, res, match) {
   const respond = (items, flags = {}) => {
     if (res.destroyed || res.writableEnded) return
     json(res, 200, {
-      items,
+      items: items.map(store.forAgent),
       upto: items.length ? items[items.length - 1].id : cursor,
       cursor,
       timedOut: false,
@@ -926,7 +926,7 @@ const handlers = {
     const board = requireBoard(match[1], res)
     if (!board) return
     const since = Number(url.searchParams.get('since') ?? 0)
-    json(res, 200, { items: store.submittedSince(board.key, since) })
+    json(res, 200, { items: store.submittedSince(board.key, since).map(store.forAgent) })
   },
 
   async feedbackCreate(req, res, match) {

@@ -142,6 +142,8 @@ Payload discipline (Aleks ruling): **stable node id + short excerpt only. No DOM
 }
 ```
 
+**Agent-facing reads (`/await`, `/feedback`) drop `key`, `state`, `createdAt` and `submittedAt`** — the agent named the board in the request, everything it collects is submitted, and it reads no timestamps. `id` (its cursor) and `round` (which change a comment predates) stay. The browser's `/state` keeps the full shape, since the queue panel draws drafts from `state`. The saving is per item, so it scales with the batch, not with the board.
+
 Widget items: `"kind": "widget"`, plus `"widgetId": "verdict-case-3"`, `"value": "approve"`, `anchor.sid` of the widget node, no `comment`/`quote`. Widget clicks are born `draft` and ride the same queue as annotations (Aleks ruling: everything waits for Send). At most one live draft exists per (widget, client) — a reclick replaces its value in place; only Send freezes it.
 
 ### Browser-facing routes
@@ -169,7 +171,7 @@ Once a board is no longer open, `POST /feedback`, `POST /send` and `POST /widget
 
 | Route | Body | Response |
 |---|---|---|
-| `POST /api/b/:key/chat` | `{"clientId", "text", "withDrafts?": false}` | `{"id": 8, "submitted": […]}` — user-side message; wakes `await`? **No** — chat messages ride the `await` stream as items of `"kind": "chat"` (`{"id", "kind": "chat", "state": "submitted", "text", "createdAt"}`) so one blocking read covers annotations, widgets, and chat. With `withDrafts: true`, the caller's queued drafts submit in the same wake — one batch, drafts first, chat last — and `submitted` lists their ids (empty when nothing was queued or `clientId` is absent). |
+| `POST /api/b/:key/chat` | `{"clientId", "text", "withDrafts?": false}` | `{"id": 8, "submitted": […]}` — user-side message; wakes `await`? **No** — chat messages ride the `await` stream as items of `"kind": "chat"` (`{"id", "kind": "chat", "text"}` on the agent side) so one blocking read covers annotations, widgets, and chat. With `withDrafts: true`, the caller's queued drafts submit in the same wake — one batch, drafts first, chat last — and `submitted` lists their ids (empty when nothing was queued or `clientId` is absent). |
 
 ## Lifecycle routes (back the CLI)
 

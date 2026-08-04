@@ -77,8 +77,8 @@ test('Send delivers the widget draft to await; the item is frozen after', async 
   const got = await api('POST', `/api/b/${key}/await`, { agent: 'wd-agent', timeoutS: 5 })
   const widgets = got.data.items.filter((i) => i.kind === 'widget')
   assert.deepEqual(
-    widgets.map((i) => [i.widgetId, i.value, i.state]).sort(),
-    [['ship', 'yes', 'submitted'], ['theme', 'light', 'submitted']]
+    widgets.map((i) => [i.widgetId, i.value]).sort(),
+    [['ship', 'yes'], ['theme', 'light']]
   )
   // Send froze it: a new click on the same widget starts a fresh draft.
   const again = await clickWidget('theme', 'dark')

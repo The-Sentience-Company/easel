@@ -148,6 +148,10 @@ export function createStore(db = openDb()) {
     submittedAt: row.submitted_at || undefined,
   })
 
+  /* The browser needs state to draw drafts; an agent does not — it asked for one
+     board and everything it collects is submitted. Per item, so it scales. */
+  const forAgent = ({ key, state, createdAt, submittedAt, ...item }) => item
+
   return {
     db,
     createBoard(fields) {
@@ -320,5 +324,6 @@ export function createStore(db = openDb()) {
     },
 
     feedbackItem,
+    forAgent,
   }
 }
