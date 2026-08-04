@@ -29,8 +29,10 @@ function classify(line) {
 
 const MARKED = new Set(['add', 'del', 'ctx'])
 
-/* Whitespace is its own token so a rebuilt line keeps the author's spacing. */
-const tokenize = (s) => s.match(/\s+|\S+/g) ?? []
+/* Punctuation is its own token, so "words." still matches the "words" it grew from.
+   Entities lead: splitting &lt; would put a mark inside markup. Whitespace kept as-is. */
+const TOKEN = /&[a-zA-Z][a-zA-Z0-9]*;|&#\d+;|&#x[0-9a-fA-F]+;|\s+|[\w']+|[^\s\w]/g
+const tokenize = (s) => s.match(TOKEN) ?? []
 
 /* The differing middle of two token lists, as [start, endFromRight]. Null when they
    share no edge tokens — marking the whole line says nothing the tint has not. */

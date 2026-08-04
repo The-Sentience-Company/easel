@@ -77,13 +77,34 @@ describe('word-level emphasis stays inside an unambiguous pair', () => {
     assert.deepEqual(marks(body('-one two', '+one two three')), ['three'])
   })
 
+  // "words." and "words" are one token each, so a sentence extended past its full
+  // stop shares no trailing token and the mark slides left onto unchanged text.
+  test('a sentence extended past its punctuation marks only what was added', () => {
+    assert.deepEqual(marks(body('-this is words', '+this is words. more words')), ['. more words'])
+  })
+
+  test('punctuation added to an unchanged line is the only thing marked', () => {
+    assert.deepEqual(marks(body('-it works', '+it works!')), ['!'])
+  })
+
+  test('a word inside punctuation is marked without its delimiters', () => {
+    assert.deepEqual(marks(body('-see docs/api.md', '+see docs/usage.md')), ['api', 'usage'])
+  })
+
   test('an added line following a context line is not paired backwards', () => {
     assert.deepEqual(marks(body(' ctx', '+added alone')), [])
   })
 
   test('escaped markup is not split mid-entity', () => {
+    // The brackets are shared, so only the tag name is marked — but a mark
+    // boundary inside &lt; would emit a stray & or ; against a tag.
     const html = body('-a &lt;div&gt; b', '+a &lt;span&gt; b')
-    assert.deepEqual(marks(html), ['&lt;div&gt;', '&lt;span&gt;'])
+    assert.deepEqual(marks(html), ['div', 'span'])
+    assert.doesNotMatch(html, /&[a-zA-Z#][^;<>\s]*<|>[a-zA-Z0-9]*;/, 'no entity may be split by a mark')
+  })
+
+  test('an entity is one token, so a changed one is marked whole', () => {
+    assert.deepEqual(marks(body('-say &quot;hi&quot;', '+say &quot;bye&quot;')), ['hi', 'bye'])
   })
 })
 
