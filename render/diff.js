@@ -34,30 +34,81 @@ const MARKED = new Set(['add', 'del', 'ctx'])
 const TOKEN = /&[a-zA-Z][a-zA-Z0-9]*;|&#\d+;|&#x[0-9a-fA-F]+;|\s+|[\w']+|[^\s\w]/g
 const tokenize = (s) => s.match(TOKEN) ?? []
 
-/* The differing middle of two token lists, as [start, endFromRight]. Null when they
-   share no edge tokens — marking the whole line says nothing the tint has not. */
-function changedSpan(a, b) {
+/* ~1000 differing tokens a side: 4MB and 7ms, once per paired line, and past any
+   real prose line. Beyond it the middle is marked whole, as it always was. */
+const MAX_LCS_CELLS = 1000000
+
+/* Which positions on each side changed, as two boolean lists. Null when the
+   lines share no edge tokens — marking everything says nothing the tint has not. */
+function changedFlags(a, b) {
   let head = 0
   while (head < a.length && head < b.length && a[head] === b[head]) head++
   let tail = 0
   while (tail < a.length - head && tail < b.length - head &&
          a[a.length - 1 - tail] === b[b.length - 1 - tail]) tail++
   if (head === 0 && tail === 0) return null
-  return [head, tail]
+
+  const fa = new Array(a.length).fill(false)
+  const fb = new Array(b.length).fill(false)
+  const mid = (f, len) => { for (let i = head; i < len - tail; i++) f[i] = true }
+  const n = a.length - tail - head
+  const m = b.length - tail - head
+  if (n <= 0 || m <= 0 || n * m > MAX_LCS_CELLS) {
+    mid(fa, a.length)
+    mid(fb, b.length)
+    return [fa, fb]
+  }
+
+  // Longest common subsequence of the differing middle: two edits on one line
+  // must mark two spans rather than one covering the unchanged text between.
+  const dp = new Int32Array((n + 1) * (m + 1))
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i * (m + 1) + j] = a[head + i] === b[head + j]
+        ? dp[(i + 1) * (m + 1) + j + 1] + 1
+        : Math.max(dp[(i + 1) * (m + 1) + j], dp[i * (m + 1) + j + 1])
+    }
+  }
+  let i = 0
+  let j = 0
+  while (i < n && j < m) {
+    if (a[head + i] === b[head + j]) { i++; j++; continue }
+    if (dp[(i + 1) * (m + 1) + j] >= dp[i * (m + 1) + j + 1]) fa[head + i++] = true
+    else fb[head + j++] = true
+  }
+  for (; i < n; i++) fa[head + i] = true
+  for (; j < m; j++) fb[head + j] = true
+  return [fa, fb]
 }
 
-/* Whitespace tokens sit outside the mark: highlighting the space before a word
+/* Two changed words with only a space between them read as one edit, so the gap
+   joins them rather than splitting the mark in half. */
+function bridgeGaps(tokens, flags) {
+  for (let i = 1; i < flags.length - 1; i++) {
+    if (!flags[i] && !tokens[i].trim() && flags[i - 1] && flags[i + 1]) flags[i] = true
+  }
+}
+
+/* Whitespace tokens sit outside a mark: highlighting the space before a word
    makes the tint look misaligned by a character. */
-function markSpan(tokens, span) {
-  if (!span) return tokens.join('')
-  let start = span[0]
-  let end = tokens.length - span[1]
-  while (start < end && !tokens[start].trim()) start++
-  while (end > start && !tokens[end - 1].trim()) end--
-  if (start >= end) return tokens.join('')
-  return tokens.slice(0, start).join('') +
-    `<mark class="sd-diff-word">${tokens.slice(start, end).join('')}</mark>` +
-    tokens.slice(end).join('')
+function markRuns(tokens, flags) {
+  if (!flags) return tokens.join('')
+  bridgeGaps(tokens, flags)
+  let out = ''
+  for (let i = 0; i < tokens.length;) {
+    if (!flags[i]) { out += tokens[i++]; continue }
+    let end = i
+    while (end < tokens.length && flags[end]) end++
+    let start = i
+    let stop = end
+    while (start < stop && !tokens[start].trim()) start++
+    while (stop > start && !tokens[stop - 1].trim()) stop--
+    out += tokens.slice(i, start).join('')
+    if (start < stop) out += `<mark class="sd-diff-word">${tokens.slice(start, stop).join('')}</mark>`
+    out += tokens.slice(stop, end).join('')
+    i = end
+  }
+  return out
 }
 
 function lineHtml(kind, line, ordinal, wordHtml) {
@@ -89,9 +140,9 @@ export function renderDiffBody(source) {
     if (pairedAt(kinds, i)) {
       const del = tokenize(lines[i].slice(1))
       const add = tokenize(lines[i + 1].slice(1))
-      const span = changedSpan(del, add)
-      out.push(lineHtml('del', lines[i], i, markSpan(del, span)))
-      out.push(lineHtml('add', lines[i + 1], i + 1, markSpan(add, span)))
+      const flags = changedFlags(del, add)
+      out.push(lineHtml('del', lines[i], i, markRuns(del, flags && flags[0])))
+      out.push(lineHtml('add', lines[i + 1], i + 1, markRuns(add, flags && flags[1])))
       i++
       continue
     }

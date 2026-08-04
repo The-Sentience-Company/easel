@@ -91,6 +91,28 @@ describe('word-level emphasis stays inside an unambiguous pair', () => {
     assert.deepEqual(marks(body('-see docs/api.md', '+see docs/usage.md')), ['api', 'usage'])
   })
 
+  test('two edits on one line mark two spans, not the unchanged text between', () => {
+    // A common prefix and suffix alone cannot see the island in the middle.
+    assert.deepEqual(marks(body('-the quick brown fox jumps', '+the slow brown fox leaps')),
+      ['quick', 'jumps', 'slow', 'leaps'])
+  })
+
+  test('changed values scattered through a line are each marked alone', () => {
+    assert.deepEqual(marks(body('-timeout 30 retries 3', '+timeout 60 retries 5')),
+      ['30', '3', '60', '5'])
+  })
+
+  test('adjacent changed words join through the space between them', () => {
+    assert.deepEqual(marks(body('-run the old task', '+run a new task')), ['the old', 'a new'])
+  })
+
+  test('a line too long to align falls back to marking the whole middle', () => {
+    // The LCS table is capped; past it the mark is the coarse span it always was.
+    const long = (w) => Array.from({ length: 1200 }, (_, i) => (i === 600 ? w : `t${i}`)).join(' ')
+    // Aligned it would be four marks: the swap and the tail word, per side.
+    assert.equal(marks(body(`-${long('x')} end`, `+${long('y')} tail`)).length, 2)
+  })
+
   test('an added line following a context line is not paired backwards', () => {
     assert.deepEqual(marks(body(' ctx', '+added alone')), [])
   })
