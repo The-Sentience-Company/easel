@@ -29,6 +29,18 @@ describe('a diff line is classified by its marker', () => {
       ['hunk', 'add', 'del', 'ctx', 'ctx'])
   })
 
+  test('a typographic minus (U+2212) reads as a removal and still pairs', () => {
+    // LLM-authored diffs substitute − for -; the line must not fall to context,
+    // or its + partner loses the word-level marks with it.
+    const html = body('−the quick brown fox', '+the quick red fox')
+    assert.deepEqual(kinds(html), ['del', 'add'])
+    // A wholly substituted diff turns the old-file header into −−−; it must
+    // stay metadata, not become a removed content line.
+    assert.deepEqual(kinds(body('−−− a/x', '+++ b/x')), ['meta', 'meta'])
+    assert.deepEqual([...html.matchAll(/<mark class="sd-diff-word">(.*?)<\/mark>/g)].map((m) => m[1]),
+      ['brown', 'red'])
+  })
+
   test('the marker is split off the text, so the text reads without it', () => {
     assert.deepEqual(texts(body('+added', '-removed', ' context')), ['added', 'removed', 'context'])
   })

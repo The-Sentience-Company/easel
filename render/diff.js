@@ -19,11 +19,12 @@ const hasClass = (attrs, want) => {
    as a removed or added line. */
 function classify(line) {
   if (/^(diff |index |similarity |rename |new file|deleted file|old mode|new mode)/.test(line)) return 'meta'
-  if (/^(---|\+\+\+)(\s|$)/.test(line)) return 'meta'
+  if (/^(---|\+\+\+|−−−)(\s|$)/.test(line)) return 'meta'
   if (/^@@/.test(line)) return 'hunk'
   if (/^\\ No newline/.test(line)) return 'meta'
   if (line.startsWith('+')) return 'add'
-  if (line.startsWith('-')) return 'del'
+  // U+2212: LLM-authored diffs substitute the typographic minus for ASCII '-'.
+  if (line.startsWith('-') || line.startsWith('−')) return 'del'
   return 'ctx'
 }
 
