@@ -14,7 +14,7 @@ easel gives that exchange a page and a cursor. You point at the thing. The agent
 
 ## Quickstart
 
-Requires macOS and Node 22+.
+Requires macOS and Node 22+. The install pulls a Chromium through Puppeteer, which mermaid-cli uses to render diagrams to SVG at publish time — expect the first `npm install` to be slow and roughly a gigabyte on disk.
 
 ```
 install/install.sh                             # idempotent; writes the plist, puts `easel` on PATH, waits for health
@@ -94,4 +94,12 @@ The e2e harness spawns scratch daemons on allocated ports, so the suite never to
 
 ## Credits
 
-easel was built after using [lavish-axi](https://github.com/kunchenguid/lavish-axi), which pioneered this loop — an agent writes an artifact, a local browser UI collects annotations, and a long poll carries the feedback back. easel takes the same idea toward durable multi-round boards: a persistent daemon, rounds with visual diffs between them, and per-agent feedback cursors that survive restarts. The dark theme and table treatment started from lavish's.
+easel was built after using [lavish-axi](https://github.com/kunchenguid/lavish-axi), which pioneered this loop — an agent writes an artifact, a local browser UI collects annotations, and a long poll carries the feedback back. easel takes the same idea toward durable multi-round boards: a persistent daemon, rounds with visual diffs between them, and per-agent feedback cursors that survive restarts. The dark theme and table treatment started from lavish's, which is MIT licensed.
+
+## License
+
+Copyright © 2026 The Sentience Company.
+
+easel is fully open source — not open core — under the GNU General Public License v3.0. See [LICENSE](LICENSE).
+
+Use it, modify it, run it at work: internal use carries no obligations. What the GPL asks is that if you distribute easel or something built from it, that stays under the GPL too. If you want to build easel into a product under different terms, get in touch.
