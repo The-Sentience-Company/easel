@@ -51,11 +51,27 @@ describe('word-level emphasis stays inside an unambiguous pair', () => {
     assert.deepEqual(marks(html), ['brown', 'red'])
   })
 
-  test('a run of several removals gets no word marks', () => {
-    // -a -b +c +d has no unambiguous pairing; the line tint carries it alone.
+  test('equal runs of removals and additions pair by position', () => {
+    // The shape an edited list makes: line 1 answers line 1, line 2 line 2.
     const html = body('-run one', '-run two', '+run three', '+run four')
-    assert.deepEqual(marks(html), [])
+    assert.deepEqual(marks(html), ['one', 'two', 'three', 'four'])
     assert.deepEqual(kinds(html), ['del', 'del', 'add', 'add'])
+  })
+
+  test('unequal runs get no word marks', () => {
+    // Three out, two in: there is no correspondence to read, so the tint alone.
+    const html = body('-a one', '-b two', '-c three', '+d four', '+e five')
+    assert.deepEqual(marks(html), [])
+    assert.deepEqual(kinds(html), ['del', 'del', 'del', 'add', 'add'])
+  })
+
+  test('a rewritten line marks whole rather than shredding into confetti', () => {
+    // LCS finds the incidental shared words; past a few runs that reads as noise.
+    const html = body(
+      '-note. A rule Sam stated reads firm; an inferred pattern reads as a general preference.',
+      '+note. The VERB carries it: a rule Sam stated uses a firm imperative; an inferred pattern uses a preference verb.',
+    )
+    assert.equal(marks(html).length, 2, 'one solid span a side')
   })
 
   test('one removal followed by several adds marks against the first add only', () => {

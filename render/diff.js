@@ -38,6 +38,9 @@ const tokenize = (s) => s.match(TOKEN) ?? []
    real prose line. Beyond it the middle is marked whole, as it always was. */
 const MAX_LCS_CELLS = 1000000
 
+/* Four separate tints on one line stop reading as "these words changed". */
+const MAX_MARK_RUNS = 3
+
 /* Which positions on each side changed, as two boolean lists. Null when the
    lines share no edge tokens — marking everything says nothing the tint has not. */
 function changedFlags(a, b) {
@@ -78,8 +81,21 @@ function changedFlags(a, b) {
   }
   for (; i < n; i++) fa[head + i] = true
   for (; j < m; j++) fb[head + j] = true
+
+  bridgeGaps(a, fa)
+  bridgeGaps(b, fb)
+  // A rewritten line shares incidental words with its old self, and marking each
+  // one shreds the tint into confetti. Past a few edits the middle marks whole.
+  if (runCount(fa) > MAX_MARK_RUNS || runCount(fb) > MAX_MARK_RUNS) {
+    fa.fill(false)
+    fb.fill(false)
+    mid(fa, a.length)
+    mid(fb, b.length)
+  }
   return [fa, fb]
 }
+
+const runCount = (flags) => flags.reduce((n, on, i) => n + (on && !flags[i - 1] ? 1 : 0), 0)
 
 /* Two changed words with only a space between them read as one edit, so the gap
    joins them rather than splitting the mark in half. */
@@ -93,7 +109,6 @@ function bridgeGaps(tokens, flags) {
    makes the tint look misaligned by a character. */
 function markRuns(tokens, flags) {
   if (!flags) return tokens.join('')
-  bridgeGaps(tokens, flags)
   let out = ''
   for (let i = 0; i < tokens.length;) {
     if (!flags[i]) { out += tokens[i++]; continue }
@@ -123,10 +138,17 @@ function lineHtml(kind, line, ordinal, wordHtml) {
     `${marker}<span class="sd-diff-text">${body}</span></div>`
 }
 
-/* A lone del pairs with the add right after it; further adds in the run are
-   wholly new. A multi-del run (-a -b +c) has no unambiguous pairing. */
-function pairedAt(kinds, i) {
-  return kinds[i] === 'del' && kinds[i - 1] !== 'del' && kinds[i + 1] === 'add'
+/* N removals then N additions pair by position — the shape an edited list makes.
+   One removal pairs with the first add; the rest of that run is wholly new. */
+function pairedBlock(kinds, i) {
+  if (kinds[i] !== 'del' || kinds[i - 1] === 'del') return null
+  let dels = 0
+  while (kinds[i + dels] === 'del') dels++
+  let adds = 0
+  while (kinds[i + dels + adds] === 'add') adds++
+  if (!adds) return null
+  if (dels === adds) return { dels, pairs: dels }
+  return dels === 1 ? { dels: 1, pairs: 1 } : null
 }
 
 export function renderDiffBody(source) {
@@ -137,16 +159,21 @@ export function renderDiffBody(source) {
   const out = []
 
   for (let i = 0; i < lines.length; i++) {
-    if (pairedAt(kinds, i)) {
-      const del = tokenize(lines[i].slice(1))
-      const add = tokenize(lines[i + 1].slice(1))
-      const flags = changedFlags(del, add)
-      out.push(lineHtml('del', lines[i], i, markRuns(del, flags && flags[0])))
-      out.push(lineHtml('add', lines[i + 1], i + 1, markRuns(add, flags && flags[1])))
-      i++
+    const block = pairedBlock(kinds, i)
+    if (block) {
+      const { dels, pairs } = block
+      for (let k = 0; k < dels; k++) out[i + k] = lineHtml('del', lines[i + k], i + k)
+      for (let k = 0; k < pairs; k++) {
+        const del = tokenize(lines[i + k].slice(1))
+        const add = tokenize(lines[i + dels + k].slice(1))
+        const flags = changedFlags(del, add)
+        out[i + k] = lineHtml('del', lines[i + k], i + k, markRuns(del, flags && flags[0]))
+        out[i + dels + k] = lineHtml('add', lines[i + dels + k], i + dels + k, markRuns(add, flags && flags[1]))
+      }
+      i += dels + pairs - 1
       continue
     }
-    out.push(lineHtml(kinds[i], lines[i], i))
+    out[i] = lineHtml(kinds[i], lines[i], i)
   }
   return out.join('')
 }
