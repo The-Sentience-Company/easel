@@ -283,9 +283,9 @@ function addWaiter(key, waiter) {
   if (wasEmpty && !reattach) {
     broadcast(key, 'agent', { waiting: true })
     // Grace covers an in-process re-attach; the flag covers one that outlived it.
-    // Answered: the agent collected a reply and went back to waiting on the same
-    // round — a tab there shows the reader only what they already responded to.
-    if (!waiter.resumed && !store.answeredCurrentRound(key)) maybeAutoOpen(key)
+    // An agent that collects a reply and waits again is asking about a round the
+    // reader has already read; a tab there shows them nothing they have not seen.
+    if (!waiter.resumed && store.hasUnseenRound(key)) maybeAutoOpen(key)
   }
 }
 
@@ -885,6 +885,9 @@ const handlers = {
       round: round != null ? Number(round) : undefined,
     })
     if (!state) return json(res, 404, { error: 'no such round' })
+    // A tab asking for state has the board on screen; auto-open reads this to
+    // tell a round nobody has looked at from one already read.
+    if (url.searchParams.get('clientId')) store.markViewed(board.key, state.currentRound.seq)
     state.seq = eventSeq(board.key)
     json(res, 200, state)
   },

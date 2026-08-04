@@ -119,6 +119,8 @@ function migrate(db) {
   // Freeform sections rendered in a sandboxed frame; verbatim html per round.
   if (!has('rounds', 'islands_json')) db.exec(`ALTER TABLE rounds ADD COLUMN islands_json TEXT`)
   if (!has('surfaces', 'wip_islands_json')) db.exec(`ALTER TABLE surfaces ADD COLUMN wip_islands_json TEXT`)
+  // The last round a reader had on screen; auto-open opens what has not been seen.
+  if (!has('surfaces', 'viewed_round')) db.exec(`ALTER TABLE surfaces ADD COLUMN viewed_round INTEGER`)
 }
 
 export const now = () => new Date().toISOString()

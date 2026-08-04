@@ -95,9 +95,9 @@ test('a restart does not reopen the boards their agents were already waiting on'
   }
 })
 
-// The reader answered what is on screen and the agent went back to waiting on it.
-// A tab there shows them only the round they already responded to.
-test('an agent that collected a reply and waits again does not reopen the board', SLOW, async () => {
+// The agent collected a reply and went back to waiting on a round the reader has
+// already had on screen. A tab there shows them nothing they have not seen.
+test('an agent that waits again on a round already read does not reopen it', SLOW, async () => {
   const h = bootstrap(1)
   const daemon = startDaemon(h.port, h.dir)
   try {
@@ -108,25 +108,29 @@ test('an agent that collected a reply and waits again does not reopen the board'
     await h.api('POST', '/api/config', { autoOpen: true })
 
     await h.api('POST', `/api/b/${key}/await`, { agent: 'loop-agent', timeoutS: 1 })
-    assert.equal((await h.openedAtLeast(1)).length, 1, 'the first wait on a fresh round opens the board')
+    assert.equal((await h.openedAtLeast(1)).length, 1, 'the first wait on a round nobody read opens the board')
 
-    // The reader has their say, and the agent collects it.
+    // The reader reads it — what the chrome does on every sync — and has their say.
+    await h.api('GET', `/api/b/${key}/state?clientId=reader`)
     await h.api('POST', `/api/b/${key}/chat`, { clientId: 'reader', text: 'do the thing' })
     const collected = await h.api('POST', `/api/b/${key}/await`, { agent: 'loop-agent', timeoutS: 1 })
     assert.ok(collected.data.items.length > 0, 'the agent collects the reply')
 
-    // Back to waiting on the same round: nothing new to show, so no tab.
+    // A new round is something new to read, so publishing opens the board.
+    writeFileSync(page, '<p>read</p><p>and revised</p>')
+    await h.api('POST', `/api/b/${key}/publish`, { note: 'round 2' })
+    assert.equal((await h.openedAtLeast(2)).length, 2, 'a fresh round opens the board')
+
+    // The reader reads round 2 and says nothing — the shape the live board was in.
+    await h.api('GET', `/api/b/${key}/state?clientId=reader`)
     await sleep(1200) // past both the cooldown and the grace
+
+    // The agent acks the round-1 reply and waits again. Nothing unread, so no tab.
     await h.api('POST', `/api/b/${key}/await`, {
       agent: 'loop-agent', ack: collected.data.upto, timeoutS: 1,
     })
     await sleep(300)
-    assert.equal(h.opened().length, 1, 'waiting again on an answered round must not reopen it')
-
-    // A new round is new to read, so publishing does open it again.
-    writeFileSync(page, '<p>answered</p><p>and revised</p>')
-    await h.api('POST', `/api/b/${key}/publish`, { note: 'round 2' })
-    assert.equal((await h.openedAtLeast(2)).length, 2, 'a fresh round still opens the board')
+    assert.equal(h.opened().length, 2, 'waiting again on a round already read must not reopen it')
   } finally {
     daemon?.kill()
   }

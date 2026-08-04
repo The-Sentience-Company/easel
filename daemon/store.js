@@ -44,10 +44,13 @@ export function createStore(db = openDb()) {
     submittedSince: db.prepare(
       `SELECT * FROM feedback WHERE surface_key = ? AND state = 'submitted' AND id > ? ORDER BY id`
     ),
-    // "Has the reader already had their say on what is on screen" — auto-open asks.
-    submittedInRound: db.prepare(
-      `SELECT count(*) AS n FROM feedback WHERE surface_key = ? AND state = 'submitted'
-       AND round_seq = (SELECT max(seq) FROM rounds WHERE surface_key = ?)`
+    // "Is the round on screen one a reader has already seen" — auto-open asks.
+    markViewed: db.prepare(
+      `UPDATE surfaces SET viewed_round = ? WHERE key = ? AND (viewed_round IS NULL OR viewed_round < ?)`
+    ),
+    unseenRound: db.prepare(
+      `SELECT (SELECT max(seq) FROM rounds WHERE surface_key = s.key) > coalesce(s.viewed_round, 0) AS unseen
+       FROM surfaces s WHERE s.key = ?`
     ),
     draftsForClient: db.prepare(
       `SELECT * FROM feedback WHERE surface_key = ? AND state = 'draft' AND client_id = ? ORDER BY id`
@@ -215,7 +218,8 @@ export function createStore(db = openDb()) {
     feedbackRow: (id) => q.feedbackById.get(id),
     deleteFeedback: (id) => q.deleteFeedback.run(id),
     submittedSince: (key, since) => q.submittedSince.all(key, since).map(feedbackItem),
-    answeredCurrentRound: (key) => q.submittedInRound.get(key, key).n > 0,
+    markViewed: (key, seq) => q.markViewed.run(seq, key, seq),
+    hasUnseenRound: (key) => Boolean(q.unseenRound.get(key)?.unseen),
     draftsForClient: (key, clientId) => q.draftsForClient.all(key, clientId).map(feedbackItem),
     // Drafts move to the top of the id sequence on submit so they always land
     // ahead of every cursor (id-as-cursor breaks if an old draft submits late).
