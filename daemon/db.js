@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS feedback (
   text         TEXT,                 -- chat-kind payload
   payload_json TEXT,                 -- whiteboard-kind: {diagramIndex,scenePath,svgPath,...}
   context_json TEXT,                 -- anchor section context: {heading,card,nth,of}
+  pin_x        REAL,                 -- island pin: fractional click point in the island document
+  pin_y        REAL,
   created_at   TEXT NOT NULL,
   submitted_at TEXT
 );
@@ -124,6 +126,9 @@ function migrate(db) {
   if (!has('surfaces', 'wip_islands_json')) db.exec(`ALTER TABLE surfaces ADD COLUMN wip_islands_json TEXT`)
   // The last round a reader had on screen; auto-open opens what has not been seen.
   if (!has('surfaces', 'viewed_round')) db.exec(`ALTER TABLE surfaces ADD COLUMN viewed_round INTEGER`)
+  // Pin annotations: fractional click point inside an island's document.
+  if (!has('feedback', 'pin_x')) db.exec(`ALTER TABLE feedback ADD COLUMN pin_x REAL`)
+  if (!has('feedback', 'pin_y')) db.exec(`ALTER TABLE feedback ADD COLUMN pin_y REAL`)
 }
 
 export const now = () => new Date().toISOString()

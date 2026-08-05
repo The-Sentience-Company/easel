@@ -127,6 +127,8 @@ One stream for the whole origin. Browsers cap HTTP/1.1 at 6 connections per orig
 
 Payload discipline: **stable node id + short excerpt only. No DOM snapshots. No selector chains.** `excerpt` is the anchored node's text clipped to 200 chars; `quote` is the exact user selection (absent for element-level annotations). `context` (computed at submit from the annotated round, absent when it adds nothing) disambiguates anchors whose text repeats: nearest preceding heading, enclosing `sd-card-title`, and `nth`/`of` among same-tag nodes with identical text.
 
+Island pins: a click inside an island frame anchors to the island's sid plus `anchor.x`/`anchor.y` — the click point as fractions (0–1, 4 dp) of the island document's width/height. `quote` then carries the clicked element's nearest text (the frame's shim derives it), and each distinct point is its own marker on the page. Map a pin back to a design element by locating (x, y) in the island's source html.
+
 ```json
 {
   "id": 42,
@@ -153,7 +155,7 @@ Once a board is no longer open, `POST /feedback`, `POST /send` and `POST /widget
 
 | Route | Body | Response |
 |---|---|---|
-| `POST /api/b/:key/feedback` | `{"clientId", "round", "anchor": {"sid", "quote?", "prefix?", "suffix?"}, "comment"}` | The created item, `state: "draft"`. Called when a comment is **queued** (not per keystroke). |
+| `POST /api/b/:key/feedback` | `{"clientId", "round", "anchor": {"sid", "quote?", "prefix?", "suffix?", "x?", "y?"}, "comment"}` | The created item, `state: "draft"`. Called when a comment is **queued** (not per keystroke). `x`/`y` (island pins) are clamped to 0–1 and rounded to 4 dp; one without the other is dropped. |
 | `DELETE /api/b/:key/feedback/:id` | — | `{"deleted": true}`. Removes a draft from the queue. Drafts only; submitted items are immutable. |
 | `POST /api/b/:key/send` | `{"clientId"}` | `{"submitted": [42, 43]}`. Flips that client's drafts to `submitted`, stamps `submittedAt`, wakes `await`. |
 | `POST /api/b/:key/widget` | `{"clientId" (required), "round", "widgetId", "value", "sid"}` | The live draft for (widget, client) — created on first click, value-replaced in place on a reclick (same `id`). `state: "draft"`; `await` receives nothing until `/send` submits it. Removing it is the ordinary draft `DELETE` above. |

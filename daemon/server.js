@@ -962,6 +962,11 @@ const handlers = {
     // A sid absent from the annotated round would store an unanchorable orphan row.
     if (excerpt == null) return json(res, 400, { error: `no such anchor in round ${roundRow.seq}: ${anchor.sid}` })
     const context = contextForSid(source, anchor.sid) ?? contextForSid(roundRow?.html ?? '', anchor.sid)
+    // Island pins: fractional click point, both coords or neither.
+    const pin = [anchor.x, anchor.y].map((v) =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 1e4) / 1e4 : null
+    )
+    if (pin[0] == null || pin[1] == null) pin[0] = pin[1] = null
     const item = store.addFeedback({
       surface_key: board.key,
       round_seq: roundRow?.seq ?? null,
@@ -975,6 +980,8 @@ const handlers = {
       excerpt: excerpt ?? null,
       context_json: context ? JSON.stringify(context) : null,
       comment,
+      pin_x: pin[0],
+      pin_y: pin[1],
     })
     broadcast(board.key, 'feedback', { id: item.id })
     json(res, 200, item)
@@ -1212,7 +1219,9 @@ const handlers = {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(island.title || `Island ${index}`)}</title>
-<style>html,body{margin:0;padding:0}</style>
+<style>html,body{margin:0;padding:0}
+.easel-annotating, .easel-annotating *{cursor:crosshair!important}
+.easel-annotating body :hover:not(:has(:hover)){outline:1.5px dashed color-mix(in oklch, currentColor 60%, transparent);outline-offset:2px}</style>
 </head>
 <body>
 ${island.html}
@@ -1226,6 +1235,31 @@ ${island.html}
   new ResizeObserver(report).observe(document.documentElement)
   addEventListener('load', report)
   report()
+  var annotating = false
+  addEventListener('message', function(e){
+    var m = e.data || {}
+    if (m.easelIslandMode !== true) return
+    annotating = Boolean(m.annotating)
+    document.documentElement.classList.toggle('easel-annotating', annotating)
+  })
+  // The clicked leaf is often an icon; the nearest ancestor with text names it.
+  function labelFor(el){
+    for (var n = el; n && n.nodeType === 1; n = n.parentElement) {
+      var t = (n.textContent || '').replace(/\\s+/g, ' ').trim()
+      if (t) return t.slice(0, 120)
+    }
+    return ''
+  }
+  addEventListener('click', function(e){
+    if (!annotating) return
+    e.preventDefault()
+    e.stopPropagation()
+    parent.postMessage({ easelIsland: true, index: ${index}, click: {
+      x: (e.clientX + scrollX) / Math.max(1, document.documentElement.scrollWidth),
+      y: (e.clientY + scrollY) / Math.max(1, document.documentElement.scrollHeight),
+      cx: e.clientX, cy: e.clientY, label: labelFor(e.target)
+    } }, '*')
+  }, true)
 })()
 </script>
 </body>

@@ -62,7 +62,7 @@ const state = {
   annotating: false,
   diffView: true,
   showRemoved: false,
-  draftsBySid: new Map(), // sid -> draft feedback items, for page-side removal
+  draftsByKey: new Map(), // anchor key (sid, or sid@x,y for pins) -> draft items, for page-side removal
 }
 
 // ---------------------------------------------------------------- chrome DOM
@@ -385,17 +385,25 @@ function render() {
 
   const showWip = d.wip && state.viewingRound == null
   const html = showWip ? d.wip.html : d.currentRound.html
-  CONTENT.innerHTML = html
-  restoreDetails()
-  refreshLiveAges()
+  // Rebuilding on a feedback-only sync would reload every island frame (a flicker
+  // per queued note); the key needs round/WIP identity — island-only publishes keep host html identical.
+  const contentKey = (showWip ? `wip|${d.wip.updatedAt}` : `r${state.viewingRound ?? d.currentRound.seq}`) + `|${html}`
+  const rebuild = state.renderedContentKey !== contentKey
+  if (rebuild) {
+    CONTENT.innerHTML = html
+    state.renderedContentKey = contentKey
+    restoreDetails()
+    refreshLiveAges()
+  }
   CONTENT.classList.toggle('sf-wip', Boolean(showWip))
   show(ui.wipMarker, Boolean(d.wip))
 
   renderRounds(d)
-  if (!showWip && state.diffView && d.diff) applyDiff(d.diff)
+  if (rebuild && !showWip && state.diffView && d.diff) applyDiff(d.diff)
   // Feedback is tied to the round it was left on; other rounds' items stay out.
   // A draft not yet stamped with a round (null) belongs to the round on screen.
   const roundFeedback = d.feedback.filter((i) => i.round == null || i.round === d.currentRound.seq)
+  if (!rebuild) clearAnnotations()
   // Assigns the marker ids the queue rows label themselves with, so it runs first.
   markAnnotated(roundFeedback)
   renderQueue(roundFeedback)
@@ -412,9 +420,21 @@ function render() {
     disableContentControls()
   }
   markRecordedWidgets(roundFeedback)
-  attachWhiteboardButtons()
-  attachWrapButtons()
-  mountIslands(d, showWip)
+  if (rebuild) {
+    attachWhiteboardButtons()
+    attachWrapButtons()
+    mountIslands(d, showWip)
+  }
+}
+
+// Undoes markAnnotated for a marker-only refresh over live content: stale
+// markers, pins, and anchor classes go; the html itself stays (frames included).
+function clearAnnotations() {
+  CONTENT.querySelectorAll('.sf-marker').forEach((m) => m.remove())
+  for (const n of CONTENT.querySelectorAll('.sf-annotated, .sf-annotated-col')) {
+    n.classList.remove('sf-annotated', 'sf-annotated-col')
+    delete n.dataset.markerHue
+  }
 }
 
 // Islands render in an opaque-origin sandboxed frame: author CSS runs there,
@@ -432,8 +452,15 @@ function mountIslands(d, showWip) {
     const declared = Number(node.dataset.islandHeight)
     frame.style.height = `${Number.isFinite(declared) && declared > 0 ? Math.min(declared, 4000) : 320}px`
     if (node.dataset.islandTitle) frame.title = node.dataset.islandTitle
+    // The frame boots with no idea whether annotate mode is on; tell it on load.
+    frame.addEventListener('load', () => postIslandMode(frame))
     node.appendChild(frame)
   }
+}
+
+// Sandboxed frames have an opaque origin, so '*' is the only addressable target.
+function postIslandMode(frame) {
+  frame.contentWindow?.postMessage({ easelIslandMode: true, annotating: state.annotating }, '*')
 }
 
 window.addEventListener('message', (event) => {
@@ -443,11 +470,33 @@ window.addEventListener('message', (event) => {
   if (!frame || event.source !== frame.contentWindow) return
   const h = Number(m.height)
   if (Number.isFinite(h) && h > 0) frame.style.height = `${Math.min(Math.max(h, 40), 4000)}px`
+  if (m.click && state.annotating) islandPinClick(frame, m.click)
 })
+
+// A click inside an island frame arrives as frame-relative coordinates; anchor
+// it to the island's sid as a fractional point and open the normal popover.
+function islandPinClick(frame, click) {
+  const host = frame.closest('[data-sid]')
+  const round4 = (v) => Math.round(Math.min(1, Math.max(0, Number(v))) * 1e4) / 1e4
+  const x = round4(click.x)
+  const y = round4(click.y)
+  if (!host || !Number.isFinite(x) || !Number.isFinite(y)) return
+  const r = frame.getBoundingClientRect()
+  const at = { clientX: r.left + Number(click.cx || 0), clientY: r.top + Number(click.cy || 0) }
+  const quote = String(click.label || '').slice(0, 200) || undefined
+  const drafts = state.draftsByKey.get(`${host.dataset.sid}@${x},${y}`)
+  if (drafts?.length) openDraftManager(host, at, drafts, { x, y, quote })
+  else openPopover(host, at, { x, y, quote })
+}
 
 // Re-applied on every render: innerHTML replacement wipes DOM-only state.
 // Drafts are sorted last so the live draft's choice wins the option marking.
 function markRecordedWidgets(items) {
+  // Marker-only refreshes keep the DOM, so a removed widget draft must unmark.
+  for (const w of CONTENT.querySelectorAll('[data-widget].sf-recorded')) {
+    w.classList.remove('sf-recorded')
+    for (const opt of w.querySelectorAll('[data-option]')) opt.removeAttribute('aria-pressed')
+  }
   const widgetItems = items.filter((i) => i.kind === 'widget')
   widgetItems.sort((a, b) => (a.state === 'draft' ? 1 : 0) - (b.state === 'draft' ? 1 : 0))
   for (const item of widgetItems) {
@@ -562,7 +611,8 @@ function renderQueue(items) {
     const sid = item.anchor?.sid
     if (sid) {
       row.dataset.sid = sid
-      const mark = state.markerIds?.get(sid)
+      row.dataset.markerKey = anchorKey(item.anchor)
+      const mark = state.markerIds?.get(anchorKey(item.anchor))
       if (mark) {
         row.dataset.markerHue = String(mark.hue)
         row.appendChild(el('span', 'sf-item-marker', mark.id))
@@ -716,32 +766,53 @@ function setAgentWaiting(waiting) {
   show(ui.cancelWait, waiting)
 }
 
+// A pin (island click point) is its own anchor: each unique point gets its own
+// marker id, while plain annotations still share one marker per sid.
+const isPin = (anchor) => Number.isFinite(anchor?.x) && Number.isFinite(anchor?.y)
+const anchorKey = (anchor) => (isPin(anchor) ? `${anchor.sid}@${anchor.x},${anchor.y}` : anchor?.sid)
+
 // Markers are real nodes, not ::before pseudo-elements: they carry a number that
 // keys them to their panel row, and they have to be hoverable and clickable.
 function markAnnotated(items) {
-  state.draftsBySid = new Map()
-  state.commentsBySid = new Map()
+  state.draftsByKey = new Map()
+  state.commentsByKey = new Map()
   state.markerIds = new Map()
   const order = []
   for (const item of items) {
     const sid = item.anchor?.sid
     if (!sid || item.kind === 'widget') continue
-    if (!state.markerIds.has(sid)) {
-      state.markerIds.set(sid, { id: markerId(order.length), hue: order.length % MARKER_HUES })
-      order.push(sid)
+    const key = anchorKey(item.anchor)
+    if (!state.markerIds.has(key)) {
+      state.markerIds.set(key, {
+        id: markerId(order.length),
+        hue: order.length % MARKER_HUES,
+        sid,
+        pin: isPin(item.anchor) ? { x: item.anchor.x, y: item.anchor.y, quote: item.anchor.quote } : null,
+      })
+      order.push(key)
     }
     if (item.comment) {
-      if (!state.commentsBySid.has(sid)) state.commentsBySid.set(sid, [])
-      state.commentsBySid.get(sid).push(item.comment)
+      if (!state.commentsByKey.has(key)) state.commentsByKey.set(key, [])
+      state.commentsByKey.get(key).push(item.comment)
     }
     if (item.state !== 'draft') continue
-    if (!state.draftsBySid.has(sid)) state.draftsBySid.set(sid, [])
-    state.draftsBySid.get(sid).push(item)
+    if (!state.draftsByKey.has(key)) state.draftsByKey.set(key, [])
+    state.draftsByKey.get(key).push(item)
   }
-  for (const sid of order) {
-    const node = CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
+  for (const key of order) {
+    const mark = state.markerIds.get(key)
+    const node = CONTENT.querySelector(`[data-sid="${CSS.escape(mark.sid)}"]`)
     if (!node) continue
-    const mark = state.markerIds.get(sid)
+    // A pin floats at its click point over the island; no gutter badge, no
+    // whole-block outline — the island itself is not what was annotated.
+    if (mark.pin) {
+      const pinBtn = buildMarker(key, mark.id, mark.hue)
+      pinBtn.classList.add('sf-pin')
+      pinBtn.style.left = `${mark.pin.x * 100}%`
+      pinBtn.style.top = `${mark.pin.y * 100}%`
+      node.appendChild(pinBtn)
+      continue
+    }
     node.classList.add('sf-annotated')
     node.dataset.markerHue = String(mark.hue)
     for (const cell of columnCells(node)) {
@@ -752,7 +823,7 @@ function markAnnotated(items) {
     // out of the table. Table anchors host it in their first cell instead.
     const host = TABLE_ROW_TAGS.has(node.tagName) ? node.querySelector('td, th') : node
     if (!host) continue
-    const marker = buildMarker(sid, mark.id, mark.hue)
+    const marker = buildMarker(key, mark.id, mark.hue)
     // Nested anchors can resolve to the same host (a table and its first row),
     // which would stack the badges on identical coordinates.
     marker.style.setProperty('--marker-stack', String(host.querySelectorAll(':scope > .sf-marker').length))
@@ -792,8 +863,8 @@ function highlightAnchor(sid, on) {
   for (const n of [node, ...columnCells(node)]) n.classList.toggle('sf-linked', on)
 }
 
-function highlightQueueRows(sid, on) {
-  for (const row of ui.queueList.querySelectorAll(`[data-sid="${CSS.escape(sid)}"]`)) {
+function highlightQueueRows(key, on) {
+  for (const row of ui.queueList.querySelectorAll(`[data-marker-key="${CSS.escape(key)}"]`)) {
     row.classList.toggle('sf-linked', on)
   }
 }
@@ -812,26 +883,27 @@ function revealAnchor(sid) {
 }
 let flashTimer = null
 
-function buildMarker(sid, id, hue) {
+function buildMarker(key, id, hue) {
   const marker = el('button', 'sf-marker', id)
   marker.type = 'button'
-  marker.dataset.markerSid = sid
+  marker.dataset.markerKey = key
   marker.dataset.markerHue = String(hue)
-  const comments = state.commentsBySid?.get(sid) || []
+  const comments = state.commentsByKey?.get(key) || []
   marker.title = comments.length ? comments.join('\n\n') : 'Annotations on this element'
   marker.onclick = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    const node = CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
+    const mark = state.markerIds.get(key)
+    const node = mark && CONTENT.querySelector(`[data-sid="${CSS.escape(mark.sid)}"]`)
     if (!node) return
-    const drafts = state.draftsBySid.get(sid)
+    const drafts = state.draftsByKey.get(key)
     // Submitted annotations have no drafts to manage, but the badge must still
     // do something — otherwise it reads as a broken button.
-    if (drafts?.length) openDraftManager(node, e, drafts)
-    else openPopover(node, e)
+    if (drafts?.length) openDraftManager(node, e, drafts, mark.pin)
+    else openPopover(node, e, mark.pin)
   }
-  marker.onmouseenter = () => highlightQueueRows(sid, true)
-  marker.onmouseleave = () => highlightQueueRows(sid, false)
+  marker.onmouseenter = () => highlightQueueRows(key, true)
+  marker.onmouseleave = () => highlightQueueRows(key, false)
   return marker
 }
 
@@ -841,6 +913,7 @@ function setAnnotating(on) {
   state.annotating = on
   document.body.classList.toggle('sf-annotating', on)
   ui.annotateToggle.classList.toggle('sf-on', on)
+  CONTENT.querySelectorAll('.sd-island-frame').forEach(postIslandMode)
   if (!on) closePopover()
 }
 
@@ -879,7 +952,7 @@ CONTENT.addEventListener('click', (e) => {
   const target = e.target.closest('[data-sid]')
   if (!target || target.closest('[data-widget]')) return
   e.preventDefault()
-  const drafts = state.draftsBySid.get(target.dataset.sid)
+  const drafts = state.draftsByKey.get(target.dataset.sid)
   if (drafts?.length && window.getSelection()?.isCollapsed !== false) {
     openDraftManager(target, e, drafts)
     return
@@ -917,7 +990,7 @@ function selectionAnchor(node) {
 
 // Clicking an element that already carries drafts manages them instead of
 // stacking another one — the page-side answer to "how do I remove this?".
-function openDraftManager(node, event, drafts) {
+function openDraftManager(node, event, drafts, pin) {
   closePopover()
   popover = el('div', 'sf-popover')
   popover.appendChild(el('div', 'sf-popover-label', drafts.length === 1 ? 'Queued note' : `${drafts.length} queued notes`))
@@ -936,7 +1009,7 @@ function openDraftManager(node, event, drafts) {
   const actions = el('div', 'sf-popover-actions')
   const addBtn = el('button', 'sf-popover-queue', 'Add another')
   addBtn.type = 'button'
-  addBtn.onclick = () => openPopover(node, event)
+  addBtn.onclick = () => openPopover(node, event, pin)
   const cancelBtn = el('button', 'sf-popover-cancel', 'Close')
   cancelBtn.type = 'button'
   cancelBtn.onclick = closePopover
@@ -954,13 +1027,15 @@ function placePopover(node, event) {
   node.style.top = `${Math.max(pad, Math.min(event.clientY + pad, window.innerHeight - node.offsetHeight - pad))}px`
 }
 
-function openPopover(node, event) {
+// `pin` ({x,y,quote}) skips text-selection anchoring: the anchor is a point
+// inside an island frame, not a range in this document.
+function openPopover(node, event, pin) {
   closePopover()
   const sid = node.dataset.sid
-  const extra = selectionAnchor(node)
+  const extra = pin ? { x: pin.x, y: pin.y, quote: pin.quote || undefined } : selectionAnchor(node)
   popover = el('div', 'sf-popover')
   const excerptText = extra.quote || anchorText(node).trim().slice(0, 200)
-  popover.appendChild(el('div', 'sf-popover-label', extra.quote ? 'Selection' : 'Element'))
+  popover.appendChild(el('div', 'sf-popover-label', pin ? 'Pin' : extra.quote ? 'Selection' : 'Element'))
   popover.appendChild(el('div', 'sf-popover-excerpt', excerptText))
   const textarea = el('textarea', 'sf-popover-text')
   textarea.placeholder = 'Comment…'

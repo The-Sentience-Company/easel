@@ -592,5 +592,7 @@ export function excerptForSid(html, sid, max = 200) {
     }
   })(tree)
   if (!found) return null
-  return norm(textOf(found)).slice(0, max)
+  const text = norm(textOf(found))
+  // An island placeholder has no text; its title is what locates a pin.
+  return (text || getAttr(found, 'data-island-title') || '').slice(0, max)
 }

@@ -71,6 +71,42 @@ test('the published round holds a sid-bearing placeholder and none of the island
   assert.doesNotMatch(html, /evil\.example/)
 })
 
+test('a pin annotation on the island sid stores clamped fractional coords and replays them', async () => {
+  const state = (await api('GET', `/api/b/${key}/state?clientId=c1`)).data
+  const sid = state.currentRound.html.match(/class="sd-island"[^>]*data-sid="([^"]+)"/)?.[1]
+  assert.ok(sid, 'island placeholder must carry a sid')
+  const { status, data: item } = await api('POST', `/api/b/${key}/feedback`, {
+    clientId: 'c1',
+    round: 1,
+    anchor: { sid, x: 0.123456, y: 1.7, quote: 'Undo button' },
+    comment: 'move this left',
+  })
+  assert.equal(status, 200)
+  assert.equal(item.anchor.x, 0.1235)
+  assert.equal(item.anchor.y, 1)
+  assert.equal(item.anchor.quote, 'Undo button')
+  assert.equal(item.excerpt, 'Diff view', 'a pin on a text-less island excerpts the island title')
+  await api('POST', `/api/b/${key}/send`, { clientId: 'c1' })
+  const replay = (await api('GET', `/api/b/${key}/feedback?since=0`)).data.items
+  // Submit re-ids drafts to the top of the sequence; the comment is the stable handle.
+  const pin = replay.find((i) => i.comment === 'move this left')
+  assert.equal(pin.anchor.x, 0.1235)
+  assert.equal(pin.anchor.y, 1)
+})
+
+test('one pin coordinate without the other stores a plain annotation, not a half-pin', async () => {
+  const state = (await api('GET', `/api/b/${key}/state?clientId=c1`)).data
+  const sid = state.currentRound.html.match(/class="sd-island"[^>]*data-sid="([^"]+)"/)?.[1]
+  const { data: item } = await api('POST', `/api/b/${key}/feedback`, {
+    clientId: 'c1',
+    round: 1,
+    anchor: { sid, x: 0.5 },
+    comment: 'no y given',
+  })
+  assert.equal(item.anchor.x, undefined)
+  assert.equal(item.anchor.y, undefined)
+})
+
 test('island-frame serves the verbatim content under a no-network, no-script-except-nonce CSP', async () => {
   const res = await fetch(`${BASE}/island-frame?key=${key}&index=0&round=1`)
   assert.equal(res.status, 200)
@@ -81,6 +117,9 @@ test('island-frame serves the verbatim content under a no-network, no-script-exc
   const body = await res.text()
   assert.ok(body.includes(ISLAND_INNER), 'island html must arrive verbatim')
   assert.match(body, /easelIsland/)
+  // The pin shim: annotate-mode listener plus click reporting back to the parent.
+  assert.match(body, /easelIslandMode/)
+  assert.match(body, /click:\s*\{/)
 })
 
 test('an unknown island index is a 404, not an empty page', async () => {

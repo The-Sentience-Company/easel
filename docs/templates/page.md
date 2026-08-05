@@ -130,7 +130,7 @@ Two things worth knowing before styling around it:
 
 ### Islands — freeform sections
 
-`<div data-island data-island-title="Diff view" data-island-height="360">…any html + css…</div>` renders its inner content in a sandboxed frame: full CSS freedom (inline `<style>` included), no scripts, no network, `data:` images/fonts only. Use for layouts the `sd-*` system cannot express — image comparisons, custom diffs — and stay in `sd-*` everywhere else: island content gets whole-block annotation only, and no diff markers inside. `data-island-height` is the pre-load height; the frame then self-sizes.
+`<div data-island data-island-title="Diff view" data-island-height="360">…any html + css…</div>` renders its inner content in a sandboxed frame: full CSS freedom (inline `<style>` included), no scripts, no network, `data:` images/fonts only. Use for layouts the `sd-*` system cannot express — image comparisons, custom diffs — and stay in `sd-*` everywhere else: no diff markers inside an island. `data-island-height` is the pre-load height; the frame then self-sizes. In annotate mode a click inside an island drops a **pin** — a point annotation carrying fractional coordinates and the clicked element's text — so individual design elements are commentable with no authoring change; the island as a whole stays annotatable via its placeholder.
 
 ### Callouts, accents and citations
 

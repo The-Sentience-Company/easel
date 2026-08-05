@@ -453,7 +453,8 @@ body.sf-shell {
 
 /* ------------------------------------------------------------ components -- */
 
-.sd-island { margin: 18px 0; }
+/* Relative so pin markers can sit at fractional points over the frame. */
+.sd-island { margin: 18px 0; position: relative; }
 .sd-island-frame { display: block; width: 100%; border: 0; }
 
 .sd-card {
@@ -1066,6 +1067,18 @@ button.sf-marker:hover { filter: brightness(1.12); }
 #sf-content .sd-tablewrap.sf-annotated > .sf-marker { left: auto; right: 3px; }
 /* A list bullet owns the near gutter; sit fully outside it. */
 #sf-content li.sf-annotated > .sf-marker { left: -44px; }
+
+/* A pin marks a point inside an island frame: centered on its click point,
+   floated above the frame, ringed so it reads over any island background. */
+#sf-content .sf-marker.sf-pin {
+  transform: translate(-50%, -50%);
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  line-height: 19px;
+  z-index: 2;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 1px 4px rgba(0, 0, 0, 0.35);
+}
 
 /* Panel row and page anchor point at each other on hover. */
 /* Widget rows anchor to a sid but carry no marker hue, so these fall back. */

@@ -37,9 +37,9 @@ export function createStore(db = openDb()) {
 
     insertFeedback: db.prepare(
       `INSERT INTO feedback (surface_key, round_seq, kind, state, client_id, sid, quote, prefix, suffix,
-                             excerpt, comment, widget_id, widget_value, text, payload_json, context_json, created_at, submitted_at)
+                             excerpt, comment, widget_id, widget_value, text, payload_json, context_json, pin_x, pin_y, created_at, submitted_at)
        VALUES (@surface_key, @round_seq, @kind, @state, @client_id, @sid, @quote, @prefix, @suffix,
-               @excerpt, @comment, @widget_id, @widget_value, @text, @payload_json, @context_json, @at, @submitted_at)`
+               @excerpt, @comment, @widget_id, @widget_value, @text, @payload_json, @context_json, @pin_x, @pin_y, @at, @submitted_at)`
     ),
     feedbackById: db.prepare(`SELECT * FROM feedback WHERE id = ?`),
     deleteFeedback: db.prepare(`DELETE FROM feedback WHERE id = ?`),
@@ -138,7 +138,13 @@ export function createStore(db = openDb()) {
     ...(row.kind === 'chat'
       ? { text: row.text }
       : {
-          anchor: { sid: row.sid, quote: row.quote || undefined, prefix: row.prefix || undefined, suffix: row.suffix || undefined },
+          anchor: {
+            sid: row.sid,
+            quote: row.quote || undefined,
+            prefix: row.prefix || undefined,
+            suffix: row.suffix || undefined,
+            ...(row.pin_x != null && row.pin_y != null ? { x: row.pin_x, y: row.pin_y } : {}),
+          },
           excerpt: row.excerpt,
           context: parseJson(row.context_json) ?? undefined,
         }),
@@ -209,7 +215,8 @@ export function createStore(db = openDb()) {
       const info = q.insertFeedback.run({
         round_seq: null, kind: 'annotation', state: 'draft', client_id: null, sid: null,
         quote: null, prefix: null, suffix: null, excerpt: null, comment: null,
-        widget_id: null, widget_value: null, text: null, payload_json: null, context_json: null, submitted_at: null,
+        widget_id: null, widget_value: null, text: null, payload_json: null, context_json: null,
+        pin_x: null, pin_y: null, submitted_at: null,
         ...fields, at: now(),
       })
       q.touchBoard.run(now(), fields.surface_key)
