@@ -644,6 +644,16 @@ describe('queue', () => {
     assert.match(html, /waits on #4799/)
   })
 
+  test('open PRs carry an owning-pane column; a PR without one renders a dash', async () => {
+    const html = queue.render(await base())
+    const prSection = html.slice(html.indexOf('Open PRs'))
+    assert.match(prSection, /<th>Pane<\/th>/)
+    const row4799 = prSection.slice(prSection.indexOf('#4799'), prSection.indexOf('#4801'))
+    assert.match(row4799, /<td>a2<\/td>/)
+    const row4801 = prSection.slice(prSection.indexOf('#4801'))
+    assert.match(row4801, /<td>—<\/td><td>waits on #4799<\/td>/)
+  })
+
   test('an unknown kind throws a readable TemplateError', async () => {
     const data = await base()
     data.entries[0].kind = 'vibe'

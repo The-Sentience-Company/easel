@@ -32,6 +32,7 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
     "number": 123,
     "url": "string",
     "title": "string",
+    "pane": "string",                // optional — the agent pane that owns the PR; renders as its own column, "—" when absent
     "blocked_by": 122                // optional — renders "waits on #122"
   }]
 }

@@ -33,7 +33,7 @@
     { "artifact": "eval answer key", "last_reviewed_version": "r1", "current_version": "r3" }
   ],
   "open_prs": [
-    { "number": 4799, "url": "https://github.com/example/repo/pull/4799", "title": "Schema for extraction intermediates" },
+    { "number": 4799, "url": "https://github.com/example/repo/pull/4799", "title": "Schema for extraction intermediates", "pane": "a2" },
     { "number": 4801, "url": "https://github.com/example/repo/pull/4801", "title": "Extraction pipeline", "blocked_by": 4799 }
   ]
 }

@@ -80,8 +80,9 @@ function prRows(prs) {
     if (typeof p.number !== 'number' && typeof p.number !== 'string') fail(`${path}.number must be a number or string`)
     const url = requireString(p.url, `${path}.url`)
     const title = requireString(p.title, `${path}.title`)
+    if (p.pane !== undefined) requireString(p.pane, `${path}.pane`)
     const blocked = p.blocked_by !== undefined && p.blocked_by !== null ? `waits on #${esc(p.blocked_by)}` : '—'
-    return [`<a href="${attr(url)}">#${esc(p.number)}</a>`, esc(title), blocked]
+    return [`<a href="${attr(url)}">#${esc(p.number)}</a>`, esc(title), p.pane ? esc(p.pane) : '—', blocked]
   })
 }
 
@@ -127,7 +128,7 @@ export function render(data) {
     ? [
         '<section class="sd-section">',
         `<h2>Open PRs, in merge order <span class="sd-count">${prs.length}</span></h2>`,
-        table(['PR', 'Title', 'Waits on'], prRows(prs)),
+        table(['PR', 'Title', 'Pane', 'Waits on'], prRows(prs)),
         '</section>',
       ].join('\n')
     : ''
