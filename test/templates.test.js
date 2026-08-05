@@ -616,6 +616,13 @@ describe('queue', () => {
     assert.ok(html.includes('needs your review'), 'answered entry text must still render')
   })
 
+  test('answered entries sit inside a collapsed details block', async () => {
+    const html = queue.render(await base())
+    const answered = html.slice(html.indexOf('<details class="sd-collapse">'))
+    assert.ok(answered.includes('<summary>Answered'), 'summary must carry the Answered heading')
+    assert.ok(answered.includes('needs your review'), 'answered entry must render inside the collapse body')
+  })
+
   test('an entry with no options gets the approve/reject/discuss default', async () => {
     const html = queue.render(await base())
     const first = html.slice(html.indexOf('design-note-extraction-table'))

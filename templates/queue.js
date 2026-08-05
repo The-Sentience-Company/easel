@@ -121,8 +121,10 @@ export function render(data) {
   const answeredHtml = answered.length
     ? [
         '<section class="sd-section">',
-        `<h2>Answered <span class="sd-count">${answered.length}</span></h2>`,
-        answered.map((e) => entryCard(e, entries.indexOf(e), uniqueId)).join('\n'),
+        '<details class="sd-collapse">',
+        `<summary>Answered <span class="sd-count">${answered.length}</span></summary>`,
+        `<div class="sd-collapse-body">${answered.map((e) => entryCard(e, entries.indexOf(e), uniqueId)).join('\n')}</div>`,
+        '</details>',
         '</section>',
       ].join('\n')
     : ''
