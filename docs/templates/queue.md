@@ -28,6 +28,11 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
     "last_reviewed_version": "string",
     "current_version": "string"      // != last_reviewed_version renders "changed since review"
   }],
+  "boards": [{                       // optional — the campaign's other active easel boards
+    "title": "string",
+    "url": "string",
+    "note": "string"                 // optional — what the board holds
+  }],
   "open_prs": [{                     // optional; array order is merge order
     "number": 123,
     "url": "string",
@@ -44,6 +49,8 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
 - Each open entry carries `<time data-live-age datetime="...">` — the chrome recomputes "waiting 2h" from `filed_at` every 30s, so a long-open tab never shows a stale age.
 - A `review_stamps` row whose versions differ gets a warning badge; matching versions get "current".
 - Empty sections vanish; an empty `entries` list renders "Nothing waiting." — so a freshly seeded board (`{"campaign": "...", "entries": [], "review_stamps": [], "open_prs": []}`) publishes cleanly at wiring time.
+
+Each open-PR row renders a **Mark merged** button (widget id `pr-<number>`, single option `merged`). A click queues it as ordinary draft feedback; the listener receives `widgetId: "pr-<number>", value: "merged"` and updates the data file (drop or restate the row) before republishing.
 
 ## Answer flow
 

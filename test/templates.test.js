@@ -612,7 +612,7 @@ describe('queue', () => {
     const answeredAt = html.indexOf('Answered')
     assert.ok(openAt >= 0 && answeredAt >= 0 && openAt < answeredAt)
     const ids = [...html.matchAll(/data-widget-id="([^"]+)"/g)].map((m) => m[1])
-    assert.deepEqual(ids, ['design-note-extraction-table', 'merge-order-4801'])
+    assert.deepEqual(ids, ['design-note-extraction-table', 'merge-order-4801', 'pr-4799', 'pr-4801'])
     assert.ok(html.includes('needs your review'), 'answered entry text must still render')
   })
 
@@ -673,6 +673,29 @@ describe('queue', () => {
   test('a seeded board with empty sections still renders', async () => {
     const html = queue.render({ campaign: 'fresh-campaign', entries: [], review_stamps: [], open_prs: [] })
     assert.ok(html.includes('Nothing waiting.'))
-    assert.doesNotMatch(html, /Review stamps|Open PRs/)
+    assert.doesNotMatch(html, /Review stamps|Open PRs|Project boards/)
+  })
+
+  test('each open PR row carries a mark-merged widget', async () => {
+    const html = queue.render(await base())
+    const section = html.slice(html.indexOf('Open PRs'))
+    assert.match(section, /<th>Mark merged<\/th>/)
+    for (const id of ['pr-4799', 'pr-4801']) {
+      assert.ok(section.includes(`data-widget-id="${id}"`), `${id} widget missing`)
+    }
+    assert.match(section, /data-option="merged"/)
+  })
+
+  test('a PR number colliding with an entry id throws', async () => {
+    const data = await base()
+    data.entries[0].id = 'pr-4799'
+    assert.throws(() => queue.render(data), TemplateError)
+  })
+
+  test('project boards render as a linked section', async () => {
+    const html = queue.render(await base())
+    const section = html.slice(html.indexOf('Project boards'))
+    assert.match(section, /<a href="http:\/\/127\.0\.0\.1:4400\/b\/deadbeef">design coverage<\/a>/)
+    assert.match(section, /phase plan with per-PR coverage/)
   })
 })

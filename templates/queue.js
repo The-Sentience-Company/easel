@@ -73,7 +73,17 @@ function stampRows(stamps) {
   })
 }
 
-function prRows(prs) {
+function boardRows(boards) {
+  return boards.map((b, i) => {
+    requireObject(b, `queue.boards[${i}]`)
+    const title = requireString(b.title, `queue.boards[${i}].title`)
+    const url = requireString(b.url, `queue.boards[${i}].url`)
+    if (b.note !== undefined) requireString(b.note, `queue.boards[${i}].note`)
+    return [`<a href="${attr(url)}">${esc(title)}</a>`, b.note ? esc(b.note) : '—']
+  })
+}
+
+function prRows(prs, uniqueId) {
   return prs.map((p, i) => {
     requireObject(p, `queue.open_prs[${i}]`)
     const path = `queue.open_prs[${i}]`
@@ -82,7 +92,8 @@ function prRows(prs) {
     const title = requireString(p.title, `${path}.title`)
     if (p.pane !== undefined) requireString(p.pane, `${path}.pane`)
     const blocked = p.blocked_by !== undefined && p.blocked_by !== null ? `waits on #${esc(p.blocked_by)}` : '—'
-    return [`<a href="${attr(url)}">#${esc(p.number)}</a>`, esc(title), p.pane ? esc(p.pane) : '—', blocked]
+    const merged = widget({ type: 'decision', id: uniqueId(`pr-${p.number}`, `${path}.number`), options: ['merged'] })
+    return [`<a href="${attr(url)}">#${esc(p.number)}</a>`, esc(title), p.pane ? esc(p.pane) : '—', blocked, merged]
   })
 }
 
@@ -92,6 +103,7 @@ export function render(data) {
   const entries = requireArray(data.entries ?? [], 'queue.entries').map(validateEntry)
   const stamps = requireArray(data.review_stamps ?? [], 'queue.review_stamps')
   const prs = requireArray(data.open_prs ?? [], 'queue.open_prs')
+  const boards = requireArray(data.boards ?? [], 'queue.boards')
   const uniqueId = makeIdGuard('queue')
 
   const open = entries.filter((e) => e.status === 'open')
@@ -124,11 +136,20 @@ export function render(data) {
       ].join('\n')
     : ''
 
+  const boardsHtml = boards.length
+    ? [
+        '<section class="sd-section">',
+        `<h2>Project boards <span class="sd-count">${boards.length}</span></h2>`,
+        table(['Board', 'What it holds'], boardRows(boards)),
+        '</section>',
+      ].join('\n')
+    : ''
+
   const prsHtml = prs.length
     ? [
         '<section class="sd-section">',
         `<h2>Open PRs, in merge order <span class="sd-count">${prs.length}</span></h2>`,
-        table(['PR', 'Title', 'Pane', 'Waits on'], prRows(prs)),
+        table(['PR', 'Title', 'Pane', 'Waits on', 'Mark merged'], prRows(prs, uniqueId)),
         '</section>',
       ].join('\n')
     : ''
@@ -139,5 +160,6 @@ export function render(data) {
     answeredHtml,
     stampsHtml,
     prsHtml,
+    boardsHtml,
   ].filter(Boolean).join('\n')
 }
