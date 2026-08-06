@@ -1,83 +1,52 @@
-# easel in pictures
+# easel in use
 
-Real boards from a real session — the day easel's own installer was reviewed on an easel board. The agent published its findings, the human annotated them, the agent applied the feedback and republished, and the board carried the whole exchange. No mockups; this is what the loop looks like in use.
+Screenshots of real boards from a few weeks of multi-agent work. Three workflows: a UI design that took eleven rounds to settle, a 148-finding audit reviewed with per-finding verdict buttons, and a campaign queue that collected decisions across nineteen rounds. Lantern theme, dark.
 
-## A published board
+## Design iteration
 
-A `review`-template board: title, summary, sections with badges, tables — rendered from a JSON data file the agent wrote. The top chrome carries the theme pickers, the round tabs (`r1 r2 r3`), and the diff legend. Note **agent waiting** on the right: an `easel await` is parked on this board, blocked until the human sends feedback.
+A product designer would use Figma for this. An agent uses a board. Each design variant renders inside an **island** — a sandboxed frame with its own CSS, so the mockup is built from the product's real components and tokens, not an approximation:
 
-![A review board with three rounds, an agent waiting on feedback](demo/review-board.png)
+![A design variant rendered in the product's own dark skin, inside an island](demo/design-island.png)
 
-## Annotating
+The purple chip next to the variant heading is an annotation from an earlier round. Feedback lands on the element it was made on, and the chip label ("A1") is how both sides refer to it afterwards.
 
-Click **Annotate**, then click anything on the page — a sentence, a table cell, a badge. The composer quotes the exact element and queues the comment as a draft; **Send** delivers the whole batch to the waiting agent at once, as JSON, each item anchored to the element it was made on.
+This board took eleven rounds. The tabs at the top are the whole history — every round is kept, and any two can be compared:
 
-![The annotation composer, quoting the clicked element](demo/annotate-composer.png)
+![Round eleven of a design call, with all eleven round tabs](demo/design-round11.png)
 
-Once sent, each annotation leaves a numbered chip in the margin (**A2** here). The chip is the shared name for that piece of feedback — the agent's reply says "your A2", and both sides mean the same thing. The green bars on the left are diff markers: this text is new in this round.
+The ask at the bottom of the board is concrete: which treatment ships, and is the build green-lit. Options are buttons; a click is queued and delivered with the rest of the feedback in one batch:
 
-![An annotation chip anchored in the margin of the changed text](demo/annotation-chip.png)
+![Two decision widgets, one already answered](demo/design-votes.png)
 
-What the parked `easel await` receives when Send is clicked — real output from this board:
+## Evals and audits
 
-```json
-{
-  "items": [
-    {
-      "id": 1791,
-      "kind": "annotation",
-      "excerpt": "First writable of /opt/homebrew/bin, /usr/local/bin, ~/.local/bin",
-      "context": { "heading": "The whole sequence, in order" },
-      "comment": "We're not installing this via homebrew. We obviously should not use homebrew as one of the dirs."
-    },
-    {
-      "id": 1816,
-      "kind": "widget",
-      "widgetId": "install-layout",
-      "value": "one-clone"
-    }
-  ],
-  "upto": 1816
-}
-```
+An audit produced 148 findings across 69 files. Nobody reads 148 findings in a terminal. On a board, the summary is a row of stat tiles and the method fits in three cards:
 
-## Decisions and votes
+![Stat tiles and method cards at the top of an audit board](demo/eval-metrics.png)
 
-A board can carry structured asks, not just prose. Decision widgets render the options the agent needs answered; a click is queued and delivered with the same Send. Here the human picked **one-clone** — and the agent, woken by its await, executed exactly that.
+Each finding is a card: severity and category as badges, the reasoning as prose, the proposed rewrite as a word-level diff, and a verdict row — **apply / apply with my notes / skip**. The reviewer works through them like an inbox, and the agent gets back a per-finding verdict list instead of a vague "looks good":
 
-![An answered decision widget with the agent's recommendation beneath it](demo/decision-widget.png)
+![One finding: badges, a word-level diff, and an answered verdict row](demo/eval-finding.png)
 
-## Chat
+The same pattern carries blind A/B comparisons, golden-answer reviews, and model-output grading — anywhere the human's job is many small judgments rather than one big one.
 
-Questions that don't anchor to any element ride the same stream. The agent answers with `easel reply`, and the bubble carries its callsign — useful when several agents share a board.
+## The campaign queue
 
-![The conversation panel: a human question, an agent answer](demo/chat.png)
+When several agents work in parallel, their questions pile up in chat and get lost. The queue template gives a campaign one page that always answers "what's waiting on me." Agents file questions; the human answers on the page; the answer routes back to the pane that asked. This one ran for nineteen rounds:
 
-## Rounds and diffs
+![A campaign queue: one question waiting, nineteen rounds of history](demo/queue-board.png)
 
-The agent applies the feedback and republishes to the same key. The new round arrives with diff markers against the previous one — added, removed, modified, moved — so the human reviews *what changed since they last looked*, not the whole document again. **Show removed** reveals deleted text struck through in place. Here, round 2's "I did not make install delete or relocate them" was replaced in round 3 by "Relocating them, as you asked" — the annotation above, applied.
+Below the open asks, the board tracks what the human has already reviewed — and whether it changed since — plus the campaign's open PRs in merge order:
 
-![Round 3 with removed text struck through beside its replacement](demo/round-diff.png)
+![Review stamps with a changed-since-review badge, and PRs in merge order](demo/queue-stamps.png)
 
-## The page template
+## The mechanics under all of this
 
-For content that isn't a review or an eval, the `page` template takes hand-authored HTML through the same chrome, annotation layer, and design system — cards, metrics, badges, callouts.
+Every board above works the same way:
 
-![A page-template board composed of cards](demo/page-template.png)
+- **Anything on the page is annotatable** — a sentence, a table cell, a badge, a point inside a design island. Click Annotate, click the thing, type. Comments queue as drafts and deliver as one batch on Send.
+- **An agent is blocked waiting** on each of these boards (`easel await`, top right: *agent waiting*). Send unblocks it with the batch, anchored to the elements it was made on.
+- **Rounds are diffs.** A republished board marks what was added, removed, modified, or moved since the round the human last saw, and removed text can be shown struck through in place.
+- **The daemon owns the state.** Boards outlive sessions and agents — the design call above spanned days and multiple agent handoffs, and the queue collected answers for a whole campaign.
 
-Mermaid fences in any board render to inline SVG at publish time — no client-side renderer. Diagrams get a **Sketch look** toggle and open in an Excalidraw **Whiteboard** for freehand markup.
-
-![A rendered mermaid flow with sketch and whiteboard toggles](demo/mermaid-flow.png)
-
-## The loop, end to end
-
-Everything above is one cycle of the core exchange:
-
-1. Agent: `easel open --template review --data plan.json --title "..."` → board URL
-2. Agent: `easel await <key> --agent my-project:claude` → blocks
-3. Human: opens the URL, annotates, clicks widgets, hits **Send**
-4. The await returns the batch as JSON; the agent applies it, edits the data file
-5. Agent: `easel publish <key> --note "round 2: ..."` → same URL, diff markers
-6. Repeat until the human stops finding things to annotate
-
-The daemon owns the state, so the board outlives the session, survives restarts, and can be handed to a different agent mid-review — the exchange in these screenshots spanned three sessions.
+The flow, from the agent's side: `easel open` → `easel await` → apply the feedback → `easel publish` → await again. Details in [usage.md](usage.md); per-template authoring guides in [templates/](templates/).
