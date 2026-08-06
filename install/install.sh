@@ -133,21 +133,6 @@ fi
 
 echo "easel: installing from $ROOT"
 
-# Migrate from the old com.aleks.surfaced agent and surface shim if present.
-OLD_LABEL="com.aleks.surfaced"
-OLD_PLIST="$PLIST_DIR/$OLD_LABEL.plist"
-if launchctl print "gui/$UID/$OLD_LABEL" >/dev/null 2>&1; then
-  launchctl bootout "gui/$UID/$OLD_LABEL" 2>/dev/null || true
-  say "booted out old agent $OLD_LABEL"
-fi
-if [ -f "$OLD_PLIST" ]; then rm -f "$OLD_PLIST"; say "removed old plist $OLD_PLIST"; fi
-for _mig_dir in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin"; do
-  _old_shim="$_mig_dir/surface"
-  if [ -e "$_old_shim" ] || [ -L "$_old_shim" ]; then
-    rm -f "$_old_shim"; say "removed old shim $_old_shim"
-  fi
-done
-
 LAUNCHER="$ROOT/install/easeld-launcher.sh"
 [ -f "$LAUNCHER" ] || { echo "error: missing $LAUNCHER" >&2; exit 1; }
 chmod +x "$LAUNCHER"
