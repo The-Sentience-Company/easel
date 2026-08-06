@@ -1,4 +1,5 @@
 version: 2
+# npm only — there are no workflows for the github-actions ecosystem to update.
 updates:
   - package-ecosystem: npm
     directory: /
