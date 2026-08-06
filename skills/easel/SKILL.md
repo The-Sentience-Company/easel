@@ -14,17 +14,25 @@ easel open --template <review|eval|answer-key|page|queue> --data <file.json> --t
 easel open <file.html>                                                            # plain doc
 ```
 
-**Every template has an authoring doc at `docs/templates/<template>.md` — read it before writing that template's data file.** They carry the data schemas and per-template workflow rules (e.g. queue entries must pass `queue-lint` before filing, which needs the `claude` CLI on PATH) that this skill doesn't repeat.
+**Pick the template by the shape of the work:**
+
+| Template | The work is |
+|---|---|
+| `review` | a plan, design, or proposal to read, plus decisions to answer |
+| `eval` | eval output — dossiers, a blind two-column compare, or an item matrix; the data shape picks the mode |
+| `answer-key` | hand-authored goldens laid out for the eval owner to approve |
+| `queue` | a campaign's open decisions on one board, orchestrator-owned |
+| `page` | none of the above — hand-authored HTML through the same chrome and annotation layer |
+
+**Then read that template's authoring doc at `docs/templates/<template>.md` before writing the data file.** Each doc carries its data schema and the rules that only matter inside that flow — queue's lint gate, page's composition patterns and validation contract, eval's mode switching — so this file doesn't repeat them and they can't drift.
+
+Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time (`docs/templates/mermaid.md`).
 
 **Always pass `--title`: 4–6 words naming the work, not the document.** It is the only handle on the dashboard, where boards outlive the session that made them — write what a reader months from now needs to tell this board from its neighbours. "Extractor arms — 2.5-flash vs 3.5-flash-lite", not "Eval results" or "Analysis". Omitted, it falls back to the data's own `title`, which is the page heading and usually too long or too generic to scan.
-
-`page` data is `{"title", "html"}`. Markup passes a sanitizer allowlist: no `input`/`form`/`select`/`textarea`/`style` — decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons), which the daemon binds and queues as drafts. Diagrams: `<pre class="mermaid">` is the render hook. Style only with the shared `sd-*` classes.
 
 **Sources need a durable home:** the daemon re-reads the source (`file`, or `template` + `data` JSON) on every publish, and `/tmp`/scratchpad paths die on reboot — baked rounds survive but republish breaks. Put sources in `~/.easel/sources/<key-or-name>.json` (`mkdir -p` it), never a session scratchpad.
 
 **Publish reads the REGISTERED path, nothing else.** The source path is fixed at `easel open`; `easel status <key>` shows it under `file`. Before every publish, write your new content to THAT path — writing any other file (including the conventional sources dir, when the board was opened from somewhere else) makes `publish` silently re-ship the stale registered file as a new round. This shipped two stale rounds once; check `status` when in doubt.
-
-**Compose `page` HTML natively in `sd-*`.** Pick structure from content shape: the load-bearing facts as an `sd-metrics` row first, mechanism parts as an `sd-grid` of titled `sd-card`s, worked examples both directions as `sd-callout-success` beside `sd-callout-error`, edge cases as a table with `sd-badge-success|info|warning` status per row, verbatim payloads in `sd-collapse`. Content drafted as markdown and wrapped in a card arrives as flat prose — if most body text ends up in `<p>` runs inside one card, restructure before publishing.
 
 ## Listen — always `easel await`, never hand-rolled waiters
 
@@ -32,7 +40,11 @@ easel open <file.html>                                                          
 easel await <key> [--agent ID] [--ack N]
 ```
 
-Blocks until real feedback, cancel, or board end — it re-attaches across long-poll timeouts, dropped connections, and daemon restarts, so run it once and stop polling. `easel publish --agent ID` (the same ID as the await — the drop matches on it) drops your own parked listener on that board in-turn (`dropped: true`, exit 0 — expected, not a failure): relaunch the await once after each publish, and never pre-emptively relaunch a listener that hasn't fired — a parked listener survives rounds and delivers newer feedback fine. Annotations, widget clicks, and chat all ride the same stream. Answer chat with `easel reply <key> "msg" --agent ID` — same ID as the await, so the bubble carries your callsign. To get the turn back, background it only as a harness-tracked background command (`run_in_background: true`) — its exit is what wakes you to read the batch; a shell `&`/`nohup` launch exits into a file no one reads.
+Blocks until real feedback, cancel, or board end — it re-attaches across long-poll timeouts, dropped connections, and daemon restarts, so run it once and stop polling. Annotations, widget clicks, and chat all ride the same stream; answer chat with `easel reply <key> "msg" --agent ID` — same ID as the await, so the bubble carries your callsign.
+
+Publishing with the same agent ID drops your own parked listener on that board in-turn (`dropped: true`, exit 0 — expected, not a failure). Relaunch the await once after each publish, and never pre-emptively relaunch one that hasn't fired — a parked listener survives rounds and delivers newer feedback fine.
+
+To get the turn back while waiting, background the await only as a harness-tracked background command (`run_in_background: true`) — its exit is what wakes you to read the batch. A shell `&`/`nohup` launch exits into a file no one reads.
 
 **Ack what you have already handled.** The server replays a cursor's unacked backlog, so an await relaunched after applying a round re-delivers that same round and looks like fresh feedback. Pass `--ack <upto>` (the `upto` from the batch you just handled) when relaunching, or you will answer the same annotations twice.
 
