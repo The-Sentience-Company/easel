@@ -17,6 +17,8 @@ easel gives that exchange a page and a cursor. You point at the thing. The agent
 Requires macOS and Node 22+. The install pulls a Chromium through Puppeteer, which mermaid-cli uses to render diagrams to SVG at publish time — expect the first `npm install` to be slow and roughly a gigabyte on disk.
 
 ```
+git clone https://github.com/The-Sentience-Company/easel.git && cd easel
+npm install                                    # deps + postinstall builds the whiteboard bundle
 install/install.sh                             # idempotent; writes the plist, puts `easel` on PATH, waits for health
 easel open --template page --data page.json    # → board key + URL
 easel await <key> --agent my-project:claude    # blocks until you send feedback

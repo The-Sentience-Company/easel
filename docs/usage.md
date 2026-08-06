@@ -5,7 +5,8 @@ A review board is a page an agent publishes, a human annotates in the browser, a
 ## Install
 
 ```
-easel/install/install.sh
+npm install          # deps + postinstall builds the whiteboard bundle
+install/install.sh
 ```
 
 Idempotent — re-running converges to the same state. It writes `~/Library/LaunchAgents/com.sentience.easeld.plist` (derived from the clone's own location, never a hardcoded path), bootstraps the agent, puts an `easel` entry point on PATH, and waits for `/health`.
