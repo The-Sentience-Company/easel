@@ -23,27 +23,42 @@ const VERSION = '0.1.0'
 // Forking git costs ~50ms and blocks the loop; the index polls the build every
 // two seconds, so the answer is cached just long enough to stay out of the way.
 const HEAD_TTL_MS = 15000
-let headCache = { at: -Infinity, commit: null }
+let headCache = { at: -Infinity, commit: null, branch: null, dirty: 0 }
 
-function headCommit() {
-  if (Date.now() - headCache.at < HEAD_TTL_MS) return headCache.commit
-  let commit = null
+function git(args) {
   try {
-    commit = execFileSync('git', ['-C', ROOT, 'rev-parse', '--short', 'HEAD'], {
+    return execFileSync('git', ['-C', ROOT, ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim()
   } catch {
-    commit = null
+    return null
   }
-  headCache = { at: Date.now(), commit }
-  return commit
 }
-const BOOT_COMMIT = headCommit()
+
+// Uncommitted edits never move HEAD, so commit drift alone cannot see them — and
+// chrome/ is read per request, so a half-saved file is already being served.
+function headState() {
+  if (Date.now() - headCache.at < HEAD_TTL_MS) return headCache
+  const commit = git(['rev-parse', '--short', 'HEAD'])
+  // `--branch` puts `## <branch>...<upstream>` first, so one fork answers both.
+  const lines = (git(['status', '--porcelain', '--branch']) ?? '').split('\n')
+  const head = lines[0]?.startsWith('## ') ? lines[0].slice(3).split(/\.{3}| /)[0] : null
+  headCache = { at: Date.now(), commit, branch: head || null, dirty: lines.slice(1).filter(Boolean).length }
+  return headCache
+}
+const BOOT_COMMIT = headState().commit
 
 function buildInfo() {
-  const onDisk = headCommit()
-  return { version: VERSION, commit: BOOT_COMMIT, onDisk, stale: Boolean(BOOT_COMMIT && onDisk && BOOT_COMMIT !== onDisk) }
+  const { commit: onDisk, branch, dirty } = headState()
+  return {
+    version: VERSION,
+    commit: BOOT_COMMIT,
+    onDisk,
+    stale: Boolean(BOOT_COMMIT && onDisk && BOOT_COMMIT !== onDisk),
+    branch,
+    dirty,
+  }
 }
 // A scene carries excalidraw's embedded `files`, so one pasted image dwarfs the
 // generic limit — and a 413 on the close flush would trap the drawing unsaved.

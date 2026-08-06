@@ -61,6 +61,23 @@ function output(data, asJson, human) {
   else console.log(human ? human(data) : JSON.stringify(data, null, 2))
 }
 
+/* One clone means the daemon serves the tree you edit. Name that once, on the
+   two commands that expose it, rather than leaving it to look like a bug. */
+async function warnServingTree() {
+  let info
+  try {
+    info = await request('GET', '/health')
+  } catch {
+    return // an unreachable daemon is the next call's problem to report
+  }
+  const bits = []
+  if (info.branch && info.branch !== 'main') bits.push(`branch ${info.branch}`)
+  if (info.dirty) bits.push(`${info.dirty} uncommitted file${info.dirty === 1 ? '' : 's'}`)
+  if (info.stale) bits.push(`running ${info.commit}, disk at ${info.onDisk}`)
+  if (!bits.length) return
+  console.error(`easel: serving from ${bits.join(', ')} — chrome/ and render/.gen are live on save`)
+}
+
 function parseDays(spec) {
   const m = String(spec).match(/^(\d+)d?$/)
   if (!m) fail(`bad --older-than value: ${spec} (expected e.g. 7d)`)
@@ -101,6 +118,7 @@ const commands = {
       allowPositionals: true,
     })
     const key = positionals[0] || fail(USAGE)
+    await warnServingTree()
     // Identify the publisher so the daemon drops their own parked listener in-turn.
     const agent = values.agent || process.env.CLAUDE_SESSION_ID || null
     const data = await call('POST', `/api/b/${key}/publish`, { note: values.note, agent })
@@ -130,6 +148,8 @@ const commands = {
     if (!Number.isFinite(timeoutS) || timeoutS <= 0 || timeoutS > 3600) {
       fail(`bad --timeout-s value: ${values['timeout-s']} (window seconds, 1..3600)`)
     }
+    // Before the block, not inside the loop — a re-attach must stay silent.
+    await warnServingTree()
     const body = { agent, timeoutS }
     if (values.ack != null) body.ack = Number(values.ack)
     if (values.cursor != null) body.cursor = Number(values.cursor)

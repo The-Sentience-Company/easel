@@ -376,7 +376,13 @@ test('health and status carry the build, and agree on it', async () => {
   assert.equal(h.app, 'easel')
   assert.ok(h.version, 'version present')
   assert.equal(typeof h.stale, 'boolean', 'staleness is answerable without reading git')
-  const build = { version: h.version, commit: h.commit, onDisk: h.onDisk, stale: h.stale }
+  // Commit drift cannot see an uncommitted edit, and chrome/ is served per request.
+  assert.equal(typeof h.dirty, 'number', 'uncommitted-file count present')
+  assert.ok(h.branch === null || typeof h.branch === 'string', 'branch is a name or null')
+  const build = {
+    version: h.version, commit: h.commit, onDisk: h.onDisk, stale: h.stale,
+    branch: h.branch, dirty: h.dirty,
+  }
   const s = (await api('GET', '/api/status')).data
   assert.deepEqual(s.daemon, build)
   // `easel status <key>` reads this route, so the warning has to reach it too.

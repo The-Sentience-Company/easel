@@ -6,7 +6,7 @@ One board per campaign: the single surface where decisions wait for the user. Op
 easel open --template queue --data queue-<campaign>.json --title "Decision queue — <campaign>"
 ```
 
-The board is orchestrator-owned: one writer edits the data file and republishes; executors never touch it. Run each drafted entry through `queue-lint` (installed next to the `easel` CLI) before filing — a context-free cheap model flags shorthand the reader could not decode. `queue-lint` shells out to the `claude` CLI, so it needs Claude Code installed; without it every entry fails with `model call failed`.
+The board is orchestrator-owned: one writer edits the data file and republishes; executors never touch it. Run each drafted entry through `queue-lint` (installed next to the `easel` CLI) before filing — a context-free cheap model flags shorthand the reader could not decode. `queue-lint` shells out to the `claude` CLI, so it needs Claude Code installed; without it it exits 2 immediately naming what is missing, rather than failing per entry.
 
 ## Input schema
 
