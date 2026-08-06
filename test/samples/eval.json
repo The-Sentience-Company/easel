@@ -1,0 +1,49 @@
+{
+  "title": "Preference extraction — run 41",
+  "run": {"dataset": "frozen-2026-07-28", "model": "claude-opus-5", "samples": 8, "judge": "calibrated-v3"},
+  "summary": "Recall recovered after the corpus fix; precision is flat.",
+  "metrics": [
+    {"label": "Precision", "value": "0.91", "note": "+0.02 vs run 40"},
+    {"label": "Recall", "value": "0.84", "note": "+0.11 vs run 40"},
+    {"label": "F1", "value": "0.874"},
+    {"label": "Cases", "value": "24"},
+    {"label": "Median latency", "value": "3.4s", "note": "p95 8.1s"}
+  ],
+  "cases": [
+    {
+      "id": "pref-001",
+      "name": "pref-001 Explicit dietary preference in a long thread",
+      "status": "pass",
+      "score": "1.00",
+      "notes": "**Input:** I've been vegetarian since March, please stop suggesting steakhouses.\n\n**Extracted:** diet: vegetarian (since 2026-03) — exact match with the expected value."
+    },
+    {
+      "id": "pref-002",
+      "name": "Negated preference",
+      "status": "fail",
+      "score": "0.00",
+      "notes": "Polarity flip. The negation `not ... anymore` is not handled — this is the **known** negation gap.\n\n- expected: schedule: avoid early meetings\n- actual: schedule: prefers mornings"
+    },
+    {
+      "id": "pref-003",
+      "name": "Ambiguous, judge split",
+      "status": "partial",
+      "score": "0.50",
+      "notes": "\"Coffee after 2pm wrecks me.\" — expected `caffeine: none after 14:00`, got `caffeine: reduce in afternoon`. Judge split on whether the softer phrasing counts.",
+      "verdictOptions": ["agree", "disagree", "unsure"]
+    },
+    {
+      "id": "pref-004",
+      "name": "Timeout on a very long thread",
+      "status": "error",
+      "score": "—",
+      "notes": "Extractor exceeded the 30s budget on a 412-turn thread."
+    },
+    {
+      "id": "pref-005",
+      "name": "Out-of-scope, correctly skipped",
+      "status": "skip",
+      "notes": "Correctly skipped: the thread contains no preference statements."
+    }
+  ]
+}

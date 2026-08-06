@@ -1,0 +1,64 @@
+{
+  "name": "easel",
+  "version": "0.1.0",
+  "description": "Local review-board daemon: agent publishes HTML boards, user annotates in the browser, feedback flows back durably.",
+  "keywords": [
+    "agent",
+    "ai",
+    "review",
+    "annotation",
+    "human-in-the-loop",
+    "cli",
+    "daemon",
+    "llm"
+  ],
+  "license": "GPL-3.0-only",
+  "author": "The Sentience Company",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/The-Sentience-Company/easel.git"
+  },
+  "homepage": "https://github.com/The-Sentience-Company/easel#readme",
+  "bugs": {
+    "url": "https://github.com/The-Sentience-Company/easel/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "os": [
+    "darwin"
+  ],
+  "bin": {
+    "easel": "cli/easel.js"
+  },
+  "files": [
+    "chrome/",
+    "cli/",
+    "daemon/",
+    "docs/",
+    "install/",
+    "render/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "preview": "node test/preview.js",
+    "postinstall": "node render/build-excalidraw.mjs"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.16.0",
+    "better-sqlite3": "^12.2.0",
+    "parse5": "^8.0.0",
+    "puppeteer": "25.4.0"
+  },
+  "devDependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "@excalidraw/mermaid-to-excalidraw": "2.2.2",
+    "esbuild": "0.25.8",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+}
