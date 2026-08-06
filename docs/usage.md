@@ -12,6 +12,12 @@ Idempotent — re-running converges to the same state. It writes `~/Library/Laun
 
 `install.sh --uninstall` boots the agent out, removes the plist, and removes the entry point.
 
+**It deliberately leaves `~/.easel/` alone** — your boards, sources, whiteboards, and `easel.db` all survive an uninstall, so reinstalling later picks up exactly where you left off. Nothing prompts you about this, so if you meant to erase everything, that is a second, separate step:
+
+```
+rm -rf ~/.easel        # or $EASEL_DATA_DIR — every board you ever published
+```
+
 **The installer never touches an `easel` it did not create.** The entry point it writes carries a marker naming this checkout; on install an unrecognised `easel` is a hard error telling you to remove it or pass `--bin-dir`, and on uninstall it is left alone. Nothing else on your PATH is at risk.
 
 ### Configuration

@@ -26,6 +26,8 @@ Open the URL, annotate, hit Send — the blocked `easel await` returns your feed
 
 `http://127.0.0.1:4400/` lists every board and marks which ones have an agent waiting on you.
 
+To back out, `install/install.sh --uninstall` removes the agent, the plist, and the `easel` entry point. It leaves `~/.easel/` — your boards and database — deliberately intact; `rm -rf ~/.easel` is the separate, deliberate step that erases them.
+
 ## The commands
 
 | Command | Does |
