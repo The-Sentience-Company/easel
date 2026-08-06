@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.16.0",
-    "better-sqlite3": "^12.2.0",
+    "better-sqlite3": "^13.0.2",
     "parse5": "^8.0.0",
     "puppeteer": "25.4.0"
   },
