@@ -78,6 +78,7 @@ Templates take JSON and own their markup, so a generated board cannot reproduce 
 | `chrome/` | the browser UI wrapped around a rendered round |
 | `templates/` | the publishable shapes |
 | `render/` | mermaid, diff, and excalidraw pre-render |
+| `skills/` | [the agent-side guide](skills/easel/SKILL.md) — how an agent drives all of the above |
 | `install/` | installer, updater, launchd plist template |
 | `docs/` | [usage.md](docs/usage.md) (flow), [api.md](docs/api.md) (routes), [templates/page.md](docs/templates/page.md) (the `sd-*` vocabulary), [design-system.md](docs/design-system.md) |
 

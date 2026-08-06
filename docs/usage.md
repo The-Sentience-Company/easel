@@ -53,7 +53,7 @@ Pulls the installed checkout (`--ff-only`), reinstalls deps, rebuilds the excali
 3. `easel await <key>` — one foreground call that blocks until feedback actually arrives. No clock ever wakes it: it silently re-attaches across long-poll windows, dropped connections, and daemon restarts, and exits only on feedback, cancel, or board end. Safe to re-run: the cursor is server-side per agent, so a repeat call re-delivers the same unacked batch rather than losing it, and a new await from the same agent supersedes an abandoned one (exit 0). Publishing a round drops your own parked listener in-turn (`dropped: true`, exit 0) — relaunch the await after each publish.
 4. Apply the feedback, then `easel publish <key> --note "round 2: ..."` to close a round.
 
-Full command reference and HTTP shapes: `easel/docs/api.md`.
+Full command reference and HTTP shapes: `docs/api.md`.
 
 ## Choosing a template
 

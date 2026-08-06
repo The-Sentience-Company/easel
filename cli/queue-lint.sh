@@ -31,6 +31,11 @@ VERDICT: PASS or FAIL
 TERMS: comma-separated undecodable terms, or: none
 OPTIONS: CLEAR, or UNCLEAR - one short reason"
 
+command -v claude >/dev/null 2>&1 || {
+  echo "queue-lint: needs the \`claude\` CLI (Claude Code) on PATH" >&2
+  exit 2
+}
+
 out="$(claude -p "$prompt" --model "$MODEL" 2>/dev/null)" || {
   echo "queue-lint: model call failed" >&2
   exit 2

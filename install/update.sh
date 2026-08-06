@@ -6,9 +6,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLIST="$HOME/Library/LaunchAgents/com.sentience.easeld.plist"
 
-before="$(git -C "$ROOT" rev-parse --short HEAD)"
-git -C "$ROOT" pull --ff-only
-after="$(git -C "$ROOT" rev-parse --short HEAD)"
+before="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo none)"
+# A dirty tree, no upstream, or no clone at all: rebuild and restart what is
+# already here rather than refusing to update.
+git -C "$ROOT" pull --ff-only 2>/dev/null || echo "easel: pull skipped — converging on the checkout as it stands"
+after="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo none)"
 if [ "$before" = "$after" ]; then
   echo "easel: already at $after"
 else
