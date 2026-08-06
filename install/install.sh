@@ -111,9 +111,9 @@ write_entry() {
 # longer a target, but dropping it here would orphan shims earlier versions left.
 SWEEP_DIRS=(/opt/homebrew/bin /usr/local/bin "$HOME/.local/bin")
 
-# A shim from another checkout is not ours to delete, but it still shadows the
-# one we just wrote if its dir comes earlier on PATH, so it has to be named.
-warn_stale_entries() {
+# Removing a shim from a dir we no longer pick IS the relocation — the
+# replacement is already written. Unmarked entries belong to someone else.
+relocate_stale_entries() {
   local dir name link
   for dir in "${SWEEP_DIRS[@]}"; do
     [ "$dir" = "$DEST_DIR" ] && continue
@@ -121,8 +121,8 @@ warn_stale_entries() {
       link="$dir/$name"
       [ -f "$link" ] || continue
       grep -qF "$MARKER" "$link" 2>/dev/null || continue
-      say "warning: an earlier easel install left $link — it shadows $DEST_DIR/$name"
-      say "         if its dir comes first on PATH. remove it with: rm $link"
+      rm -f "$link"
+      say "relocated $link -> $DEST_DIR/$name"
     done
   done
 }
@@ -204,7 +204,7 @@ printf '%s\n' \
 chmod +x "$LINT_ENTRY"
 say "cli: $LINT_ENTRY -> $LINT"
 
-warn_stale_entries
+relocate_stale_entries
 
 NODE_ENV_XML="$(node_env_xml)"
 [ -z "$NODE_ENV_XML" ] || say "pinning EASEL_NODE=$EASEL_NODE into the agent"

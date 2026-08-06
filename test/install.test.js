@@ -82,40 +82,44 @@ describe('install.sh: where the CLI lands', () => {
   })
 
   /* A shim in a dir we no longer pick still shadows the new one if it comes
-     earlier on PATH, but it names another root, so it is named and not removed. */
+     earlier on PATH, so install relocates it: the replacement is already written. */
   describe('a shim left in a dir this install did not pick', () => {
     const MARKER = readFileSync(SCRIPT, 'utf8').match(/^MARKER="(.+)"$/m)[1]
     const run = () => {
       const box = mkdtempSync(join(tmpdir(), 'easel-stale-'))
-      const [stale, dest] = [join(box, 'stale'), join(box, 'dest')]
-      mkdirSync(stale); mkdirSync(dest)
+      const [stale, foreign, dest] = ['stale', 'foreign', 'dest'].map((d) => join(box, d))
+      for (const d of [stale, foreign, dest]) mkdirSync(d)
       writeFileSync(join(stale, 'easel'), `#!/bin/sh\n${MARKER} /some/other/checkout\n`)
       writeFileSync(join(stale, 'other'), '#!/bin/sh\necho unrelated\n')
+      // Same name, no marker: an `easel` some other tool put on PATH.
+      writeFileSync(join(foreign, 'easel'), '#!/bin/sh\necho not ours\n')
       const out = runBash(`
         set -euo pipefail
         MARKER=${JSON.stringify(MARKER)}
-        SWEEP_DIRS=(${JSON.stringify(stale)} ${JSON.stringify(dest)})
+        SWEEP_DIRS=(${JSON.stringify(stale)} ${JSON.stringify(foreign)} ${JSON.stringify(dest)})
         DEST_DIR=${JSON.stringify(dest)}
         say() { printf '  %s\\n' "$*"; }
-        ${extract('warn_stale_entries')}
-        warn_stale_entries
+        ${extract('relocate_stale_entries')}
+        relocate_stale_entries
       `)
-      return { out, stale }
+      return { out, stale, foreign, dest }
     }
 
-    test('is named, with the command to remove it', () => {
-      const { out, stale } = run()
-      assert.match(out, /warning: an earlier easel install left/)
-      assert.match(out, new RegExp(`rm ${join(stale, 'easel')}`))
+    test('is relocated, and the move is reported', () => {
+      const { out, stale, dest } = run()
+      assert.match(out, new RegExp(`relocated ${join(stale, 'easel')} -> ${join(dest, 'easel')}`))
+      assert.ok(!existsSync(join(stale, 'easel')), 'left the shadowing shim in place')
     })
 
-    test('is not deleted, and neither is anything else in that dir', () => {
-      const { stale } = run()
-      assert.ok(existsSync(join(stale, 'easel')), 'deleted a shim belonging to another root')
+    /* The marker is the whole safety boundary — without it this deletes a
+       binary named `easel` that some other tool put on PATH. */
+    test('an unmarked binary of the same name is left alone', () => {
+      const { stale, foreign } = run()
+      assert.ok(existsSync(join(foreign, 'easel')), 'removed an `easel` easel never wrote')
       assert.ok(existsSync(join(stale, 'other')), 'touched an unrelated binary')
     })
 
-    test('an unrelated binary raises no warning', () => {
+    test('an unrelated binary is never mentioned', () => {
       assert.doesNotMatch(run().out, /\bother\b/)
     })
   })
