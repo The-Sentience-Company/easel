@@ -521,3 +521,32 @@ describe('code wrap toggle', () => {
     await pg.close()
   })
 })
+
+/* A widget's prompt is prose the reader may disagree with; only the option
+   buttons are the vote. */
+describe('annotating inside a widget', () => {
+  const PAGE = page('widget-annotate.html', '<h1>widget annotate</h1><div data-widget="vote" data-widget-id="w1"><div class="sd-widget-prompt">what should it read from?</div><div class="sd-widget-options"><button type="button" data-option="a">option a</button></div></div>')
+  let key
+
+  before(async () => { key = await open(PAGE, 'widget annotate') })
+
+  test('the prompt opens a popover; the option votes instead', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    if (!(await pg.evaluate("document.querySelector('.sf-annotate-toggle').classList.contains('sf-on')"))) {
+      await pg.click('.sf-annotate-toggle')
+    }
+
+    await pg.click('#sf-content .sd-widget-prompt')
+    const excerpt = await pg.evaluate("document.querySelector('.sf-popover-excerpt')?.textContent")
+    assert.match(excerpt || '', /what should it read from/, 'the widget prompt did not open a popover')
+    await pg.keyboard.press('Escape')
+
+    await pg.click('#sf-content [data-option]')
+    assert.equal(await pg.evaluate("!!document.querySelector('.sf-popover')"), false, 'an option click must vote, not annotate')
+    assert.equal(
+      await pg.evaluate("document.querySelector('#sf-content [data-widget]').classList.contains('sf-recorded')"),
+      true, 'the option click did not record a vote')
+    await pg.close()
+  })
+})

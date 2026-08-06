@@ -934,7 +934,7 @@ CONTENT.addEventListener('mouseover', (e) => {
   CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
   // Hover previews only the anchor itself; the column echo appears on the
   // saved mark (sf-annotated-col), not while merely pointing at a header.
-  if (target && !target.closest('[data-widget]')) target.classList.add('sf-hover')
+  if (target && !target.closest('[data-option]')) target.classList.add('sf-hover')
 })
 
 CONTENT.addEventListener('click', (e) => {
@@ -950,7 +950,8 @@ CONTENT.addEventListener('click', (e) => {
   if (e.target.closest('summary') || e.target.closest('a[href]')) return
   if (e.target.closest(CHROME_CONTROLS)) return
   const target = e.target.closest('[data-sid]')
-  if (!target || target.closest('[data-widget]')) return
+  // A widget's prompt is annotatable text; only the option buttons vote.
+  if (!target || target.closest('[data-option]')) return
   e.preventDefault()
   const drafts = state.draftsByKey.get(target.dataset.sid)
   if (drafts?.length && window.getSelection()?.isCollapsed !== false) {
