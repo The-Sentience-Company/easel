@@ -21,7 +21,7 @@ jobs:
           cache: npm
 
       # Puppeteer's Chromium is ~1GB and unchanged between runs.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/puppeteer
           key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
