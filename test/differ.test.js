@@ -178,13 +178,13 @@ test('excerptForSid finds node text, clips, and returns null for unknown sid', (
 
 test('contextForSid: nearest preceding heading and dup ordinal', () => {
   const { html } = annotateAndDiff(
-    '<h2>aleks — dump 1</h2><table><thead><tr><th>final page entry</th></tr></thead></table>' +
-    '<h2>ben — dump 2</h2><table><thead><tr><th>final page entry</th></tr></thead></table>'
+    '<h2>alice — dump 1</h2><table><thead><tr><th>final page entry</th></tr></thead></table>' +
+    '<h2>bob — dump 2</h2><table><thead><tr><th>final page entry</th></tr></thead></table>'
   )
   const sids = [...html.matchAll(/data-sid="([^"]+)"[^>]*>final page entry/g)].map((m) => m[1])
   assert.equal(sids.length, 2)
-  assert.deepEqual(contextForSid(html, sids[0]), { heading: 'aleks — dump 1', nth: 1, of: 2 })
-  assert.deepEqual(contextForSid(html, sids[1]), { heading: 'ben — dump 2', nth: 2, of: 2 })
+  assert.deepEqual(contextForSid(html, sids[0]), { heading: 'alice — dump 1', nth: 1, of: 2 })
+  assert.deepEqual(contextForSid(html, sids[1]), { heading: 'bob — dump 2', nth: 2, of: 2 })
 })
 
 test('contextForSid: enclosing card title; a heading is not its own context', () => {
