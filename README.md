@@ -6,6 +6,8 @@ The agent publishes a page. You open it in a browser, annotate anything on it, a
 
 Nothing runs in the cloud. A `easeld` daemon runs under launchd on `http://127.0.0.1:4400` and owns all state, so a board outlives the session that published it, survives a daemon restart, and can be handed between agents.
 
+**[Screenshot tour →](docs/demo.md)** — a real review, round by round: annotations, decision widgets, diffs.
+
 ## Why it exists
 
 Agents produce work that is painful to review in a terminal: a plan, an eval run, a prompt diff, a comparison table, a design. The usual fallbacks are a wall of scrollback or a screenshot, and the feedback going back is a paragraph of prose describing which part you meant.
