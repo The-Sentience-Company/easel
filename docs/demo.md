@@ -49,4 +49,4 @@ Every board above works the same way:
 - **Rounds are diffs.** A republished board marks what was added, removed, modified, or moved since the round the human last saw, and removed text can be shown struck through in place.
 - **The daemon owns the state.** Boards outlive sessions and agents — the design call above spanned days and multiple agent handoffs, and the queue collected answers for a whole campaign.
 
-The flow, from the agent's side: `easel open` → `easel await` → apply the feedback → `easel publish` → await again. Details in [usage.md](usage.md); per-template authoring guides in [templates/](templates/).
+The flow, from the agent's side: `easel open` → `easel await` → apply the feedback → `easel publish` → await again. Details in [usage.md](usage.md); each template's data format and rules in [templates/](templates/).
