@@ -6,10 +6,7 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
-    # React 19.2.x satisfies excalidraw 0.18.1's peer range and then fails 21
-    # whiteboard tests. Unpin when a stable Excalidraw supports it.
-    ignore:
-      - dependency-name: react
-        versions: ['>=19.2.0']
-      - dependency-name: react-dom
-        versions: ['>=19.2.0']
+    # react and react-dom must move together; alone, either one breaks the build.
+    groups:
+      react:
+        patterns: ['react', 'react-dom']
