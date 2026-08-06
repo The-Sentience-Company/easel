@@ -41,7 +41,7 @@ usage: install.sh [--uninstall] [--bin-dir DIR]
 
   --uninstall   bootout the agent, remove the plist and the CLI symlink
   --bin-dir     where to symlink the CLI (default: first writable of
-                /opt/homebrew/bin, /usr/local/bin, \$HOME/.local/bin)
+                /usr/local/bin, \$HOME/.local/bin)
 EOF
 }
 
@@ -56,9 +56,11 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Not /opt/homebrew/bin: easel is not distributed through homebrew, and writing
+# into brew's prefix makes an unrelated package manager look like the owner.
 pick_bin_dir() {
   if [ -n "$BIN_DIR" ]; then printf '%s\n' "$BIN_DIR"; return; fi
-  for d in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin"; do
+  for d in /usr/local/bin "$HOME/.local/bin"; do
     if [ -d "$d" ] && [ -w "$d" ]; then printf '%s\n' "$d"; return; fi
   done
   printf '%s\n' "$HOME/.local/bin"
@@ -105,6 +107,26 @@ write_entry() {
   chmod +x "$path"
 }
 
+# Every dir an install may have written to, now or in the past. Homebrew is no
+# longer a target, but dropping it here would orphan shims earlier versions left.
+SWEEP_DIRS=(/opt/homebrew/bin /usr/local/bin "$HOME/.local/bin")
+
+# A shim from another checkout is not ours to delete, but it still shadows the
+# one we just wrote if its dir comes earlier on PATH, so it has to be named.
+warn_stale_entries() {
+  local dir name link
+  for dir in "${SWEEP_DIRS[@]}"; do
+    [ "$dir" = "$DEST_DIR" ] && continue
+    for name in easel queue-lint; do
+      link="$dir/$name"
+      [ -f "$link" ] || continue
+      grep -qF "$MARKER" "$link" 2>/dev/null || continue
+      say "warning: an earlier easel install left $link — it shadows $DEST_DIR/$name"
+      say "         if its dir comes first on PATH. remove it with: rm $link"
+    done
+  done
+}
+
 # An unrelated entry on PATH belongs to someone else, on install and uninstall alike.
 remove_owned_link() {
   local link="$1/$2"
@@ -121,7 +143,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
   bootout_if_loaded
   say "agent booted out"
   if [ -f "$PLIST" ]; then rm -f "$PLIST"; say "removed $PLIST"; else say "no plist at $PLIST"; fi
-  LINK_DIRS=(/opt/homebrew/bin /usr/local/bin "$HOME/.local/bin")
+  LINK_DIRS=("${SWEEP_DIRS[@]}")
   [ -n "$BIN_DIR" ] && LINK_DIRS+=("$BIN_DIR")
   for d in "${LINK_DIRS[@]}"; do
     remove_owned_link "$d" easel
@@ -181,6 +203,8 @@ printf '%s\n' \
   "exec bash \"$LINT\" \"\$@\"" > "$LINT_ENTRY"
 chmod +x "$LINT_ENTRY"
 say "cli: $LINT_ENTRY -> $LINT"
+
+warn_stale_entries
 
 NODE_ENV_XML="$(node_env_xml)"
 [ -z "$NODE_ENV_XML" ] || say "pinning EASEL_NODE=$EASEL_NODE into the agent"

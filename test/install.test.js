@@ -60,6 +60,76 @@ describe('install.sh: subst_value', () => {
   })
 })
 
+describe('install.sh: where the CLI lands', () => {
+  const src = () => readFileSync(SCRIPT, 'utf8')
+
+  test('homebrew is not a candidate — easel is not distributed through brew', () => {
+    assert.doesNotMatch(extract('pick_bin_dir'), /homebrew/)
+  })
+
+  /* Dropping brew from the candidates must not drop it from cleanup, or an
+     install that once chose it leaves a shim uninstall can no longer find. */
+  test('cleanup still sweeps the dir installs used to pick', () => {
+    const sweep = src().match(/^SWEEP_DIRS=\((.+)\)$/m)
+    assert.ok(sweep, 'install.sh no longer declares SWEEP_DIRS')
+    assert.match(sweep[1], /\/opt\/homebrew\/bin/)
+    assert.match(src(), /^\s*LINK_DIRS=\("\$\{SWEEP_DIRS\[@\]\}"\)$/m)
+  })
+
+  test('an explicit --bin-dir still wins over the candidate scan', () => {
+    const out = runBash(`BIN_DIR=/tmp/somewhere\n${extract('pick_bin_dir')}\npick_bin_dir`)
+    assert.equal(out.trim(), '/tmp/somewhere')
+  })
+
+  /* A shim in a dir we no longer pick still shadows the new one if it comes
+     earlier on PATH, but it names another root, so it is named and not removed. */
+  describe('a shim left in a dir this install did not pick', () => {
+    const MARKER = readFileSync(SCRIPT, 'utf8').match(/^MARKER="(.+)"$/m)[1]
+    const run = () => {
+      const box = mkdtempSync(join(tmpdir(), 'easel-stale-'))
+      const [stale, dest] = [join(box, 'stale'), join(box, 'dest')]
+      mkdirSync(stale); mkdirSync(dest)
+      writeFileSync(join(stale, 'easel'), `#!/bin/sh\n${MARKER} /some/other/checkout\n`)
+      writeFileSync(join(stale, 'other'), '#!/bin/sh\necho unrelated\n')
+      const out = runBash(`
+        set -euo pipefail
+        MARKER=${JSON.stringify(MARKER)}
+        SWEEP_DIRS=(${JSON.stringify(stale)} ${JSON.stringify(dest)})
+        DEST_DIR=${JSON.stringify(dest)}
+        say() { printf '  %s\\n' "$*"; }
+        ${extract('warn_stale_entries')}
+        warn_stale_entries
+      `)
+      return { out, stale }
+    }
+
+    test('is named, with the command to remove it', () => {
+      const { out, stale } = run()
+      assert.match(out, /warning: an earlier easel install left/)
+      assert.match(out, new RegExp(`rm ${join(stale, 'easel')}`))
+    })
+
+    test('is not deleted, and neither is anything else in that dir', () => {
+      const { stale } = run()
+      assert.ok(existsSync(join(stale, 'easel')), 'deleted a shim belonging to another root')
+      assert.ok(existsSync(join(stale, 'other')), 'touched an unrelated binary')
+    })
+
+    test('an unrelated binary raises no warning', () => {
+      assert.doesNotMatch(run().out, /\bother\b/)
+    })
+  })
+
+  test('falls back to ~/.local/bin when no shared dir is writable', () => {
+    const box = mkdtempSync(join(tmpdir(), 'easel-bindir-'))
+    const out = runBash(`BIN_DIR=\nHOME=${JSON.stringify(box)}\n${extract('pick_bin_dir')}\npick_bin_dir`)
+    // /usr/local/bin is absent or root-owned on a stock machine; either way the
+    // fallback is the user's own dir, never a package manager's prefix.
+    assert.doesNotMatch(out, /homebrew/)
+    if (out.trim() !== '/usr/local/bin') assert.equal(out.trim(), join(box, '.local/bin'))
+  })
+})
+
 describe('install.sh: plist generation', () => {
   const fn = [extract('xml_escape'), extract('subst_value')].join('\n')
   const TEMPLATE = join(HERE, '..', 'install', 'com.sentience.easeld.plist.template')
