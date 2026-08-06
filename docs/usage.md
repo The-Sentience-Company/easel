@@ -43,6 +43,8 @@ launchctl kickstart -k gui/$UID/com.sentience.easeld
 
 `install.sh` does this for you, so a normal install or upgrade is fine. It only bites when editing in place.
 
+Adding a new template type has its own guide: [templates/creating-a-template.md](templates/creating-a-template.md).
+
 ### Upgrading the installed daemon
 
 ```
