@@ -30,7 +30,7 @@ Open the URL, annotate, hit Send — the blocked `easel await` returns your feed
 
 | Command | Does |
 |---|---|
-| `easel open <file.md>` | publish a plain document |
+| `easel open <file.html>` | publish a plain document |
 | `easel open --template <review\|eval\|answer-key\|queue\|page> --data <file.json>` | publish a structured board |
 | `easel publish <key> --note "…"` | re-render the source as a new round |
 | `easel await <key> --agent <id>` | block until feedback, cancel, or board end |

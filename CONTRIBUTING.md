@@ -43,7 +43,7 @@ Skipping it fails the whole suite with one stale-bundle error rather than a scat
 
 **No unrelated cleanup.** Match the surrounding style even if you would write it differently.
 
-There is no CI. `npm test` before you push is the whole safety net, so run it.
+CI runs `npm test` on macOS for every push and pull request, but run it before you push anyway — the suite is the whole safety net and it is faster locally than waiting on a runner.
 
 ## Working on a running daemon
 
