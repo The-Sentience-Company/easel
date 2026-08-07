@@ -46,6 +46,16 @@ Publishing with the same agent ID drops your own parked listener on that board i
 
 To get the turn back while waiting, background the await only as a harness-tracked background command (`run_in_background: true`) — its exit is what wakes you to read the batch. A shell `&`/`nohup` launch exits into a file no one reads.
 
+**Background it under a supervisor, or every stray kill wakes you.** Background commands get swept machine-wide — unrelated sessions and non-easel commands die in the same second — and the harness tracks the *wrapping shell*, not the waiter, so the wrapper's exit is what costs a turn. Launch the await as:
+
+```
+trap "" TERM HUP INT QUIT; while true; do easel await <key> --agent ID --ack N; rc=$?; [ $rc -lt 128 ] && exit $rc; sleep 1; done
+```
+
+The trap holds the tracked shell through catchable signals; the loop restarts a waiter killed by any signal (exit ≥ 128) without exiting, so a sweep passes unnoticed. A normal exit — feedback, cancel, supersede, drop, board end, or a real error — falls through and wakes you exactly as before.
+
+Only an uncatchable kill of the tracked shell still gets through. When it does, relaunch the identical command and say nothing else: `<status>killed</status>` is a distinct status from `completed`, so the await never delivered, and the cursor is server-side, so nothing was lost. Reading the empty output file and checking `easel status` is a wasted turn.
+
 **Ack what you have already handled.** The server replays a cursor's unacked backlog, so an await relaunched after applying a round re-delivers that same round and looks like fresh feedback. Pass `--ack <upto>` (the `upto` from the batch you just handled) when relaunching, or you will answer the same annotations twice.
 
 **Anchors carry `context`** — `{heading, card, nth, of}`, computed from the annotated round — so when the same text repeats across sections (four tables with an identical header), read `context.heading` and `nth/of` to place the feedback instead of guessing from `excerpt`.
