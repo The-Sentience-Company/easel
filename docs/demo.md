@@ -1,6 +1,12 @@
 # easel in use
 
-Screenshots of real boards from a few weeks of multi-agent work. Three workflows: a UI design that took eleven rounds to settle, a 148-finding audit reviewed with per-finding verdict buttons, and a campaign queue that collected decisions across nineteen rounds. Lantern theme, dark.
+Real boards from a few weeks of multi-agent work. Three workflows: a UI design that took eleven rounds to settle, a 148-finding audit reviewed with per-finding verdict buttons, and a campaign queue that collected decisions across nineteen rounds. Lantern theme, dark.
+
+Five of them, moving:
+
+![A design call, a failure-map doc, a campaign decision queue, an eval run, and easel's own architecture](demo/easel-tour.gif)
+
+Below is the same material held still, with the detail called out.
 
 ## Design iteration
 
@@ -41,6 +47,10 @@ Below the open asks, the board tracks what the human has already reviewed — an
 ![Review stamps with a changed-since-review badge, and PRs in merge order](demo/queue-stamps.png)
 
 ## The mechanics under all of this
+
+Two notes going onto a design board — one on a heading, one pinned to a point inside the mockup — queued as drafts and delivered together:
+
+![Annotate mode, a comment typed on a heading, a pin dropped inside a design island, and Send](demo/easel-annotate.gif)
 
 Every board above works the same way:
 
