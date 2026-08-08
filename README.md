@@ -2,6 +2,10 @@
 
 A local review board for work an agent wants a human to look at.
 
+![A comment and a pin queued on a board, sent, and picked up by an agent that was blocked waiting for them](docs/demo/easel-loop.gif)
+
+*Above: the board in a browser. Below: the agent, blocked on one command, taking the feedback and republishing — the round it publishes lands in the open tab.*
+
 The agent publishes a page. You open it in a browser, annotate anything on it, and click Send. The agent — which has been blocked on a single command this whole time — gets your feedback back as JSON, applies it, and republishes. The second round arrives with diff markers showing exactly what changed since you last looked.
 
 Nothing runs in the cloud. A `easeld` daemon runs under launchd on `http://127.0.0.1:4400` and owns all state, so a board outlives the session that published it, survives a daemon restart, and can be handed between agents.
