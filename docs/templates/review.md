@@ -20,11 +20,13 @@ easel open --template review --data plan.json --title "Retry budget"
       "badges": [                    // optional
         "plain label",
         { "label": "string", "tone": "success|warning|error|info" }
-      ]
+      ],
+      "decisions": [ ... ],          // optional, same shape as top-level; renders inside the section
+      "votes": [ ... ]               // optional, same shape as top-level; renders inside the section
     }
   ],
 
-  "decisions": [                     // optional
+  "decisions": [                     // optional — board-wide only; see placement rule below
     {
       "id": "string",                // required, unique across the board
       "question": "string",          // required
@@ -49,7 +51,9 @@ easel open --template review --data plan.json --title "Retry budget"
 }
 ```
 
-At least one of `sections`, `decisions`, or `votes` must be present. `id` values must be unique across decisions *and* votes on the board — a collision throws, because two widgets sharing an id would record to the same key.
+At least one of `sections`, `decisions`, or `votes` must be present. `id` values must be unique across decisions *and* votes on the board — inline and top-level alike — a collision throws, because two widgets sharing an id would record to the same key.
+
+**Placement rule: put each decision inside the section that motivates it** (`sections[].decisions`), so the reader answers with the relevant context directly above — never make them scroll back up from a pile at the bottom. Top-level `decisions`/`votes` render in a trailing "Decisions"/"Votes" section; reserve those for calls that genuinely span the whole board (final approve, overall verdict). A board whose every decision sits at the bottom is almost always mis-authored.
 
 ## Markdown supported in prose fields
 

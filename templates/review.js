@@ -18,6 +18,33 @@ export function render(data) {
 
   const uniqueId = makeIdGuard('review')
 
+  const renderDecision = (d, path) => {
+    requireObject(d, path)
+    return [
+      '<div class="sd-card">',
+      widget({
+        type: 'decision',
+        id: uniqueId(d.id, `${path}.id`),
+        prompt: requireString(d.question, `${path}.question`),
+        help: d.context,
+        options: requireArray(d.options, `${path}.options`),
+      }),
+      d.detail ? `<div class="sd-muted">${markdown(d.detail)}</div>` : '',
+      '</div>',
+    ].filter(Boolean).join('\n')
+  }
+
+  const renderVote = (v, path) => {
+    requireObject(v, path)
+    return widget({
+      type: v.type === 'approve' ? 'approve' : 'vote',
+      id: uniqueId(v.id, `${path}.id`),
+      prompt: requireString(v.question, `${path}.question`),
+      help: v.context,
+      options: requireArray(v.options ?? ['yes', 'no'], `${path}.options`),
+    })
+  }
+
   const head = [
     `<h1>${esc(data.title)}</h1>`,
     data.summary ? `<div class="sd-muted">${markdown(data.summary)}</div>` : '',
@@ -33,11 +60,17 @@ export function render(data) {
         const tone = typeof b === 'string' ? null : b.tone
         return badge(label, tone, `review.sections[${i}].badges tone`)
       }).join('')
+    const inlineDecisions = requireArray(s.decisions ?? [], `review.sections[${i}].decisions`)
+      .map((d, j) => renderDecision(d, `review.sections[${i}].decisions[${j}]`)).join('\n')
+    const inlineVotes = requireArray(s.votes ?? [], `review.sections[${i}].votes`)
+      .map((v, j) => renderVote(v, `review.sections[${i}].votes[${j}]`)).join('\n')
     return [
       '<section class="sd-section">',
       `<h2>${esc(s.heading)}</h2>`,
       badges ? `<div class="sd-row">${badges}</div>` : '',
       body,
+      inlineDecisions,
+      inlineVotes,
       '</section>',
     ].filter(Boolean).join('\n')
   }).join('\n')
@@ -46,22 +79,7 @@ export function render(data) {
     ? [
         '<section class="sd-section">',
         '<h2>Decisions</h2>',
-        decisions.map((d, i) => {
-          requireObject(d, `review.decisions[${i}]`)
-          const id = uniqueId(d.id, `review.decisions[${i}].id`)
-          return [
-            '<div class="sd-card">',
-            widget({
-              type: 'decision',
-              id,
-              prompt: requireString(d.question, `review.decisions[${i}].question`),
-              help: d.context,
-              options: requireArray(d.options, `review.decisions[${i}].options`),
-            }),
-            d.detail ? `<div class="sd-muted">${markdown(d.detail)}</div>` : '',
-            '</div>',
-          ].filter(Boolean).join('\n')
-        }).join('\n'),
+        decisions.map((d, i) => renderDecision(d, `review.decisions[${i}]`)).join('\n'),
         '</section>',
       ].join('\n')
     : ''
@@ -70,16 +88,7 @@ export function render(data) {
     ? [
         '<section class="sd-section">',
         '<h2>Votes</h2>',
-        votes.map((v, i) => {
-          requireObject(v, `review.votes[${i}]`)
-          return widget({
-            type: v.type === 'approve' ? 'approve' : 'vote',
-            id: uniqueId(v.id, `review.votes[${i}].id`),
-            prompt: requireString(v.question, `review.votes[${i}].question`),
-            help: v.context,
-            options: requireArray(v.options ?? ['yes', 'no'], `review.votes[${i}].options`),
-          })
-        }).join('\n'),
+        votes.map((v, i) => renderVote(v, `review.votes[${i}]`)).join('\n'),
         '</section>',
       ].join('\n')
     : ''
