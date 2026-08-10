@@ -279,6 +279,29 @@ describe('review', () => {
     assert.match(html, /data-widget="approve"/)
   })
 
+  test('renders section-inline decisions and votes inside the section', () => {
+    const html = review.render({
+      title: 't',
+      sections: [{
+        heading: 'Retry budget',
+        body: 'context',
+        decisions: [{ id: 'inline-d', question: 'q', options: ['a', 'b'] }],
+        votes: [{ id: 'inline-v', question: 'ok?', type: 'approve' }],
+      }],
+    })
+    const section = html.slice(html.indexOf('<section'), html.indexOf('</section>'))
+    assert.match(section, /data-widget-id="inline-d"/)
+    assert.match(section, /data-widget-id="inline-v"/)
+  })
+
+  test('rejects duplicate widget ids between inline and top-level', () => {
+    assert.throws(() => review.render({
+      title: 't',
+      sections: [{ heading: 'h', decisions: [{ id: 'dup', question: 'q', options: ['a'] }] }],
+      decisions: [{ id: 'dup', question: 'q', options: ['a'] }],
+    }), TemplateError)
+  })
+
   test('rejects duplicate widget ids across decisions and votes', () => {
     assert.throws(() => review.render({
       title: 't',
