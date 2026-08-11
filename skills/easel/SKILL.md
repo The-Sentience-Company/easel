@@ -5,7 +5,7 @@ description: Publish review boards (docs, evals, decisions) via the local easel 
 
 # easel — publish for review, listen for feedback
 
-The daemon (`easeld`) runs under launchd on `http://127.0.0.1:4400` and owns all state; nothing is tied to the session that published. A published artifact is a **board**. Full references live in the repo: `docs/usage.md` (flow), `docs/templates/page.md` (the `sd-*` vocabulary), `docs/api.md` (routes), `docs/design-system.md`. If the daemon is not running, `install/install.sh` registers it.
+The daemon (`easeld`) runs under launchd on `http://127.0.0.1:4400` and owns all state; nothing is tied to the session that published. A published artifact is a **board**. Template authoring docs ship with this skill at `references/templates/`; the wider references live in the easel repo — `/Users/aleks/repos/easel` (if moved, the root is named in the comment atop `~/.local/bin/easel`): `docs/usage.md` (flow), `docs/api.md` (routes), `docs/design-system.md`. If the daemon is not running, `install/install.sh` registers it.
 
 ## Publish
 
@@ -24,9 +24,9 @@ easel open <file.html>                                                          
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | none of the above — hand-authored HTML through the same chrome and annotation layer |
 
-**Then read that template's authoring doc at `docs/templates/<template>.md` before writing the data file.** Each doc carries its data schema and the rules that only matter inside that flow — queue's lint gate, page's composition patterns and validation contract, eval's mode switching — so this file doesn't repeat them and they can't drift.
+**Then read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file. Actually Read it; never write the JSON from memory of the schema**, which silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its data schema and the rules that only matter inside that flow — review's placement rule, queue's lint gate, page's composition patterns and validation contract, eval's mode switching — so this file doesn't repeat them and they can't drift.
 
-Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time (`docs/templates/mermaid.md`).
+Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time (`references/templates/mermaid.md`).
 
 **Always pass `--title`: 4–6 words naming the work, not the document.** It is the only handle on the dashboard, where boards outlive the session that made them — write what a reader months from now needs to tell this board from its neighbours. "Extractor arms — 2.5-flash vs 3.5-flash-lite", not "Eval results" or "Analysis". Omitted, it falls back to the data's own `title`, which is the page heading and usually too long or too generic to scan.
 

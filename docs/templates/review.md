@@ -57,7 +57,7 @@ At least one of `sections`, `decisions`, or `votes` must be present. `id` values
 
 ## Markdown supported in prose fields
 
-Headings, ordered and unordered lists, blockquotes, fenced code, ` ```mermaid ` fences, tables, inline `` `code` ``, `**bold**`, `*italic*`, and `[links](https://example.com)`. Only `http(s):` and `mailto:` URLs survive; anything else is dropped.
+Headings, ordered and unordered lists, blockquotes, fenced code, ` ```mermaid ` fences, tables, inline `` `code` ``, `**bold**`, `*italic*`, `[links](https://example.com)`, and `![images](https://example.com/x.jpg)` (rendered bounded — max-height 340px; pin a width in px with `![alt|96](url)`). Only `http(s):` and `mailto:` URLs survive; anything else is dropped; image `src` is `http(s):` only.
 
 ### Tables
 

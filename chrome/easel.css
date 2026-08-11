@@ -855,6 +855,9 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 }
 .sd-diagram svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
 
+/* Markdown images: bounded so a full-size asset can't swallow the column. */
+.sd-md-img { display: block; max-width: 100%; max-height: 340px; height: auto; border-radius: var(--radius); margin: 0.5em 0; }
+
 /* Diagrams bake one SVG per theme at publish; CSS picks the visible one. */
 .sd-diagram-sketch .sd-svg-dark,
 .sd-diagram-themed .sd-svg-dark { display: none; }
