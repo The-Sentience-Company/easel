@@ -42,7 +42,7 @@ The pre-publish test: when most body text sits in `<p>` runs inside one `sd-card
 
 ### Eval shapes that land here, for now
 
-Adjudicating labeled cases has its own template (`rulings`); goldens have `answer-key`; two-candidate blind compares have `eval`. Two eval shapes still have no template and belong on a page — a season of boards converged on the same structure, so use it rather than reinventing:
+Adjudicating labeled cases and goldens have their own template (`rulings`); two-candidate blind compares have `eval`. Two eval shapes still have no template and belong on a page — a season of boards converged on the same structure, so use it rather than reinventing:
 
 - **Blind compare with 3+ arms or per-case context**: one `sd-section` per case with the context (the day's input, the run's parameters) above the candidates, candidates as an `sd-grid` of `sd-card`s labelled A/B/…, and one `vote` widget per case whose options are the labels plus `tie`/`all-bad`. Keep the blind key in the harness, never in the page.
 - **Image votes**: an `sd-grid` of `sd-card`s, each an image plus its `vote` widget; keep per-image options identical so votes aggregate.

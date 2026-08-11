@@ -41,7 +41,7 @@ To back out, `install/install.sh --uninstall` removes the agent, the plist, and 
 | Command | Does |
 |---|---|
 | `easel open <file.html>` | publish a plain document |
-| `easel open --template <review\|eval\|answer-key\|queue\|page> --data <file.json>` | publish a structured board |
+| `easel open --template <review\|eval\|rulings\|queue\|page> --data <file.json>` | publish a structured board |
 | `easel publish <key> --note "…"` | re-render the source as a new round |
 | `easel await <key> --agent <id>` | block until feedback, cancel, or board end |
 | `easel feedback <key> --since N` | read feedback without touching any cursor |
@@ -67,7 +67,7 @@ Nothing is delivered until you click Send, so a half-finished thought never wake
 |---|---|
 | `review` | plans, designs, comparisons — prose sections plus decisions and votes |
 | `eval` | eval runs — dossiers, blind compare, or an item matrix, chosen on data shape |
-| `answer-key` | hand-authored eval goldens — category × subject cells of positives and negatives |
+| `rulings` | labeled cases adjudicated one by one — answer keys, goldens, triage lists |
 | `queue` | a worklist of items to triage |
 | `page` | anything else — hand-authored HTML through the same shell and design system |
 
