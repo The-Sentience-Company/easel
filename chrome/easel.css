@@ -1874,9 +1874,20 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 
 /* print ----------------------------------------------------------------- */
 
-/* rulings template */
+/* rulings template — each case block carries its voice label */
 .sd-case-title { font-weight: 600; color: var(--color-base-content); }
 .sd-counter { border-left: 2px solid var(--color-warning); padding-left: 10px; margin-top: 6px; }
+.sd-ruling { margin-top: 8px; }
+.sd-ruling > .sd-eyebrow, .sd-ask > .sd-eyebrow { display: block; margin-bottom: 2px; }
+.sd-ruling > p { color: var(--color-base-content); margin: 0; }
+.sd-ask {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--color-info, var(--color-base-300));
+  background: color-mix(in oklch, var(--color-base-content) 4%, transparent);
+  border-radius: 0 8px 8px 0;
+}
+.sd-ask > p { margin: 0; }
 .sd-case-image { display: block; max-height: 200px; max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .sd-case-image[width] { max-height: none; height: auto; }
 .sd-case-image-round { border-radius: 999px; }

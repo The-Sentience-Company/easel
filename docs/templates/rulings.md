@@ -41,7 +41,9 @@ The section grouping IS the decision structure: sections come in the order of ju
         {
           "title": "string",            // required
           "label": "internal_name",     // required, must appear in labels
-          "rationale": "string",        // optional, markdown
+          "rationale": "string",        // optional, markdown — the KEY'S reasoning only (renders labeled "key rationale")
+          "ask": "string",              // optional, markdown — YOUR commentary or question to the reviewer
+                                        //   (renders as a labeled "your agent" callout above the vote)
           "borderline": true,           // optional — renders a tie-break badge
           "image": "https://…",         // optional — the judged object, rendered under the title;
                                         //   or { "src": "https://…", "px": 44, "round": true }
@@ -59,6 +61,8 @@ The section grouping IS the decision structure: sections come in the order of ju
 ```
 
 A case's `label` must appear in `labels` — an undefined label throws, same policy as answer-key's category rule: a reviewer must never meet an internal name without a plain-word definition.
+
+**One voice per field — never merge them.** A case speaks in up to four voices and each has its own field with its own labeled treatment: the key's reasoning in `rationale` ("key rationale"), the source excerpt in `quote`, the model's dissent in `counter` ("model disagreed"), and *your* framing or question to the reviewer in `ask` ("your agent"). Prose like "Key says X… iterate the prompt or accept the miss?" is your voice and belongs in `ask` — packing it into `rationale` leaves the reviewer unable to tell your commentary from the ruling they are reviewing, which has made a real board near-unreadable.
 
 **Size the image to the surface it ships to.** Before authoring an image case, find where the image renders in the product and pass that display size: a thread chip that ships at ~40px is judged at `{ "px": 44, "round": true }`, not as a 200px hero. An oversized review image passes judgments the real surface fails — detail that reads at 200px vanishes at 40px. Default (no `px`) renders bounded at 200px, which is only right when the product shows it at least that large.
 

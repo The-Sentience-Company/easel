@@ -206,11 +206,14 @@ function caseBlock(c, at, caseOptions, ctx) {
   }
   if (c.footnote !== undefined) requireString(c.footnote, `${at}.footnote`)
 
+  if (c.ask !== undefined) requireString(c.ask, `${at}.ask`)
+
   const body = [
     image,
-    c.rationale ? `<div class="sd-muted sd-note">${markdown(requireString(c.rationale, `${at}.rationale`))}</div>` : '',
+    c.rationale ? `<div class="sd-ruling"><span class="sd-eyebrow">key rationale</span>${markdown(requireString(c.rationale, `${at}.rationale`))}</div>` : '',
     quote,
     counter,
+    c.ask ? `<div class="sd-ask"><span class="sd-eyebrow">your agent</span>${markdown(c.ask)}</div>` : '',
     vote,
     c.footnote ? `<div class="sd-case-footnote">${esc(c.footnote)}</div>` : '',
   ].filter(Boolean).join('')
