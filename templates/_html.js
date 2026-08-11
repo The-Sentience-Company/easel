@@ -202,7 +202,7 @@ export function badge(label, style, path, title) {
 
 /** Widget markup only — client.js owns behavior. Options are native buttons so
     the annotation layer cannot swallow the click. */
-export function widget({ type, id, prompt, help, options }) {
+export function widget({ type, id, prompt, help, options, compact }) {
   requireString(type, 'widget.type')
   requireString(id, 'widget.id')
   const allowed = ['vote', 'decision', 'approve', 'rating']
@@ -218,7 +218,7 @@ export function widget({ type, id, prompt, help, options }) {
   }).join('')
 
   return [
-    `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}">`,
+    `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}"${compact ? ' class="sd-widget-compact"' : ''}>`,
     prompt ? `<div class="sd-widget-prompt">${esc(prompt)}</div>` : '',
     help ? `<div class="sd-widget-help">${esc(help)}</div>` : '',
     `<div class="sd-widget-options">${buttons}</div>`,

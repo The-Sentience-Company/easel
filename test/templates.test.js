@@ -572,6 +572,36 @@ describe('answer-key', () => {
     assert.ok(html.includes('Communication preferences'))
   })
 
+  test('a command-length evidence_copy_prefix throws instead of rendering on every chip', async () => {
+    const data = await base()
+    data.evidence_copy_prefix = 'psql -d somedb -c "select summary from t where id = " -- '
+    assert.throws(() => answerKey.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /evidence_copy_prefix/)
+      assert.match(err.message, /inline/)
+      return true
+    })
+    data.evidence_copy_prefix = 'evrow '
+    assert.ok(answerKey.render(data).includes('evrow '))
+    delete data.evidence_copy_prefix
+    assert.ok(answerKey.render(data).includes('sd-evidence'), 'absent prefix renders chips bare')
+  })
+
+  test('entry_options adds one compact vote widget per entry, distinct ids, cell override disables', async () => {
+    const data = await base()
+    data.entry_options = ['agree', 'rule differently']
+    const html = answerKey.render(data)
+    const entries = data.cells.reduce((n, c) => n + (c.positives?.length ?? 0) + (c.negatives?.length ?? 0), 0)
+    const ids = [...html.matchAll(/data-widget-id="(case-[a-z0-9-]+)"/g)].map((m) => m[1])
+    assert.equal(ids.length, entries, 'every entry gets a vote widget')
+    assert.equal(new Set(ids).size, ids.length, 'vote widget ids must be distinct')
+    assert.ok(html.includes('sd-widget-compact'), 'entry votes render compact')
+
+    data.cells = data.cells.map((c) => ({ ...c, entry_options: [] }))
+    const off = answerKey.render(data)
+    assert.equal([...off.matchAll(/data-widget-id="case-/g)].length, 0, 'per-cell [] switches votes off')
+  })
+
   test('markdown prose is never wrapped in a p — that nests invalidly', async () => {
     const html = answerKey.render(await base())
     assert.doesNotMatch(html, /<p[^>]*>\s*<p>/)

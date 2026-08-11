@@ -53,6 +53,7 @@ An answer key is a judgement call about content, and the reviewer's job is to ch
       "category": "internal_name",      // required, must appear in category_labels
       "person": "string",               // required
       "header": ["412 messages"],       // optional, small context lines
+      "entry_options": [],              // optional, overrides the top-level entry_options for this cell
       "positives": [
         {
           "content": "string",          // required
@@ -73,6 +74,7 @@ An answer key is a judgement call about content, and the reviewer's job is to ch
   ],
 
   "must_not_violate_label": "string",   // optional, overrides the default badge wording
+  "entry_options": ["agree", "rule differently"],  // optional — compact vote buttons under EVERY entry; a cell's own entry_options overrides ([] switches them off for that cell)
   "cell_options": ["looks right", "has a problem"],          // optional
   "verdict_options": ["scope is right", "mis-scoped", "…"],  // optional
   "evidence_copy_prefix": "evrow ",     // optional; a SHORT visible token (max 16 chars, enforced) rendered inline before each pointer — not click-to-copy
@@ -111,6 +113,8 @@ Layout rides existing `sd-*` classes only; this template adds no CSS. Alignment 
 ## Two feedback altitudes
 
 Every cell gets an `approve` widget, and every category gets a `decision` widget beneath its cells. Both altitudes exist because a systemic mis-scoping otherwise arrives as N scattered per-entry notes, leaving the reviewer's real point to be inferred during synthesis.
+
+A third, finer altitude is opt-in: `entry_options` puts a compact vote row (small quiet buttons, no rule line) under every entry, so ruling on an individual case is one click instead of a text annotation. Turn it on when the board's entries are individual judgments a reviewer accepts or rejects one by one (an answer key's cases); leave it off — globally, or per cell with `entry_options: []` — for bulk/skim sections where a button per line would be noise.
 
 Widget ids are derived from the category and person (`cell-comms-pref-dana-whitfield`, `verdict-comms-pref`). Two cells with the same category *and* person collide and throw.
 

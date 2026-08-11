@@ -209,13 +209,17 @@ function cellEntry(cell, i, ctx) {
   }
 
   const cellOptions = requireArray(ctx.data.cell_options ?? DEFAULT_CELL_OPTIONS, 'answer-key.cell_options')
+  /* A cell's own entry_options wins; [] switches per-entry votes off for that
+     cell (e.g. a routine skim section on a board that votes everywhere else). */
+  const entryOptions = requireArray(cell.entry_options ?? ctx.data.entry_options ?? [], `${path}.entry_options`)
+  const cellCtx = { ...ctx, entryOptions, category: cell.category, person: cell.person }
 
   return [
     '<div class="sd-entry">',
     `<div class="sd-entry-name">${esc(cell.person)}</div>`,
     meta ? `<div class="sd-entry-meta sd-muted sd-mono">${meta}</div>` : '',
-    entryList(positives, `${path}.positives`, 'positive', ctx),
-    entryList(negatives, `${path}.negatives`, 'negative', ctx),
+    entryList(positives, `${path}.positives`, 'positive', cellCtx),
+    entryList(negatives, `${path}.negatives`, 'negative', cellCtx),
     widget({
       type: 'approve',
       id: ctx.uniqueId(widgetId('cell', cell.category, cell.person)),
@@ -248,12 +252,21 @@ function entryList(entries, path, kind, ctx) {
       flags.push(statusMark(reason.label, reason.style, `answer-key.reasons["${key}"].style`, `answer-key.reasons["${key}"].label`, reason.desc))
     }
 
+    const vote = (ctx.entryOptions ?? []).length
+      ? widget({
+          type: 'vote',
+          id: ctx.uniqueId(`case-${slug(ctx.person)}-${digest(ctx.category, ctx.person, kind, String(n), entry.content)}`),
+          options: ctx.entryOptions,
+          compact: true,
+        })
+      : ''
     return [
       '<li>',
       esc(entry.content),
       flags.length ? ` ${flags.join(' ')}` : '',
       entry.note ? `<div class="sd-muted sd-note">${esc(entry.note)}</div>` : '',
       evidenceChips(entry.evidence, `${at}.evidence`, ctx),
+      vote,
       '</li>',
     ].filter(Boolean).join('')
   }).join('')
@@ -266,7 +279,8 @@ function entryList(entries, path, kind, ctx) {
 const EVIDENCE_PREFIX_MAX = 16
 
 function evidencePrefix(data) {
-  const prefix = data.evidence_copy_prefix ?? ''
+  const prefix = data.evidence_copy_prefix
+  if (prefix === undefined || prefix === null || prefix === '') return ''
   requireString(prefix, 'answer-key.evidence_copy_prefix')
   if (prefix.length > EVIDENCE_PREFIX_MAX) {
     fail(

@@ -942,6 +942,24 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
    from the widget reads as a double border. */
 .sd-tablewrap [data-widget] { border-top: 0; padding-top: 0; margin: 4px 0; }
 
+/* Compact variant: a per-item vote riding under its item, not a section-level
+   control — no rule, tight margins, small quiet buttons. */
+[data-widget].sd-widget-compact { border-top: 0; padding: 0; margin: 6px 0 2px; }
+.sd-widget-compact .sd-widget-options { gap: 6px; }
+.sd-widget-compact [data-option] {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  min-height: 1.5rem;
+  border-width: 1px;
+  border-color: var(--color-muted-content);
+  color: var(--color-muted-content);
+  background: none;
+}
+.sd-widget-compact [data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); }
+.sd-widget-compact.sf-recorded [data-option][aria-pressed="true"],
+.sd-widget-compact.sf-recorded [data-option].sf-chosen { color: inherit; }
+
 [data-option] {
   font: inherit;
   /* Pinned, not inherited: `font: inherit` alone lets any mono ancestor in the
