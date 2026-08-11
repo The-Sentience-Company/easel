@@ -56,18 +56,19 @@ The section grouping IS the decision structure: sections come in the order of ju
     }
   ],
 
-  "case_options": ["…"],                // optional board-wide override (e.g. keep/drop for candidate content)
+  "case_options": ["…"],                // optional board-wide fallback (e.g. keep/drop for candidate content);
+                                        //   a section's own `options` always wins — this does NOT override it
   "section_options": ["section is right", "needs amending"]   // optional, the per-section verdict widget
 }
 ```
 
 A case's `label` must appear in `labels` — an undefined label throws, same policy as answer-key's category rule: a reviewer must never meet an internal name without a plain-word definition.
 
-**The vote names what it rules on.** With no explicit options, a case that carries a `counter` votes on the actual contest — `key: <label>` / `model: <counter label>` / `neither` — and an uncontested case gets the plain `uphold` / `overrule` confirm. Set options explicitly only when the ruling isn't label-shaped. And `ask` is not the vote: give it options only when you genuinely need the reviewer's answer to a separate question — a reflex ask on every case competes with the vote for attention, which is the exact failure this design removed.
+**The vote names what it rules on.** When a section simply has no `options` field (leave it out — no explicit `null` needed), a case that carries a `counter` votes on the actual contest — `key: <label>` / `model: <counter label>` / `neither` — and an uncontested case gets the plain `uphold` / `overrule` confirm. Set options explicitly only when the ruling isn't label-shaped. And `ask` is not the vote: give it options only when you genuinely need the reviewer's answer to a separate question — a reflex ask on every case competes with the vote for attention, which is the exact failure this design removed.
 
 **One voice per field — never merge them.** A case speaks in up to four voices and each has its own field with its own labeled treatment: the key's reasoning in `rationale` ("key rationale"), the source excerpt in `quote`, the model's dissent in `counter` ("model disagreed"), and *your* framing or question to the reviewer in `ask` ("your agent"). Prose like "Key says X… iterate the prompt or accept the miss?" is your voice and belongs in `ask` — packing it into `rationale` leaves the reviewer unable to tell your commentary from the ruling they are reviewing, which has made a real board near-unreadable.
 
-**Size the image to the surface it ships to.** Before authoring an image case, find where the image renders in the product and pass that display size: a thread chip that ships at ~40px is judged at `{ "px": 44, "round": true }`, not as a 200px hero. An oversized review image passes judgments the real surface fails — detail that reads at 200px vanishes at 40px. Default (no `px`) renders bounded at 200px, which is only right when the product shows it at least that large.
+**Size the image to the surface it ships to.** Before authoring an image case, find where the image renders in the product and pass that display size: a thread chip that ships at ~40px is judged at `{ "px": 44, "round": true }`, not as a 200px hero. An oversized review image passes judgments the real surface fails — detail that reads at 200px vanishes at 40px. Default (no `px`) renders bounded at 200px, which is only right when the product shows it at least that large. If the data doesn't say where the image ships, ask — or state the surface you assumed on the board — rather than silently picking a size.
 
 ## Feedback altitudes
 
