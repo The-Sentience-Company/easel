@@ -723,10 +723,21 @@ body.sf-shell {
 
 .sd-claims { margin: 0 0 22px; }
 #sf-content .sd-claims ul { list-style: none; padding: 0; margin: 0; }
-/* Each entry is one self-contained judgment — rule them apart so adjacent
-   entries never read as one running thought. */
-.sd-claims li { margin: 0; padding: 12px 0; border-top: var(--rule); }
-.sd-claims li:first-child { border-top: 0; padding-top: 0; }
+/* Each entry is one self-contained judgment. A hairline vanished against the
+   evidence blocks and buttons between entries, so the boundary is a visible
+   bar: thicker, colored from the content tone, with real air on both sides. */
+.sd-claims li { margin: 0; padding: 16px 0; position: relative; }
+.sd-claims li + li { margin-top: 4px; }
+.sd-claims li + li::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: color-mix(in oklab, var(--color-base-content) 30%, transparent);
+}
+.sd-claims li:first-child { padding-top: 0; }
 .sd-claims li:last-child { padding-bottom: 0; }
 .sd-note { font-size: 0.9rem; margin-top: 2px; }
 
