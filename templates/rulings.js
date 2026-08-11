@@ -5,7 +5,7 @@ import { esc, markdown, widget, attr, makeIdGuard, requireObject, requireArray, 
 
 export const name = 'rulings'
 
-const DEFAULT_CASE_OPTIONS = ['agree', 'rule differently']
+const DEFAULT_CASE_OPTIONS = ['uphold', 'overrule']
 const DEFAULT_SECTION_OPTIONS = ['section is right', 'needs amending']
 
 const slug = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -123,8 +123,15 @@ function section(s, i, ctx) {
   const cases = requireArray(s.cases, `${at}.cases`)
   if (cases.length === 0) fail(`${at}.cases must not be empty`)
 
-  /* [] means a skim section: no per-case votes, cases render at one line each. */
-  const caseOptions = requireArray(s.options ?? ctx.data.case_options ?? DEFAULT_CASE_OPTIONS, `${at}.options`)
+  /* [] = skim section (no votes); undefined = per-case default —
+     contested cases adjudicate key-vs-model, uncontested get uphold/overrule. */
+  const explicitOptions = s.options ?? ctx.data.case_options
+  if (explicitOptions !== undefined) requireArray(explicitOptions, `${at}.options`)
+  const caseOptions = (c) => {
+    if (explicitOptions !== undefined) return explicitOptions
+    if (c.counter?.label) return [`key: ${c.label}`, `model: ${c.counter.label}`, 'neither']
+    return DEFAULT_CASE_OPTIONS
+  }
   const sectionOptions = requireArray(ctx.data.section_options ?? DEFAULT_SECTION_OPTIONS, 'rulings.section_options')
 
   return [
@@ -132,7 +139,7 @@ function section(s, i, ctx) {
     `<h2>${esc(s.heading)}</h2>`,
     s.help ? `<div class="sd-muted">${markdown(s.help)}</div>` : '',
     `<div class="sd-count sd-muted">${cases.length} ${cases.length === 1 ? 'case' : 'cases'}</div>`,
-    `<div class="sd-claims"><ul>${cases.map((c, n) => caseBlock(c, `${at}.cases[${n}]`, caseOptions, ctx)).join('')}</ul></div>`,
+    `<div class="sd-claims"><ul>${cases.map((c, n) => caseBlock(c, `${at}.cases[${n}]`, caseOptions(c), ctx)).join('')}</ul></div>`,
     widget({
       type: 'decision',
       id: ctx.uniqueId(`section-${slug(s.heading)}-${digest(s.heading)}`),
@@ -206,15 +213,32 @@ function caseBlock(c, at, caseOptions, ctx) {
   }
   if (c.footnote !== undefined) requireString(c.footnote, `${at}.footnote`)
 
-  if (c.ask !== undefined) requireString(c.ask, `${at}.ask`)
+  let ask = ''
+  if (c.ask !== undefined) {
+    let text = c.ask
+    let askWidget = ''
+    if (typeof c.ask !== 'string') {
+      requireObject(c.ask, `${at}.ask`)
+      text = requireString(c.ask.text, `${at}.ask.text`)
+      const opts = requireArray(c.ask.options, `${at}.ask.options`)
+      if (opts.length === 0) fail(`${at}.ask.options must not be empty — use a plain string for advisory prose`)
+      askWidget = widget({
+        type: 'decision',
+        id: ctx.uniqueId(`ask-${slug(c.title).slice(0, 40)}-${digest(at, 'ask')}`),
+        options: opts,
+        compact: true,
+      })
+    }
+    ask = `<div class="sd-ask"><span class="sd-eyebrow">your agent</span>${markdown(text)}${askWidget}</div>`
+  }
 
   const body = [
     image,
     c.rationale ? `<div class="sd-ruling"><span class="sd-eyebrow">key rationale</span>${markdown(requireString(c.rationale, `${at}.rationale`))}</div>` : '',
     quote,
     counter,
-    c.ask ? `<div class="sd-ask"><span class="sd-eyebrow">your agent</span>${markdown(c.ask)}</div>` : '',
     vote,
+    ask,
     c.footnote ? `<div class="sd-case-footnote">${esc(c.footnote)}</div>` : '',
   ].filter(Boolean).join('')
   // A case with a body folds; title-only cases (skim sections) stay plain lines.

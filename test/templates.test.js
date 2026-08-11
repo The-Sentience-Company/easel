@@ -591,6 +591,30 @@ describe('rulings', () => {
     assert.ok(html.includes('sd-widget-compact'))
   })
 
+  test('a contested case with default options votes key-vs-model; uncontested gets uphold/overrule', async () => {
+    const data = await base()
+    const contested = data.sections.find((s) => s.options === undefined && s.cases.some((c) => c.counter))
+    const html = rulings.render(data)
+    const c = contested.cases.find((x) => x.counter)
+    assert.ok(html.includes(`data-option="key: ${c.label}"`), 'key position missing')
+    assert.ok(html.includes(`data-option="model: ${c.counter.label}"`), 'model position missing')
+    assert.match(html, /data-option="neither"/)
+    assert.match(html, /data-option="uphold"/)
+    assert.match(html, /data-option="overrule"/)
+  })
+
+  test('an ask with options renders its own decision widget inside the callout', async () => {
+    const data = await base()
+    data.sections[0].cases[0].ask = { text: 'Iterate the prompt, or accept the miss?', options: ['iterate', 'accept'] }
+    const html = rulings.render(data)
+    const callout = html.slice(html.indexOf('sd-ask'))
+    assert.match(callout, /your agent/)
+    assert.match(callout, /data-widget-id="ask-/)
+    assert.match(callout, /data-option="iterate"/)
+    data.sections[0].cases[0].ask = { text: 'x', options: [] }
+    assert.throws(() => rulings.render(data), /ask\.options must not be empty/)
+  })
+
   test('case image: string and sized-object forms render; bad px throws', async () => {
     const data = await base()
     data.sections[0].cases[0].image = 'https://x.test/a.jpg'

@@ -36,14 +36,15 @@ The section grouping IS the decision structure: sections come in the order of ju
     {
       "heading": "string",              // required
       "help": "string",                 // optional, markdown
-      "options": ["agree", "…"],        // optional — per-case vote options; [] = skim section, no votes
+      "options": ["uphold", "…"],       // optional — per-case vote options; [] = skim section, no votes
       "cases": [
         {
           "title": "string",            // required
           "label": "internal_name",     // required, must appear in labels
           "rationale": "string",        // optional, markdown — the KEY'S reasoning only (renders labeled "key rationale")
-          "ask": "string",              // optional, markdown — YOUR commentary or question to the reviewer
-                                        //   (renders as a labeled "your agent" callout above the vote)
+          "ask": "string",              // optional — YOUR commentary to the reviewer, a labeled "your agent" callout
+                                        //   after the vote; or { "text": "…", "options": ["…"] } when you need an
+                                        //   answer — the options render as the callout's own decision widget
           "borderline": true,           // optional — renders a tie-break badge
           "image": "https://…",         // optional — the judged object, rendered under the title;
                                         //   or { "src": "https://…", "px": 44, "round": true }
@@ -55,12 +56,14 @@ The section grouping IS the decision structure: sections come in the order of ju
     }
   ],
 
-  "case_options": ["agree", "rule differently"],          // optional default for all sections
+  "case_options": ["…"],                // optional board-wide override (e.g. keep/drop for candidate content)
   "section_options": ["section is right", "needs amending"]   // optional, the per-section verdict widget
 }
 ```
 
 A case's `label` must appear in `labels` — an undefined label throws, same policy as answer-key's category rule: a reviewer must never meet an internal name without a plain-word definition.
+
+**The vote names what it rules on.** With no explicit options, a case that carries a `counter` votes on the actual contest — `key: <label>` / `model: <counter label>` / `neither` — and an uncontested case gets the plain `uphold` / `overrule` confirm. Set options explicitly only when the ruling isn't label-shaped. And `ask` is not the vote: give it options only when you genuinely need the reviewer's answer to a separate question — a reflex ask on every case competes with the vote for attention, which is the exact failure this design removed.
 
 **One voice per field — never merge them.** A case speaks in up to four voices and each has its own field with its own labeled treatment: the key's reasoning in `rationale` ("key rationale"), the source excerpt in `quote`, the model's dissent in `counter` ("model disagreed"), and *your* framing or question to the reviewer in `ask` ("your agent"). Prose like "Key says X… iterate the prompt or accept the miss?" is your voice and belongs in `ask` — packing it into `rationale` leaves the reviewer unable to tell your commentary from the ruling they are reviewing, which has made a real board near-unreadable.
 
