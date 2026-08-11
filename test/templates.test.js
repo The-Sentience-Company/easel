@@ -10,13 +10,14 @@ import * as evalT from '../templates/eval.js'
 import * as page from '../templates/page.js'
 import * as answerKey from '../templates/answer-key.js'
 import * as queue from '../templates/queue.js'
+import * as rulings from '../templates/rulings.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
 
-const TEMPLATES = [review, evalT, page, answerKey, queue]
+const TEMPLATES = [review, evalT, page, answerKey, queue, rulings]
 
 describe('contract: every template', () => {
   test('renders sample data to body-inner HTML with no document tags', async () => {
@@ -385,14 +386,62 @@ describe('eval', () => {
     assert.doesNotMatch(evalT.render(small), /<details/)
   })
 
-  test('compare mode: two labeled columns, order follows the blind key', () => {
-    const html = evalT.render(compare())
-    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>left text<\/p>/)
-    assert.match(html, /<div class="sd-eyebrow">output 2<\/div><p>right text<\/p>/)
+  const longText = (word) => `${word} paragraph long enough to stay in column mode.\n\nSecond paragraph.`
+  const compareLong = (over = {}) => compare({
+    cases: [
+      { id: 'a', candidates: [longText('left'), longText('right')] },
+      { id: 'b', candidates: [longText('one'), longText('two')] },
+    ],
+    ...over,
+  })
+
+  test('compare mode, long candidates: two labeled columns, order follows the blind key', () => {
+    const html = evalT.render(compareLong())
+    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>left paragraph/)
+    assert.match(html, /<div class="sd-eyebrow">output 2<\/div><p>right paragraph/)
     // b's key is 1: candidates[1] renders as output 1.
-    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>two<\/p>/)
+    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>two paragraph/)
     assert.match(html, /data-widget-id="cmp-a"/)
     assert.match(html, /data-option="output-1"/)
+  })
+
+  test('compare mode, one-line candidates: dense table rows with compact votes, order follows the blind key', () => {
+    const html = evalT.render(compare())
+    assert.doesNotMatch(html, /sd-rules/)
+    assert.match(html, /<th>case<\/th><th>output 1<\/th><th>output 2<\/th><th>pick<\/th>/)
+    // b's key is 1: candidates[1] renders in the output-1 column.
+    assert.match(html, /<td>two<\/td><td>one<\/td>/)
+    assert.match(html, /class="sd-widget-compact"/)
+    assert.match(html, /data-widget-id="cmp-a"/)
+  })
+
+  test('compare mode: a context column appears only when a case carries context', () => {
+    assert.doesNotMatch(evalT.render(compare()), /<th>context<\/th>/)
+    const data = compare()
+    data.cases[0].context = 'day aim: hotels'
+    const html = evalT.render(data)
+    assert.match(html, /<th>context<\/th>/)
+    assert.match(html, /day aim: hotels/)
+    assert.match(html, /<td>—<\/td>/)
+  })
+
+  test('compare mode: group starts a new table with a heading', () => {
+    const data = compare()
+    data.cases[0].group = 'aleks'
+    data.cases[1].group = 'sam'
+    const html = evalT.render(data)
+    assert.match(html, /<h2>aleks <span class="sd-count">1<\/span><\/h2>/)
+    assert.match(html, /<h2>sam <span class="sd-count">1<\/span><\/h2>/)
+    assert.equal([...html.matchAll(/<div class="sd-tablewrap">/g)].length, 2)
+  })
+
+  test('compare mode, long candidates: context renders above the pair, collapsed when long', () => {
+    const data = compareLong()
+    data.cases[0].context = 'short context line'
+    data.cases[1].context = 'x'.repeat(500)
+    const html = evalT.render(data)
+    assert.match(html, /<div class="sd-muted"><p>short context line<\/p><\/div>/)
+    assert.match(html, /<summary>context<\/summary>/)
   })
 
   test('compare mode never renders which run is which', () => {
@@ -520,6 +569,77 @@ describe('page', () => {
   })
 })
 
+describe('rulings', () => {
+  const base = () => sample('rulings')
+
+  test('a case label with no entry in labels throws', async () => {
+    const data = await base()
+    data.sections[0].cases[0].label = 'undefined_label'
+    assert.throws(() => rulings.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /undefined_label/)
+      assert.match(err.message, /rulings\.labels/)
+      return true
+    })
+  })
+
+  test('votable cases get compact vote widgets; a skim section gets none', async () => {
+    const html = rulings.render(await base())
+    const votes = [...html.matchAll(/data-widget-id="(case-[a-z0-9-]+)"/g)].map((m) => m[1])
+    assert.equal(votes.length, 2, 'both contested cases votable, routine case not')
+    assert.equal(new Set(votes).size, votes.length)
+    assert.ok(html.includes('sd-widget-compact'))
+  })
+
+  test('a contested case with default options votes key-vs-model; uncontested gets good/bad', async () => {
+    const data = await base()
+    const contested = data.sections.find((s) => s.options === undefined && s.cases.some((c) => c.counter))
+    const html = rulings.render(data)
+    const c = contested.cases.find((x) => x.counter)
+    assert.ok(html.includes(`data-option="key is good: ${c.label}"`), 'key position missing')
+    assert.ok(html.includes(`data-option="model is good: ${c.counter.label}"`), 'model position missing')
+    assert.match(html, /data-option="neither"/)
+    assert.match(html, /data-option="good"/)
+    assert.match(html, /data-option="bad"/)
+  })
+
+  test('an ask with options renders its own decision widget inside the callout', async () => {
+    const data = await base()
+    data.sections[0].cases[0].ask = { text: 'Iterate the prompt, or accept the miss?', options: ['iterate', 'accept'] }
+    const html = rulings.render(data)
+    const callout = html.slice(html.indexOf('sd-ask'))
+    assert.match(callout, /your agent/)
+    assert.match(callout, /data-widget-id="ask-/)
+    assert.match(callout, /data-option="iterate"/)
+    data.sections[0].cases[0].ask = { text: 'x', options: [] }
+    assert.throws(() => rulings.render(data), /ask\.options must not be empty/)
+  })
+
+  test('case image: string and sized-object forms render; bad px throws', async () => {
+    const data = await base()
+    data.sections[0].cases[0].image = 'https://x.test/a.jpg'
+    data.sections[0].cases[1].image = { src: 'https://x.test/b.jpg', px: 44, round: true }
+    const html = rulings.render(data)
+    assert.match(html, /<img class="sd-case-image" src="https:\/\/x.test\/a.jpg"/)
+    assert.match(html, /class="sd-case-image sd-case-image-round" src="https:\/\/x.test\/b.jpg"[^>]* width="44"/)
+    data.sections[0].cases[0].image = { src: 'https://x.test/a.jpg', px: 4 }
+    assert.throws(() => rulings.render(data), /px must be a number 16\.\.800/)
+  })
+
+  test('a counter verdict renders as a marked dissent block', async () => {
+    const html = rulings.render(await base())
+    assert.match(html, /model disagreed — said out/)
+    assert.match(html, /Model saw no promise\./)
+  })
+
+  test('questions render as decision widgets before any section', async () => {
+    const html = rulings.render(await base())
+    const qAt = html.indexOf('data-widget-id="question-')
+    const sectionAt = html.indexOf('Contested')
+    assert.ok(qAt >= 0 && sectionAt >= 0 && qAt < sectionAt)
+  })
+})
+
 describe('answer-key', () => {
   const base = () => sample('answer-key')
 
@@ -570,6 +690,36 @@ describe('answer-key', () => {
     data.how_to_test = null
     const html = answerKey.render(data)
     assert.ok(html.includes('Communication preferences'))
+  })
+
+  test('a command-length evidence_copy_prefix throws instead of rendering on every chip', async () => {
+    const data = await base()
+    data.evidence_copy_prefix = 'psql -d somedb -c "select summary from t where id = " -- '
+    assert.throws(() => answerKey.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /evidence_copy_prefix/)
+      assert.match(err.message, /inline/)
+      return true
+    })
+    data.evidence_copy_prefix = 'evrow '
+    assert.ok(answerKey.render(data).includes('evrow '))
+    delete data.evidence_copy_prefix
+    assert.ok(answerKey.render(data).includes('sd-evidence'), 'absent prefix renders chips bare')
+  })
+
+  test('entry_options adds one compact vote widget per entry, distinct ids, cell override disables', async () => {
+    const data = await base()
+    data.entry_options = ['agree', 'rule differently']
+    const html = answerKey.render(data)
+    const entries = data.cells.reduce((n, c) => n + (c.positives?.length ?? 0) + (c.negatives?.length ?? 0), 0)
+    const ids = [...html.matchAll(/data-widget-id="(case-[a-z0-9-]+)"/g)].map((m) => m[1])
+    assert.equal(ids.length, entries, 'every entry gets a vote widget')
+    assert.equal(new Set(ids).size, ids.length, 'vote widget ids must be distinct')
+    assert.ok(html.includes('sd-widget-compact'), 'entry votes render compact')
+
+    data.cells = data.cells.map((c) => ({ ...c, entry_options: [] }))
+    const off = answerKey.render(data)
+    assert.equal([...off.matchAll(/data-widget-id="case-/g)].length, 0, 'per-cell [] switches votes off')
   })
 
   test('markdown prose is never wrapped in a p — that nests invalidly', async () => {
@@ -698,6 +848,30 @@ describe('queue', () => {
     const data = await base()
     data.entries[1].id = data.entries[0].id
     assert.throws(() => queue.render(data), TemplateError)
+  })
+
+  test('title and body render on the card; a long body folds into a collapse', async () => {
+    const data = await base()
+    data.entries[0].title = 'Extraction intermediates table'
+    data.entries[0].body = 'Short brief with **markdown**.'
+    data.entries[1].body = 'x'.repeat(500)
+    const html = queue.render(data)
+    assert.match(html, /<div class="sd-card-title">Extraction intermediates table<\/div>/)
+    assert.match(html, /Short brief with <strong>markdown<\/strong>/)
+    const second = html.slice(html.indexOf('merge-order-4801') - 2000, html.indexOf('merge-order-4801') + 2000)
+    assert.match(second, /<summary>the brief<\/summary>/)
+  })
+
+  test('an open decision with no body and no context_link throws', async () => {
+    const data = await base()
+    delete data.entries[0].context_link
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /no body and no context_link/)
+      return true
+    })
+    data.entries[0].body = 'The brief.'
+    assert.doesNotThrow(() => queue.render(data))
   })
 
   test('a seeded board with empty sections still renders', async () => {

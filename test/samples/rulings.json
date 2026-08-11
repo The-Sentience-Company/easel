@@ -1,0 +1,67 @@
+{
+ "title": "Sample rulings board",
+ "intro": "Twelve cases, two need judgment.",
+ "footer": "Sample fixture.",
+ "status_badges": [
+  {
+   "text": "draft",
+   "style": "warning"
+  }
+ ],
+ "teach": {
+  "lead": "One case = one judgment.",
+  "footnote": "Footnote."
+ },
+ "labels": {
+  "in": "belongs in the set",
+  "out": "does not belong"
+ },
+ "questions": [
+  {
+   "prompt": "Count borderline cases against the model?",
+   "help": "Strict vs lenient.",
+   "options": [
+    "strict",
+    "lenient"
+   ]
+  }
+ ],
+ "sections": [
+  {
+   "heading": "Contested",
+   "help": "Needs your ruling.",
+   "cases": [
+    {
+     "title": "Case A",
+     "label": "in",
+     "rationale": "Clear promise.",
+     "borderline": true,
+     "quote": {
+      "text": "I'll send it Friday",
+      "source": "messages:12"
+     },
+     "counter": {
+      "label": "out",
+      "reason": "Model saw no promise."
+     }
+    },
+    {
+     "title": "Case B",
+     "label": "out",
+     "rationale": "Counterpart's ball."
+    }
+   ]
+  },
+  {
+   "heading": "Routine",
+   "options": [],
+   "cases": [
+    {
+     "title": "Case C",
+     "label": "out",
+     "rationale": "Newsletter."
+    }
+   ]
+  }
+ ]
+}

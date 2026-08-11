@@ -1,7 +1,7 @@
 /* queue template — per-campaign decision queue: open asks with vote widgets,
    review stamps, and open PRs in merge-dependency order. */
 
-import { esc, attr, widget, badge, table, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
+import { esc, attr, markdown, widget, badge, table, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
 
 export const name = 'queue'
 
@@ -30,6 +30,11 @@ function validateEntry(e, i) {
   const filedMs = Date.parse(requireString(e.filed_at, `${path}.filed_at`))
   if (Number.isNaN(filedMs)) fail(`${path}.filed_at must be an ISO-8601 timestamp, got "${e.filed_at}"`)
   if (e.context_link !== undefined) requireString(e.context_link, `${path}.context_link`)
+  if (e.title !== undefined) requireString(e.title, `${path}.title`)
+  if (e.body !== undefined) requireString(e.body, `${path}.body`)
+  if (status === 'open' && kind !== 'merge' && !e.body && !e.context_link) {
+    fail(`${path} is an open ${kind} with no body and no context_link — the reader would be voting on one sentence; attach the brief or link the board that holds it`)
+  }
   if (e.options !== undefined && requireArray(e.options, `${path}.options`).length === 0) {
     fail(`${path}.options must not be empty — omit it for the approve/reject/discuss default`)
   }
@@ -43,6 +48,14 @@ function ageMarkup(filedMs) {
   return `<time class="sd-muted" datetime="${attr(iso)}" data-live-age>waiting ${formatAge(Date.now() - filedMs)}</time>`
 }
 
+const BODY_COLLAPSE_CHARS = 400
+
+function entryBody(body) {
+  if (!body) return ''
+  if (body.length <= BODY_COLLAPSE_CHARS) return markdown(body)
+  return `<details class="sd-collapse"><summary>the brief</summary><div class="sd-collapse-body">${markdown(body)}</div></details>`
+}
+
 function entryCard(e, i, uniqueId) {
   const open = e.status === 'open'
   const meta = [
@@ -53,8 +66,10 @@ function entryCard(e, i, uniqueId) {
   ].filter(Boolean).join('')
   return [
     `<div class="sd-card${open ? ' sd-accent' : ''}">`,
+    e.title ? `<div class="sd-card-title">${esc(e.title)}</div>` : '',
     `<div class="sd-row sd-badge-row">${meta}</div>`,
     open ? `<p><strong>${esc(e.question)}</strong></p>` : `<p class="sd-muted">${esc(e.question)}</p>`,
+    entryBody(e.body),
     open
       ? widget({ type: 'decision', id: uniqueId(e.id, `queue.entries[${i}].id`), options: e.options ?? DEFAULT_OPTIONS })
       : '',

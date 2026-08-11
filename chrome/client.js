@@ -365,6 +365,60 @@ function restoreDetails() {
   }
 }
 
+// Headed sections/cards get a heading toggle plus a foot "collapse section"
+// control; foot-collapse scrolls the heading back into view (no jump).
+function attachCollapse() {
+  const make = (host, head, withFoot) => {
+    if (head.querySelector('.sf-sec-toggle')) return
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'sf-sec-toggle'
+    btn.title = 'collapse / expand'
+    btn.setAttribute('aria-expanded', 'true')
+    head.appendChild(btn)
+    let foot = null
+    if (withFoot) {
+      foot = document.createElement('button')
+      foot.type = 'button'
+      foot.className = 'sf-sec-foot'
+      foot.textContent = 'collapse section'
+      host.appendChild(foot)
+    }
+    const set = (collapsed, scrollBack) => {
+      host.classList.toggle('sf-collapsed', collapsed)
+      btn.setAttribute('aria-expanded', String(!collapsed))
+      if (collapsed) {
+        const hidden = [...host.children].filter((n) => n !== head && n !== foot && !n.classList.contains('sf-sec-toggle')).length
+        host.dataset.sfHidden = `${hidden} ${hidden === 1 ? 'block' : 'blocks'} hidden — click to expand`
+      }
+      if (collapsed && scrollBack) head.scrollIntoView({ block: 'start' })
+    }
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      set(!host.classList.contains('sf-collapsed'), false)
+    })
+    foot?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      set(true, true)
+    })
+    // The whole collapsed drawer expands on click; expanded sections ignore this.
+    host.addEventListener('click', (e) => {
+      if (!host.classList.contains('sf-collapsed')) return
+      if (e.target.closest('.sf-sec-toggle')) return
+      e.stopPropagation()
+      set(false, false)
+    })
+  }
+  for (const s of CONTENT.querySelectorAll('.sd-section')) {
+    const h = s.querySelector(':scope > h1, :scope > h2, :scope > h3')
+    if (h) make(s, h, true)
+  }
+  for (const c of CONTENT.querySelectorAll('.sd-card')) {
+    const t = c.querySelector(':scope > .sd-card-title')
+    if (t) make(c, t, false)
+  }
+}
+
 // Queue boards emit <time data-live-age datetime>; recompute so a long-open
 // tab never shows a stale "waiting" age. Publish-time text is the fallback.
 function refreshLiveAges() {
@@ -394,6 +448,7 @@ function render() {
     state.renderedContentKey = contentKey
     restoreDetails()
     refreshLiveAges()
+    attachCollapse()
   }
   CONTENT.classList.toggle('sf-wip', Boolean(showWip))
   show(ui.wipMarker, Boolean(d.wip))
@@ -420,10 +475,33 @@ function render() {
     disableContentControls()
   }
   markRecordedWidgets(roundFeedback)
+  markPriorVerdicts(d)
   if (rebuild) {
     attachWhiteboardButtons()
     attachWrapButtons()
     mountIslands(d, showWip)
+  }
+}
+
+// A widget answered on an earlier round shows that verdict as a badge, so a
+// cert-style eval never re-fights orientation against an unmarked page.
+function markPriorVerdicts(d) {
+  CONTENT.querySelectorAll('.sf-prior').forEach((n) => n.remove())
+  const onScreen = state.viewingRound ?? d.currentRound.seq
+  const prior = new Map()
+  for (const item of d.feedback) {
+    if (item.kind !== 'widget' || item.round == null || item.round >= onScreen) continue
+    const seen = prior.get(item.widgetId)
+    if (!seen || item.round > seen.round || (item.round === seen.round && item.id > seen.id)) prior.set(item.widgetId, item)
+  }
+  for (const [widgetId, item] of prior) {
+    const widget = CONTENT.querySelector(`[data-widget-id="${CSS.escape(widgetId)}"]`)
+    if (!widget) continue
+    const tag = document.createElement('span')
+    tag.className = 'sf-prior'
+    tag.textContent = `r${item.round}: ${item.value}`
+    tag.title = `your verdict on round ${item.round}`
+    widget.querySelector('.sd-widget-options')?.appendChild(tag)
   }
 }
 

@@ -2,6 +2,8 @@
 
 One template, three modes, switched on the case shape: `notes` renders dossiers, `candidates` renders a blind two-column compare, `items` renders an N-way item matrix. The comparison types serve different jobs, so the data decides — there is no mode flag.
 
+Know the edges before committing to this template: blind compare takes exactly two candidates, and no mode renders images. A compare needing 3+ arms or image candidates belongs on a `page` (see the "Eval shapes that land here" recipe in page.md); adjudicating labeled cases one by one belongs on `rulings`.
+
 ```
 easel open --template eval --data results.json --title "Preference extraction run 41"
 ```
@@ -38,10 +40,14 @@ Each case is a section: id heading, notes as markdown in a card, a verdict widge
 
 ```jsonc
 { "blindKey": { "ahmet": 0, "ben": 1 },        // required at top level: which candidate is output 1
-  "cases": [{ "id": "ahmet", "candidates": ["markdown A", "markdown B"] }] }
+  "cases": [{ "id": "ahmet", "candidates": ["markdown A", "markdown B"],
+              "context": "what framed this case",   // optional, markdown
+              "group": "ahmet" }] }                 // optional — table grouping
 ```
 
-Exactly two candidates per case, rendered as two columns labeled `output 1` / `output 2`. The blind key decides the order per case and is never rendered — the harness that published the board holds it and unblinds after votes land. One output-1 / output-2 / tie widget per case.
+Exactly two candidates per case. The blind key decides the order per case and is never rendered — the harness that published the board holds it and unblinds after votes land. One output-1 / output-2 / tie widget per case.
+
+**The candidates' length picks the layout.** When every candidate on the board is a single line of ≤160 characters, cases render as dense table rows — `case | context? | output 1 | output 2 | pick`, compact vote buttons in the row, consecutive cases sharing a `group` under one heading — so a 42-head-to-head board reads on a couple of screens. Any longer candidate anywhere switches the whole board to the two-column section layout, where `context` renders above the pair (collapsed past 400 chars). The context column only appears when at least one case in the group carries one.
 
 ## Matrix mode — `cases[].items`
 
@@ -57,6 +63,8 @@ Exactly two candidates per case, rendered as two columns labeled `output 1` / `o
 One table per case: `item | B | C | D`, one row per item, then a plain `best?` row carrying a widget with each candidate, `tie`, and `all-bad`. Every item in a case must carry the same candidate keys. A per-case overall widget follows the table.
 
 Divergence highlighting is the matrix's core value: tokens not present in every sibling candidate render `<strong>`, so identical prose recedes and the differences pop. Matching strips edge punctuation but keeps interior `.`/`@`, so emails compare whole.
+
+**Candidate keys are reviewer-facing.** They render verbatim as column headers and vote buttons (`<key> best`), so name them `1`/`2`/`3` (or `A`/`B`/`C`) — never raw run ids or hashes. Record which arm each number maps to in `footer`; the harness that published the board keeps the mapping for unblinding.
 
 ## Errors
 

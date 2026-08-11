@@ -11,7 +11,7 @@ const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
 
 const USAGE = `usage:
   easel open <file> [--title T] [--json]
-  easel open --template <review|eval|answer-key|page|queue> --data <file.json> [--title T] [--json]
+  easel open --template <review|eval|rulings|page|queue> --data <file.json> [--title T] [--json]
   easel publish <key> [--note "..."] [--json]
   easel await <key> [--agent ID] [--cursor N] [--ack M] [--timeout-s T] [--json]
   easel feedback <key> [--since N] [--json]

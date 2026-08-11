@@ -723,8 +723,22 @@ body.sf-shell {
 
 .sd-claims { margin: 0 0 22px; }
 #sf-content .sd-claims ul { list-style: none; padding: 0; margin: 0; }
-.sd-claims li { margin: 0 0 14px; }
-.sd-claims li:last-child { margin-bottom: 0; }
+/* Each entry is one self-contained judgment. A hairline vanished against the
+   evidence blocks and buttons between entries, so the boundary is a visible
+   bar: thicker, colored from the content tone, with real air on both sides. */
+.sd-claims li { margin: 0; padding: 16px 0; position: relative; }
+.sd-claims li + li { margin-top: 4px; }
+.sd-claims li + li::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: color-mix(in oklab, var(--color-base-content) 30%, transparent);
+}
+.sd-claims li:first-child { padding-top: 0; }
+.sd-claims li:last-child { padding-bottom: 0; }
 .sd-note { font-size: 0.9rem; margin-top: 2px; }
 
 .sd-evidence {
@@ -928,12 +942,9 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   min-width: 0;
 }
 .sd-widget-prompt {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--color-muted-content);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-base-content);
   margin-bottom: 4px;
 }
 .sd-widget-help { font-size: 0.85rem; color: var(--color-muted-content); margin-bottom: 10px; }
@@ -941,6 +952,24 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 /* Inside a table the row separator already rules the line — a second rule
    from the widget reads as a double border. */
 .sd-tablewrap [data-widget] { border-top: 0; padding-top: 0; margin: 4px 0; }
+
+/* Compact variant: a per-item vote riding under its item, not a section-level
+   control — no rule, tight margins, small quiet buttons. */
+[data-widget].sd-widget-compact { border-top: 0; padding: 0; margin: 6px 0 2px; }
+.sd-widget-compact .sd-widget-options { gap: 6px; }
+.sd-widget-compact [data-option] {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  min-height: 1.5rem;
+  border-width: 1px;
+  border-color: var(--color-muted-content);
+  color: var(--color-muted-content);
+  background: none;
+}
+.sd-widget-compact [data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); }
+.sd-widget-compact.sf-recorded [data-option][aria-pressed="true"],
+.sd-widget-compact.sf-recorded [data-option].sf-chosen { color: inherit; }
 
 [data-option] {
   font: inherit;
@@ -1845,6 +1874,96 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 
 /* print ----------------------------------------------------------------- */
 
+/* rulings template — each case block carries its voice label */
+.sd-case-title { font-weight: 600; color: var(--color-base-content); }
+.sd-counter { border-left: 2px solid var(--color-warning); padding-left: 10px; margin-top: 6px; }
+.sd-ruling { margin-top: 8px; }
+.sd-ruling > .sd-eyebrow, .sd-ask > .sd-eyebrow { display: block; margin-bottom: 2px; }
+.sd-ruling > p { color: var(--color-base-content); margin: 0; }
+.sd-ask {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--color-info, var(--color-base-300));
+  background: color-mix(in oklch, var(--color-base-content) 4%, transparent);
+  border-radius: 0 8px 8px 0;
+}
+.sd-ask > p { margin: 0; }
+.sd-case-image { display: block; max-height: 200px; max-width: 100%; border-radius: 8px; margin: 8px 0; }
+.sd-case-image[width] { max-height: none; height: auto; }
+.sd-case-image-round { border-radius: 999px; }
+.sd-case-footnote { font-size: 12px; color: var(--color-muted-content); margin-top: 6px; }
+
+/* Prior-round verdict, carried onto the current round's widget. */
+.sf-prior {
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-base-300);
+  border-radius: 999px;
+  color: var(--color-muted-content);
+}
+
+/* Section collapse — chrome-injected, so sf- prefixed. */
+.sd-section, .sd-card { scroll-margin-top: 96px; }
+.sf-sec-toggle {
+  margin-left: 10px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  vertical-align: middle;
+  border: 1px solid var(--color-base-300);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-body-content);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sf-sec-toggle::before { content: '⌃'; }
+.sf-sec-toggle[aria-expanded="false"]::before { content: '⌄'; }
+.sf-sec-toggle:hover { color: var(--color-base-content); border-color: var(--color-base-content); }
+.sf-sec-foot {
+  display: block;
+  margin: 12px 0 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--color-base-300);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-body-content);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.sf-sec-foot::after { content: ' ⌃'; }
+.sf-sec-foot:hover { color: var(--color-base-content); border-color: var(--color-base-content); }
+.sf-collapsed > :not(h1):not(h2):not(h3):not(.sd-card-title) { display: none !important; }
+/* A collapsed section reads as a closed drawer, not a normal heading. */
+.sf-collapsed {
+  border: 1px dashed var(--color-base-300);
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin: 14px 0;
+  cursor: pointer;
+}
+.sf-collapsed:hover { border-color: var(--color-base-content); border-style: solid; }
+#sf-content .sf-collapsed > h1, #sf-content .sf-collapsed > h2, #sf-content .sf-collapsed > h3 {
+  font-size: 1.05rem;
+  margin: 2px 0;
+  padding: 0;
+  border: 0;
+  color: var(--color-body-content);
+}
+#sf-content .sf-collapsed > .sd-card-title { color: var(--color-body-content); }
+.sf-collapsed::after {
+  content: attr(data-sf-hidden);
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-body-content);
+  opacity: 0.7;
+}
 @media print {
   #sf-chrome { display: none; }
   #sf-content { max-width: none; padding: 0; }

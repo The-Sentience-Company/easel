@@ -70,7 +70,7 @@ Full command reference and HTTP shapes: `docs/api.md`.
 |---|---|---|
 | `review` | plans, designs, comparisons — prose sections plus decisions and votes | [templates/review.md](templates/review.md) |
 | `eval` | eval runs — three modes on data shape: dossiers, blind compare, item matrix | [templates/eval.md](templates/eval.md) |
-| `answer-key` | hand-authored eval goldens — teach-first, then category × person cells of positives and negatives | [templates/answer-key.md](templates/answer-key.md) |
+| `rulings` | labeled cases adjudicated one by one — answer keys, goldens, triage lists, model-vs-key disagreements | [templates/rulings.md](templates/rulings.md) |
 | `page` | anything else — hand-authored HTML through the same shell | [templates/page.md](templates/page.md) |
 
 Templates are pre-audited, so a generated board cannot hit the layout and contrast problems that hand-written HTML kept reproducing. Reach for `page` only when the shape genuinely is not a review or an eval.

@@ -17,7 +17,9 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
     "id": "string",                  // required, unique among open entries — becomes the widget id
     "pane": "string",                // required — which agent pane asked
     "kind": "decision|review|merge", // required
-    "question": "string",            // required, plain English
+    "question": "string",            // required, plain English — the one-line ask
+    "title": "string",               // optional — short card title above the badges
+    "body": "string",                // optional, markdown — the brief behind the ask; collapses past ~400 chars
     "options": ["string"],           // optional; default ["approve", "reject", "discuss"]
     "context_link": "string",        // optional — board/PR/doc URL
     "filed_at": "ISO-8601 string",   // required
@@ -43,9 +45,12 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
 }
 ```
 
+**An open `decision` or `review` entry must carry a `body` or a `context_link` — rendering throws otherwise.** A vote stripped of its brief leaves the reader choosing from a single sentence and three buttons, and that has produced a rejected sign-off; `merge` entries are exempt because the PR link is the context.
+
 ## Rendering rules
 
 - Open entries render before answered ones, each an accented card with a vote widget (`data-widget-id` = entry id). Answered entries render muted, badge only, no widget, inside a collapsed `sd-collapse` details block.
+- `title` renders as the card title; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters so a long brief never buries the widget.
 - Each open entry carries `<time data-live-age datetime="...">` — the chrome recomputes "waiting 2h" from `filed_at` every 30s, so a long-open tab never shows a stale age.
 - A `review_stamps` row whose versions differ gets a warning badge; matching versions get "current".
 - Empty sections vanish; an empty `entries` list renders "Nothing waiting." — so a freshly seeded board (`{"campaign": "...", "entries": [], "review_stamps": [], "open_prs": []}`) publishes cleanly at wiring time.
