@@ -167,6 +167,9 @@ function inline(text) {
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   s = s.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
   // Only http(s) and mailto survive — no javascript: or data: URLs.
+  // Obsidian-style size hint: ![alt|96](url) pins the rendered width in px.
+  s = s.replace(/!\[([^\]|]*)(?:\|(\d{1,4}))?\]\((https?:[^)\s]+)\)/g, (_, alt, w, src) =>
+    `<img class="sd-md-img" src="${src}" alt="${alt}"${w ? ` width="${w}"` : ''} loading="lazy">`)
   s = s.replace(/\[([^\]]+)\]\(((?:https?:|mailto:)[^)\s]+)\)/g, '<a href="$2">$1</a>')
   return s
 }
