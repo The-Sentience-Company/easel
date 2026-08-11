@@ -1877,6 +1877,45 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 
 /* print ----------------------------------------------------------------- */
 
+/* rulings template */
+.sd-case-title { font-weight: 600; color: var(--color-base-content); }
+.sd-counter { border-left: 2px solid var(--color-warning); padding-left: 10px; margin-top: 6px; }
+
+/* Section collapse — chrome-injected, so sf- prefixed. */
+.sd-section, .sd-card { scroll-margin-top: 96px; }
+.sf-sec-toggle {
+  margin-left: 10px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  vertical-align: middle;
+  border: 1px solid var(--color-base-300);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-body-content);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sf-sec-toggle::before { content: '⌃'; }
+.sf-sec-toggle[aria-expanded="false"]::before { content: '⌄'; }
+.sf-sec-toggle:hover { color: var(--color-base-content); border-color: var(--color-base-content); }
+.sf-sec-foot {
+  display: block;
+  margin: 12px 0 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--color-base-300);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-body-content);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.sf-sec-foot::after { content: ' ⌃'; }
+.sf-sec-foot:hover { color: var(--color-base-content); border-color: var(--color-base-content); }
+.sf-collapsed > :not(h1):not(h2):not(h3):not(.sd-card-title) { display: none !important; }
 @media print {
   #sf-chrome { display: none; }
   #sf-content { max-width: none; padding: 0; }

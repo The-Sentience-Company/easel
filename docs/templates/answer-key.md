@@ -1,5 +1,7 @@
 # answer-key template
 
+**Deprecated — folded into `rulings` (2026-08-11).** The two templates converged on the same review shape, and the eval owner ruled to keep one. Existing answer-key boards keep rendering and replaying; do not author new ones — a new key is a `rulings` board (see rulings.md), with include/exclude tiers expressed as labels.
+
 Hand-authored eval goldens laid out for human review: what the model *should* say about someone, what it must *never* say, and the evidence behind each call.
 
 ```

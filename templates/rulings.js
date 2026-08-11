@@ -186,13 +186,20 @@ function caseBlock(c, at, caseOptions, ctx) {
       })
     : ''
 
-  return [
-    '<li>',
-    `<div class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</div>`,
+  const body = [
     c.rationale ? `<div class="sd-muted sd-note">${markdown(requireString(c.rationale, `${at}.rationale`))}</div>` : '',
     quote,
     counter,
     vote,
-    '</li>',
   ].filter(Boolean).join('')
+  // A case with a body folds; title-only cases (skim sections) stay plain lines.
+  if (!body) return `<li><div class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</div></li>`
+  return [
+    '<li>',
+    '<details class="sd-collapse" open>',
+    `<summary><span class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</span></summary>`,
+    `<div class="sd-collapse-body">${body}</div>`,
+    '</details>',
+    '</li>',
+  ].join('')
 }

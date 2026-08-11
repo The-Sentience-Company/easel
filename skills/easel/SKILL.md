@@ -10,7 +10,7 @@ The daemon (`easeld`) runs under launchd on `http://127.0.0.1:4400` and owns all
 ## Publish
 
 ```
-easel open --template <review|eval|answer-key|rulings|page|queue> --data <file.json> --title T   # → key + URL
+easel open --template <review|eval|rulings|page|queue> --data <file.json> --title T   # → key + URL
 easel open <file.html>                                                            # plain doc
 ```
 
@@ -20,8 +20,7 @@ easel open <file.html>                                                          
 |---|---|
 | `review` | a plan, design, or proposal to read, plus decisions to answer |
 | `eval` | eval output — dossiers, a blind compare (dense table for one-liners, columns for prose; per-case context and grouping), or an item matrix; the data shape picks the mode. Still exactly 2 arms and no images — 3+ arms or image candidates is a `page` for now |
-| `answer-key` | hand-authored goldens laid out for the eval owner to approve |
-| `rulings` | labeled cases adjudicated one by one — a classification key, triage list, or model-vs-key disagreements; per-case votes, decision-first sections |
+| `rulings` | labeled cases adjudicated one by one — a classification key, goldens, triage list, or model-vs-key disagreements; per-case votes, decision-first sections. Absorbed `answer-key`, which is deprecated — existing answer-key boards keep working, new keys go here |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | none of the above — hand-authored HTML through the same chrome and annotation layer |
 

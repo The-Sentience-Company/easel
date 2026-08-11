@@ -365,6 +365,49 @@ function restoreDetails() {
   }
 }
 
+// Headed sections/cards get a heading toggle plus a foot "collapse section"
+// control; foot-collapse scrolls the heading back into view (no jump).
+function attachCollapse() {
+  const make = (host, head, withFoot) => {
+    if (head.querySelector('.sf-sec-toggle')) return
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'sf-sec-toggle'
+    btn.title = 'collapse / expand'
+    btn.setAttribute('aria-expanded', 'true')
+    head.appendChild(btn)
+    let foot = null
+    if (withFoot) {
+      foot = document.createElement('button')
+      foot.type = 'button'
+      foot.className = 'sf-sec-foot'
+      foot.textContent = 'collapse section'
+      host.appendChild(foot)
+    }
+    const set = (collapsed, scrollBack) => {
+      host.classList.toggle('sf-collapsed', collapsed)
+      btn.setAttribute('aria-expanded', String(!collapsed))
+      if (collapsed && scrollBack) head.scrollIntoView({ block: 'start' })
+    }
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      set(!host.classList.contains('sf-collapsed'), false)
+    })
+    foot?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      set(true, true)
+    })
+  }
+  for (const s of CONTENT.querySelectorAll('.sd-section')) {
+    const h = s.querySelector(':scope > h1, :scope > h2, :scope > h3')
+    if (h) make(s, h, true)
+  }
+  for (const c of CONTENT.querySelectorAll('.sd-card')) {
+    const t = c.querySelector(':scope > .sd-card-title')
+    if (t) make(c, t, false)
+  }
+}
+
 // Queue boards emit <time data-live-age datetime>; recompute so a long-open
 // tab never shows a stale "waiting" age. Publish-time text is the fallback.
 function refreshLiveAges() {
@@ -394,6 +437,7 @@ function render() {
     state.renderedContentKey = contentKey
     restoreDetails()
     refreshLiveAges()
+    attachCollapse()
   }
   CONTENT.classList.toggle('sf-wip', Boolean(showWip))
   show(ui.wipMarker, Boolean(d.wip))
