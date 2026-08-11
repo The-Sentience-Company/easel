@@ -1878,6 +1878,8 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 .sd-case-title { font-weight: 600; color: var(--color-base-content); }
 .sd-counter { border-left: 2px solid var(--color-warning); padding-left: 10px; margin-top: 6px; }
 .sd-case-image { display: block; max-height: 200px; max-width: 100%; border-radius: 8px; margin: 8px 0; }
+.sd-case-image[width] { max-height: none; height: auto; }
+.sd-case-image-round { border-radius: 999px; }
 .sd-case-footnote { font-size: 12px; color: var(--color-muted-content); margin-top: 6px; }
 
 /* Prior-round verdict, carried onto the current round's widget. */

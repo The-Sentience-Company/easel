@@ -188,9 +188,16 @@ function caseBlock(c, at, caseOptions, ctx) {
 
   let image = ''
   if (c.image !== undefined) {
-    const src = requireString(c.image, `${at}.image`)
-    if (!/^https?:\/\//.test(src)) fail(`${at}.image must be an http(s) URL — the publish sanitizer drops anything else`)
-    image = `<img class="sd-case-image" src="${attr(src)}" alt="${attr(c.title)}">`
+    const spec = typeof c.image === 'string' ? { src: c.image } : requireObject(c.image, `${at}.image`)
+    const src = requireString(spec.src, `${at}.image.src`)
+    if (!/^https?:\/\//.test(src)) fail(`${at}.image.src must be an http(s) URL — the publish sanitizer drops anything else`)
+    let width = ''
+    if (spec.px !== undefined) {
+      if (!Number.isFinite(spec.px) || spec.px < 16 || spec.px > 800) fail(`${at}.image.px must be a number 16..800`)
+      width = ` width="${Math.round(spec.px)}"`
+    }
+    const cls = `sd-case-image${spec.round ? ' sd-case-image-round' : ''}`
+    image = `<img class="${cls}" src="${attr(src)}" alt="${attr(c.title)}"${width}>`
   }
   if (c.footnote !== undefined) requireString(c.footnote, `${at}.footnote`)
 

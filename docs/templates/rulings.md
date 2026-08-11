@@ -43,8 +43,11 @@ The section grouping IS the decision structure: sections come in the order of ju
           "label": "internal_name",     // required, must appear in labels
           "rationale": "string",        // optional, markdown
           "borderline": true,           // optional — renders a tie-break badge
+          "image": "https://…",         // optional — the judged object, rendered under the title;
+                                        //   or { "src": "https://…", "px": 44, "round": true }
           "quote": { "text": "…", "source": "table:id" },          // optional evidence block
-          "counter": { "label": "…", "reason": "…" }               // optional dissent (e.g. the model's verdict)
+          "counter": { "label": "…", "reason": "…" },              // optional dissent (e.g. the model's verdict)
+          "footnote": "string"          // optional — muted small print, rendered last (citations, dates)
         }
       ]
     }
@@ -56,6 +59,8 @@ The section grouping IS the decision structure: sections come in the order of ju
 ```
 
 A case's `label` must appear in `labels` — an undefined label throws, same policy as answer-key's category rule: a reviewer must never meet an internal name without a plain-word definition.
+
+**Size the image to the surface it ships to.** Before authoring an image case, find where the image renders in the product and pass that display size: a thread chip that ships at ~40px is judged at `{ "px": 44, "round": true }`, not as a 200px hero. An oversized review image passes judgments the real surface fails — detail that reads at 200px vanishes at 40px. Default (no `px`) renders bounded at 200px, which is only right when the product shows it at least that large.
 
 ## Feedback altitudes
 
