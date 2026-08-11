@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 
-const TEMPLATES = { review: 'review.js', eval: 'eval.js', 'answer-key': 'answer-key.js', page: 'page.js', queue: 'queue.js' }
+const TEMPLATES = { review: 'review.js', eval: 'eval.js', 'answer-key': 'answer-key.js', page: 'page.js', queue: 'queue.js', rulings: 'rulings.js' }
 
 /* client.js applies sf-recorded at runtime; templates never emit it.
    Simulated here so that CSS is reviewable before the daemon exists. */

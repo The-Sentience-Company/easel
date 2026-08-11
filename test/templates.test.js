@@ -10,13 +10,14 @@ import * as evalT from '../templates/eval.js'
 import * as page from '../templates/page.js'
 import * as answerKey from '../templates/answer-key.js'
 import * as queue from '../templates/queue.js'
+import * as rulings from '../templates/rulings.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
 
-const TEMPLATES = [review, evalT, page, answerKey, queue]
+const TEMPLATES = [review, evalT, page, answerKey, queue, rulings]
 
 describe('contract: every template', () => {
   test('renders sample data to body-inner HTML with no document tags', async () => {
@@ -517,6 +518,42 @@ describe('page', () => {
   test('rejects a non-string or empty html field', () => {
     assert.throws(() => page.render({ html: 42 }), TemplateError)
     assert.throws(() => page.render({ html: '   ' }), TemplateError)
+  })
+})
+
+describe('rulings', () => {
+  const base = () => sample('rulings')
+
+  test('a case label with no entry in labels throws', async () => {
+    const data = await base()
+    data.sections[0].cases[0].label = 'undefined_label'
+    assert.throws(() => rulings.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /undefined_label/)
+      assert.match(err.message, /rulings\.labels/)
+      return true
+    })
+  })
+
+  test('votable cases get compact vote widgets; a skim section gets none', async () => {
+    const html = rulings.render(await base())
+    const votes = [...html.matchAll(/data-widget-id="(case-[a-z0-9-]+)"/g)].map((m) => m[1])
+    assert.equal(votes.length, 2, 'both contested cases votable, routine case not')
+    assert.equal(new Set(votes).size, votes.length)
+    assert.ok(html.includes('sd-widget-compact'))
+  })
+
+  test('a counter verdict renders as a marked dissent block', async () => {
+    const html = rulings.render(await base())
+    assert.match(html, /model disagreed — said out/)
+    assert.match(html, /Model saw no promise\./)
+  })
+
+  test('questions render as decision widgets before any section', async () => {
+    const html = rulings.render(await base())
+    const qAt = html.indexOf('data-widget-id="question-')
+    const sectionAt = html.indexOf('Contested')
+    assert.ok(qAt >= 0 && sectionAt >= 0 && qAt < sectionAt)
   })
 })
 
