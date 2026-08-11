@@ -767,6 +767,30 @@ describe('queue', () => {
     assert.throws(() => queue.render(data), TemplateError)
   })
 
+  test('title and body render on the card; a long body folds into a collapse', async () => {
+    const data = await base()
+    data.entries[0].title = 'Extraction intermediates table'
+    data.entries[0].body = 'Short brief with **markdown**.'
+    data.entries[1].body = 'x'.repeat(500)
+    const html = queue.render(data)
+    assert.match(html, /<div class="sd-card-title">Extraction intermediates table<\/div>/)
+    assert.match(html, /Short brief with <strong>markdown<\/strong>/)
+    const second = html.slice(html.indexOf('merge-order-4801') - 2000, html.indexOf('merge-order-4801') + 2000)
+    assert.match(second, /<summary>the brief<\/summary>/)
+  })
+
+  test('an open decision with no body and no context_link throws', async () => {
+    const data = await base()
+    delete data.entries[0].context_link
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /no body and no context_link/)
+      return true
+    })
+    data.entries[0].body = 'The brief.'
+    assert.doesNotThrow(() => queue.render(data))
+  })
+
   test('a seeded board with empty sections still renders', async () => {
     const html = queue.render({ campaign: 'fresh-campaign', entries: [], review_stamps: [], open_prs: [] })
     assert.ok(html.includes('Nothing waiting.'))
