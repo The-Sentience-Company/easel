@@ -188,7 +188,12 @@ function caseBlock(c, at, caseOptions, ctx) {
 
   let image = ''
   if (c.image !== undefined) {
-    const spec = typeof c.image === 'string' ? { src: c.image } : requireObject(c.image, `${at}.image`)
+    let spec
+    if (typeof c.image === 'string') spec = { src: c.image }
+    else {
+      requireObject(c.image, `${at}.image`)
+      spec = c.image
+    }
     const src = requireString(spec.src, `${at}.image.src`)
     if (!/^https?:\/\//.test(src)) fail(`${at}.image.src must be an http(s) URL — the publish sanitizer drops anything else`)
     let width = ''

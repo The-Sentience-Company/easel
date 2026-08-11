@@ -591,6 +591,17 @@ describe('rulings', () => {
     assert.ok(html.includes('sd-widget-compact'))
   })
 
+  test('case image: string and sized-object forms render; bad px throws', async () => {
+    const data = await base()
+    data.sections[0].cases[0].image = 'https://x.test/a.jpg'
+    data.sections[0].cases[1].image = { src: 'https://x.test/b.jpg', px: 44, round: true }
+    const html = rulings.render(data)
+    assert.match(html, /<img class="sd-case-image" src="https:\/\/x.test\/a.jpg"/)
+    assert.match(html, /class="sd-case-image sd-case-image-round" src="https:\/\/x.test\/b.jpg"[^>]* width="44"/)
+    data.sections[0].cases[0].image = { src: 'https://x.test/a.jpg', px: 4 }
+    assert.throws(() => rulings.render(data), /px must be a number 16\.\.800/)
+  })
+
   test('a counter verdict renders as a marked dissent block', async () => {
     const html = rulings.render(await base())
     assert.match(html, /model disagreed — said out/)
