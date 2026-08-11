@@ -1916,6 +1916,31 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 .sf-sec-foot::after { content: ' ⌃'; }
 .sf-sec-foot:hover { color: var(--color-base-content); border-color: var(--color-base-content); }
 .sf-collapsed > :not(h1):not(h2):not(h3):not(.sd-card-title) { display: none !important; }
+/* A collapsed section reads as a closed drawer, not a normal heading. */
+.sf-collapsed {
+  border: 1px dashed var(--color-base-300);
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin: 14px 0;
+  cursor: pointer;
+}
+.sf-collapsed:hover { border-color: var(--color-base-content); border-style: solid; }
+#sf-content .sf-collapsed > h1, #sf-content .sf-collapsed > h2, #sf-content .sf-collapsed > h3 {
+  font-size: 1.05rem;
+  margin: 2px 0;
+  padding: 0;
+  border: 0;
+  color: var(--color-body-content);
+}
+#sf-content .sf-collapsed > .sd-card-title { color: var(--color-body-content); }
+.sf-collapsed::after {
+  content: attr(data-sf-hidden);
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-body-content);
+  opacity: 0.7;
+}
 @media print {
   #sf-chrome { display: none; }
   #sf-content { max-width: none; padding: 0; }

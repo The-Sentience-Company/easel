@@ -387,6 +387,10 @@ function attachCollapse() {
     const set = (collapsed, scrollBack) => {
       host.classList.toggle('sf-collapsed', collapsed)
       btn.setAttribute('aria-expanded', String(!collapsed))
+      if (collapsed) {
+        const hidden = [...host.children].filter((n) => n !== head && n !== foot && !n.classList.contains('sf-sec-toggle')).length
+        host.dataset.sfHidden = `${hidden} ${hidden === 1 ? 'block' : 'blocks'} hidden — click to expand`
+      }
       if (collapsed && scrollBack) head.scrollIntoView({ block: 'start' })
     }
     btn.addEventListener('click', (e) => {
@@ -396,6 +400,13 @@ function attachCollapse() {
     foot?.addEventListener('click', (e) => {
       e.stopPropagation()
       set(true, true)
+    })
+    // The whole collapsed drawer expands on click; expanded sections ignore this.
+    host.addEventListener('click', (e) => {
+      if (!host.classList.contains('sf-collapsed')) return
+      if (e.target.closest('.sf-sec-toggle')) return
+      e.stopPropagation()
+      set(false, false)
     })
   }
   for (const s of CONTENT.querySelectorAll('.sd-section')) {
