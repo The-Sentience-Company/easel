@@ -475,10 +475,33 @@ function render() {
     disableContentControls()
   }
   markRecordedWidgets(roundFeedback)
+  markPriorVerdicts(d)
   if (rebuild) {
     attachWhiteboardButtons()
     attachWrapButtons()
     mountIslands(d, showWip)
+  }
+}
+
+// A widget answered on an earlier round shows that verdict as a badge, so a
+// cert-style eval never re-fights orientation against an unmarked page.
+function markPriorVerdicts(d) {
+  CONTENT.querySelectorAll('.sf-prior').forEach((n) => n.remove())
+  const onScreen = state.viewingRound ?? d.currentRound.seq
+  const prior = new Map()
+  for (const item of d.feedback) {
+    if (item.kind !== 'widget' || item.round == null || item.round >= onScreen) continue
+    const seen = prior.get(item.widgetId)
+    if (!seen || item.round > seen.round || (item.round === seen.round && item.id > seen.id)) prior.set(item.widgetId, item)
+  }
+  for (const [widgetId, item] of prior) {
+    const widget = CONTENT.querySelector(`[data-widget-id="${CSS.escape(widgetId)}"]`)
+    if (!widget) continue
+    const tag = document.createElement('span')
+    tag.className = 'sf-prior'
+    tag.textContent = `r${item.round}: ${item.value}`
+    tag.title = `your verdict on round ${item.round}`
+    widget.querySelector('.sd-widget-options')?.appendChild(tag)
   }
 }
 

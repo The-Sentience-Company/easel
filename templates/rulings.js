@@ -186,11 +186,21 @@ function caseBlock(c, at, caseOptions, ctx) {
       })
     : ''
 
+  let image = ''
+  if (c.image !== undefined) {
+    const src = requireString(c.image, `${at}.image`)
+    if (!/^https?:\/\//.test(src)) fail(`${at}.image must be an http(s) URL — the publish sanitizer drops anything else`)
+    image = `<img class="sd-case-image" src="${attr(src)}" alt="${attr(c.title)}">`
+  }
+  if (c.footnote !== undefined) requireString(c.footnote, `${at}.footnote`)
+
   const body = [
+    image,
     c.rationale ? `<div class="sd-muted sd-note">${markdown(requireString(c.rationale, `${at}.rationale`))}</div>` : '',
     quote,
     counter,
     vote,
+    c.footnote ? `<div class="sd-case-footnote">${esc(c.footnote)}</div>` : '',
   ].filter(Boolean).join('')
   // A case with a body folds; title-only cases (skim sections) stay plain lines.
   if (!body) return `<li><div class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</div></li>`
