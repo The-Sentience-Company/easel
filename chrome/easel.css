@@ -723,8 +723,11 @@ body.sf-shell {
 
 .sd-claims { margin: 0 0 22px; }
 #sf-content .sd-claims ul { list-style: none; padding: 0; margin: 0; }
-.sd-claims li { margin: 0 0 14px; }
-.sd-claims li:last-child { margin-bottom: 0; }
+/* Each entry is one self-contained judgment — rule them apart so adjacent
+   entries never read as one running thought. */
+.sd-claims li { margin: 0; padding: 12px 0; border-top: var(--rule); }
+.sd-claims li:first-child { border-top: 0; padding-top: 0; }
+.sd-claims li:last-child { padding-bottom: 0; }
 .sd-note { font-size: 0.9rem; margin-top: 2px; }
 
 .sd-evidence {
