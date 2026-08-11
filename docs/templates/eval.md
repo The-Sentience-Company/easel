@@ -2,6 +2,8 @@
 
 One template, three modes, switched on the case shape: `notes` renders dossiers, `candidates` renders a blind two-column compare, `items` renders an N-way item matrix. The comparison types serve different jobs, so the data decides — there is no mode flag.
 
+Know the edges before committing to this template: blind compare takes exactly two candidates and a case carries no prose around them, and no mode renders images. A compare needing 3+ arms, context above each pair, or image candidates belongs on a `page` (see the "Eval shapes that land here" recipe in page.md); adjudicating labeled cases one by one belongs on `rulings`.
+
 ```
 easel open --template eval --data results.json --title "Preference extraction run 41"
 ```

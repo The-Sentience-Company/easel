@@ -10,7 +10,7 @@ The daemon (`easeld`) runs under launchd on `http://127.0.0.1:4400` and owns all
 ## Publish
 
 ```
-easel open --template <review|eval|answer-key|page|queue> --data <file.json> --title T   # → key + URL
+easel open --template <review|eval|answer-key|rulings|page|queue> --data <file.json> --title T   # → key + URL
 easel open <file.html>                                                            # plain doc
 ```
 
@@ -19,8 +19,9 @@ easel open <file.html>                                                          
 | Template | The work is |
 |---|---|
 | `review` | a plan, design, or proposal to read, plus decisions to answer |
-| `eval` | eval output — dossiers, a blind two-column compare, or an item matrix; the data shape picks the mode |
+| `eval` | eval output — dossiers, a blind two-column compare, or an item matrix; the data shape picks the mode. Blind compare is exactly 2 candidates with no per-case context — a compare needing 3+ arms, context above each pair, or images is a `page` for now |
 | `answer-key` | hand-authored goldens laid out for the eval owner to approve |
+| `rulings` | labeled cases adjudicated one by one — a classification key, triage list, or model-vs-key disagreements; per-case votes, decision-first sections |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | none of the above — hand-authored HTML through the same chrome and annotation layer |
 
@@ -40,13 +41,15 @@ Two rules hold across every template: decision UI is the widget protocol (`data-
 easel await <key> [--agent ID] [--ack N]
 ```
 
-Blocks until real feedback, cancel, or board end — it re-attaches across long-poll timeouts, dropped connections, and daemon restarts, so run it once and stop polling. Annotations, widget clicks, and chat all ride the same stream; answer chat with `easel reply <key> "msg" --agent ID` — same ID as the await, so the bubble carries your callsign.
+Blocks until real feedback, cancel, or board end — it re-attaches across long-poll timeouts, dropped connections, and daemon restarts, so run it once and stop polling. `--timeout-s` sizes one long-poll window (1–3600; larger values error) and never bounds the overall wait — re-attach covers any span, so there is no reason to raise it. Annotations, widget clicks, and chat all ride the same stream; answer chat with `easel reply <key> "msg" --agent ID` — same ID as the await, so the bubble carries your callsign.
 
 Publishing with the same agent ID drops your own parked listener on that board in-turn (`dropped: true`, exit 0 — expected, not a failure). Relaunch the await once after each publish, and never pre-emptively relaunch one that hasn't fired — a parked listener survives rounds and delivers newer feedback fine.
 
 To get the turn back while waiting, background the await only as a harness-tracked background command (`run_in_background: true`) — its exit is what wakes you to read the batch. A shell `&`/`nohup` launch exits into a file no one reads.
 
-**A killed listener is a non-event: relaunch in one call and say nothing.** The harness kills its own tracked background commands — SIGKILL to the shell it tracks, so no wrapper, trap, or retry loop survives it, and nothing you write here prevents the wakeup. What you control is its cost. `<status>killed</status>` is a distinct status from `completed`: the await never delivered, and the cursor is server-side, so nothing was lost. Re-run the identical await (same `--agent`, same `--ack`) and stop there. Reading the empty output file, checking `easel status`, and narrating the recovery is four turns against a full context for zero information.
+**A killed listener is a non-event: relaunch in one call and say nothing.** The harness kills its own tracked background commands — SIGKILL to the shell it tracks, so no wrapper, trap, or retry loop survives it, and nothing you write here prevents the wakeup. What you control is its cost. `<status>killed</status>` is a distinct status from `completed`: the await never delivered, and the cursor is server-side, so nothing was lost. Re-run the identical await (same `--agent`, same `--ack`) and stop there. Reading the empty output file, checking `easel status`, and narrating the recovery is four turns against a full context for zero information. Also launch the bare command — a `cd dir && easel await` prefix has gotten the relaunch killed where the bare form survived.
+
+**If the same await is killed instantly two relaunches running** (some harness setups kill tracked processes at every turn boundary), stop relaunching: poll `easel feedback <key> --since N` on a timer instead, and treat a grown `upto` as the wake signal. Cost of the fallback: the board shows no "agent waiting" badge while no await is parked. Never reach for a trap/supervisor wrapper — it does not survive the SIGKILL and hides the real state.
 
 **Ack what you have already handled.** The server replays a cursor's unacked backlog, so an await relaunched after applying a round re-delivers that same round and looks like fresh feedback. Pass `--ack <upto>` (the `upto` from the batch you just handled) when relaunching, or you will answer the same annotations twice.
 

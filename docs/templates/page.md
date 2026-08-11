@@ -40,6 +40,13 @@ A `page` is a layout, not a document. Content drafted as markdown and wrapped in
 
 The pre-publish test: when most body text sits in `<p>` runs inside one `sd-card`, the page is a transcription — restructure it.
 
+### Eval shapes that land here, for now
+
+Adjudicating labeled cases has its own template (`rulings`); goldens have `answer-key`; two-candidate blind compares have `eval`. Two eval shapes still have no template and belong on a page — a season of boards converged on the same structure, so use it rather than reinventing:
+
+- **Blind compare with 3+ arms or per-case context**: one `sd-section` per case with the context (the day's input, the run's parameters) above the candidates, candidates as an `sd-grid` of `sd-card`s labelled A/B/…, and one `vote` widget per case whose options are the labels plus `tie`/`all-bad`. Keep the blind key in the harness, never in the page.
+- **Image votes**: an `sd-grid` of `sd-card`s, each an image plus its `vote` widget; keep per-image options identical so votes aggregate.
+
 The shape, compressed:
 
 ```html
@@ -102,7 +109,10 @@ Removed lines take a red tint, added lines green, context stays untinted, and hu
 
 Where N removed lines are followed by N added lines they pair by position, and where a single removed line is followed by several added lines it pairs with the first; the paired lines get word-level emphasis — the words that actually changed take a deeper tint of the same hue — and any further added lines are treated as wholly new. Punctuation and HTML entities are their own tokens, so a sentence extended past its full stop (`this is words` → `this is words. more words`) marks the addition alone rather than dragging the mark back over text that did not change. The two lines are aligned by longest common subsequence, so several edits on one line mark as several spans — `timeout 30 retries 3` → `timeout 60 retries 5` tints the two numbers, not everything between them. Unequal runs (three out, two in) have no correspondence to read, so they get the line tint only. A line that was rewritten rather than edited shares incidental words with its old self; past a few separate edits the emphasis covers the changed middle whole, because four scattered tints stop reading as "these words changed".
 
-This renders a diff; it does not compute one. Supply real unified-diff text — the marker character at the start of each line is the entire input contract.
+This renders a diff; it does not compute one. Supply real unified-diff text — the marker character at the start of each line is the entire input contract. Two traps follow directly from that contract:
+
+- **The marker must be an ASCII hyphen (0x2D).** A typographic minus (U+2212 `−`) — which LLM-generated or copy-pasted prose swaps in silently — is not classified, so the line renders as plain context with no red. If a diff looks half-coloured, check the bytes first.
+- **Only diff text belongs inside the block.** Embedded prose whose lines start with `-` (markdown bullets in a prompt, YAML lists) renders as deletions — red tint, del semantics — even though nothing changed. Put verbatim payloads in an `sd-collapse` code block instead and diff only what actually differs.
 
 Two things worth knowing before styling around it:
 
