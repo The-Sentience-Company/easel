@@ -5,7 +5,7 @@ import { esc, markdown, widget, attr, makeIdGuard, requireObject, requireArray, 
 
 export const name = 'rulings'
 
-const DEFAULT_CASE_OPTIONS = ['uphold', 'overrule']
+const DEFAULT_CASE_OPTIONS = ['good', 'bad']
 const DEFAULT_SECTION_OPTIONS = ['section is right', 'needs amending']
 
 const slug = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -124,12 +124,12 @@ function section(s, i, ctx) {
   if (cases.length === 0) fail(`${at}.cases must not be empty`)
 
   /* [] = skim section (no votes); undefined = per-case default —
-     contested cases adjudicate key-vs-model, uncontested get uphold/overrule. */
+     contested cases adjudicate key-vs-model, uncontested get good/bad. */
   const explicitOptions = s.options ?? ctx.data.case_options
   if (explicitOptions !== undefined) requireArray(explicitOptions, `${at}.options`)
   const caseOptions = (c) => {
     if (explicitOptions !== undefined) return explicitOptions
-    if (c.counter?.label) return [`key: ${c.label}`, `model: ${c.counter.label}`, 'neither']
+    if (c.counter?.label) return [`key is good: ${c.label}`, `model is good: ${c.counter.label}`, 'neither']
     return DEFAULT_CASE_OPTIONS
   }
   const sectionOptions = requireArray(ctx.data.section_options ?? DEFAULT_SECTION_OPTIONS, 'rulings.section_options')

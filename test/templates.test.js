@@ -591,16 +591,16 @@ describe('rulings', () => {
     assert.ok(html.includes('sd-widget-compact'))
   })
 
-  test('a contested case with default options votes key-vs-model; uncontested gets uphold/overrule', async () => {
+  test('a contested case with default options votes key-vs-model; uncontested gets good/bad', async () => {
     const data = await base()
     const contested = data.sections.find((s) => s.options === undefined && s.cases.some((c) => c.counter))
     const html = rulings.render(data)
     const c = contested.cases.find((x) => x.counter)
-    assert.ok(html.includes(`data-option="key: ${c.label}"`), 'key position missing')
-    assert.ok(html.includes(`data-option="model: ${c.counter.label}"`), 'model position missing')
+    assert.ok(html.includes(`data-option="key is good: ${c.label}"`), 'key position missing')
+    assert.ok(html.includes(`data-option="model is good: ${c.counter.label}"`), 'model position missing')
     assert.match(html, /data-option="neither"/)
-    assert.match(html, /data-option="uphold"/)
-    assert.match(html, /data-option="overrule"/)
+    assert.match(html, /data-option="good"/)
+    assert.match(html, /data-option="bad"/)
   })
 
   test('an ask with options renders its own decision widget inside the callout', async () => {
