@@ -75,7 +75,7 @@ An answer key is a judgement call about content, and the reviewer's job is to ch
   "must_not_violate_label": "string",   // optional, overrides the default badge wording
   "cell_options": ["looks right", "has a problem"],          // optional
   "verdict_options": ["scope is right", "mis-scoped", "…"],  // optional
-  "evidence_copy_prefix": "evrow ",     // optional, prepended to each pointer
+  "evidence_copy_prefix": "evrow ",     // optional; a SHORT visible token (max 16 chars, enforced) rendered inline before each pointer — not click-to-copy
 
   "how_to_test": {                      // optional
     "review_steps": ["string"],
@@ -90,7 +90,7 @@ A cell needs at least one positive or one negative — an empty cell tells the r
 
 Each evidence entry is `{ pointer, text }`, where `text` is the excerpt the pointer resolves to. **Resolution happens at data-prep time; the template never queries a database.** Whoever builds the JSON is responsible for turning `messages:4471` into the row's text.
 
-The chip renders the pointer as selectable monospace followed by the excerpt. It is inert — no click behavior — because templates emit markup and the chrome owns behavior. An entry with no `text` renders an explicit *"evidence text was not resolved at build time"* note rather than a bare pointer, so an unresolved lookup cannot pass for a deliberately pointer-only chip.
+The chip renders the pointer as selectable monospace followed by the excerpt. It is inert — no click behavior — because templates emit markup and the chrome owns behavior. `evidence_copy_prefix` is therefore visible page text repeated on every chip, not a clipboard payload — the render throws past 16 chars. If the reviewer needs a runnable command around the pointer, put it once in `how_to_test.code_blocks`. An entry with no `text` renders an explicit *"evidence text was not resolved at build time"* note rather than a bare pointer, so an unresolved lookup cannot pass for a deliberately pointer-only chip.
 
 ## What the board already provides — don't rebuild it
 

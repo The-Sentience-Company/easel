@@ -261,6 +261,22 @@ function entryList(entries, path, kind, ctx) {
   return `<div class="sd-claims">${heading}<ul>${items}</ul></div>`
 }
 
+/* Renders inline before every pointer (chips are inert — the pre-easel builder's
+   click-to-copy semantics do not apply), so a command-length prefix is a hard error. */
+const EVIDENCE_PREFIX_MAX = 16
+
+function evidencePrefix(data) {
+  const prefix = data.evidence_copy_prefix ?? ''
+  requireString(prefix, 'answer-key.evidence_copy_prefix')
+  if (prefix.length > EVIDENCE_PREFIX_MAX) {
+    fail(
+      `answer-key.evidence_copy_prefix is ${prefix.length} chars — it renders inline before every evidence pointer, not as a click-to-copy payload. ` +
+      `Keep it a short token (≤${EVIDENCE_PREFIX_MAX} chars, e.g. "evrow "); put full commands in how_to_test.code_blocks instead.`,
+    )
+  }
+  return prefix
+}
+
 /* Inert by design: the pointer is selectable text, not a copy button. */
 function evidenceChips(evidence, path, ctx) {
   const items = requireArray(evidence ?? [], path)
@@ -269,7 +285,7 @@ function evidenceChips(evidence, path, ctx) {
     const at = `${path}[${n}]`
     requireObject(ev, at)
     const pointer = requireString(ev.pointer, `${at}.pointer`)
-    const prefix = ctx.data.evidence_copy_prefix ?? ''
+    const prefix = evidencePrefix(ctx.data)
     const excerpt = ev.text
       ? esc(ev.text)
       : '(evidence text was not resolved at build time)'
