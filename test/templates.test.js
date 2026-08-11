@@ -386,14 +386,62 @@ describe('eval', () => {
     assert.doesNotMatch(evalT.render(small), /<details/)
   })
 
-  test('compare mode: two labeled columns, order follows the blind key', () => {
-    const html = evalT.render(compare())
-    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>left text<\/p>/)
-    assert.match(html, /<div class="sd-eyebrow">output 2<\/div><p>right text<\/p>/)
+  const longText = (word) => `${word} paragraph long enough to stay in column mode.\n\nSecond paragraph.`
+  const compareLong = (over = {}) => compare({
+    cases: [
+      { id: 'a', candidates: [longText('left'), longText('right')] },
+      { id: 'b', candidates: [longText('one'), longText('two')] },
+    ],
+    ...over,
+  })
+
+  test('compare mode, long candidates: two labeled columns, order follows the blind key', () => {
+    const html = evalT.render(compareLong())
+    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>left paragraph/)
+    assert.match(html, /<div class="sd-eyebrow">output 2<\/div><p>right paragraph/)
     // b's key is 1: candidates[1] renders as output 1.
-    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>two<\/p>/)
+    assert.match(html, /<div class="sd-eyebrow">output 1<\/div><p>two paragraph/)
     assert.match(html, /data-widget-id="cmp-a"/)
     assert.match(html, /data-option="output-1"/)
+  })
+
+  test('compare mode, one-line candidates: dense table rows with compact votes, order follows the blind key', () => {
+    const html = evalT.render(compare())
+    assert.doesNotMatch(html, /sd-rules/)
+    assert.match(html, /<th>case<\/th><th>output 1<\/th><th>output 2<\/th><th>pick<\/th>/)
+    // b's key is 1: candidates[1] renders in the output-1 column.
+    assert.match(html, /<td>two<\/td><td>one<\/td>/)
+    assert.match(html, /class="sd-widget-compact"/)
+    assert.match(html, /data-widget-id="cmp-a"/)
+  })
+
+  test('compare mode: a context column appears only when a case carries context', () => {
+    assert.doesNotMatch(evalT.render(compare()), /<th>context<\/th>/)
+    const data = compare()
+    data.cases[0].context = 'day aim: hotels'
+    const html = evalT.render(data)
+    assert.match(html, /<th>context<\/th>/)
+    assert.match(html, /day aim: hotels/)
+    assert.match(html, /<td>—<\/td>/)
+  })
+
+  test('compare mode: group starts a new table with a heading', () => {
+    const data = compare()
+    data.cases[0].group = 'aleks'
+    data.cases[1].group = 'sam'
+    const html = evalT.render(data)
+    assert.match(html, /<h2>aleks <span class="sd-count">1<\/span><\/h2>/)
+    assert.match(html, /<h2>sam <span class="sd-count">1<\/span><\/h2>/)
+    assert.equal([...html.matchAll(/<div class="sd-tablewrap">/g)].length, 2)
+  })
+
+  test('compare mode, long candidates: context renders above the pair, collapsed when long', () => {
+    const data = compareLong()
+    data.cases[0].context = 'short context line'
+    data.cases[1].context = 'x'.repeat(500)
+    const html = evalT.render(data)
+    assert.match(html, /<div class="sd-muted"><p>short context line<\/p><\/div>/)
+    assert.match(html, /<summary>context<\/summary>/)
   })
 
   test('compare mode never renders which run is which', () => {

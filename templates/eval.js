@@ -145,32 +145,83 @@ function renderDossiers(cases, uniqueWidgetId) {
   }).join('\n')
 }
 
+/* One-line candidates pack 42 cases onto a screen as table rows; anything
+   longer gets the two-column section treatment. The data decides, per mode. */
+const DENSE_MAX_CHARS = 160
+
+function compareContextBlock(context) {
+  if (!context) return ''
+  if (context.length <= 400) return `<div class="sd-muted">${markdown(context)}</div>`
+  return `<details class="sd-collapse"><summary>context</summary><div class="sd-collapse-body">${markdown(context)}</div></details>`
+}
+
 function renderCompare(cases, blindKey, uniqueWidgetId) {
   if (blindKey === undefined || blindKey === null) {
     fail('eval: compare mode requires blindKey — the harness holds the mapping, the page never names the runs')
   }
   requireObject(blindKey, 'eval.blindKey')
-  return cases.map((c, i) => {
+  const rows = cases.map((c, i) => {
     const candidates = requireArray(c.candidates, `eval.cases[${i}].candidates`)
     if (candidates.length !== 2) fail(`eval.cases[${i}].candidates must have exactly 2 entries, got ${candidates.length}`)
+    candidates.forEach((t) => requireString(t, `eval.cases[${i}].candidates[]`))
+    if (c.context !== undefined) requireString(c.context, `eval.cases[${i}].context`)
+    if (c.group !== undefined) requireString(c.group, `eval.cases[${i}].group`)
     const first = blindKey[c.id]
     if (first !== 0 && first !== 1) fail(`eval.blindKey["${c.id}"] must be 0 or 1 — which candidate renders as output 1`)
     const [left, right] = first === 0 ? candidates : [candidates[1], candidates[0]]
-    return [
-      '<section class="sd-section">',
-      caseHeading(c),
-      '<div class="sd-rules">',
-      `<div class="sd-rule"><div class="sd-eyebrow">output 1</div>${markdown(requireString(left, `eval.cases[${i}].candidates[]`))}</div>`,
-      `<div class="sd-rule"><div class="sd-eyebrow">output 2</div>${markdown(requireString(right, `eval.cases[${i}].candidates[]`))}</div>`,
-      '</div>',
+    return { c, left, right }
+  })
+
+  const dense = rows.every(({ left, right }) =>
+    [left, right].every((t) => !t.includes('\n') && t.length <= DENSE_MAX_CHARS))
+  if (dense) return renderCompareTable(rows, uniqueWidgetId)
+
+  return rows.map(({ c, left, right }) => [
+    '<section class="sd-section">',
+    caseHeading(c),
+    compareContextBlock(c.context),
+    '<div class="sd-rules">',
+    `<div class="sd-rule"><div class="sd-eyebrow">output 1</div>${markdown(left)}</div>`,
+    `<div class="sd-rule"><div class="sd-eyebrow">output 2</div>${markdown(right)}</div>`,
+    '</div>',
+    widget({
+      type: 'vote',
+      id: uniqueWidgetId(`cmp-${c.id}`),
+      prompt: `${c.id}: which is better?`,
+      options: ['output-1', 'output-2', 'tie'],
+    }),
+    '</section>',
+  ].filter(Boolean).join('\n')).join('\n')
+}
+
+function renderCompareTable(rows, uniqueWidgetId) {
+  const groups = []
+  for (const r of rows) {
+    const name = r.c.group ?? ''
+    if (!groups.length || groups.at(-1).name !== name) groups.push({ name, rows: [] })
+    groups.at(-1).rows.push(r)
+  }
+  return groups.map((g) => {
+    const hasContext = g.rows.some((r) => r.c.context)
+    const head = ['case', ...(hasContext ? ['context'] : []), 'output 1', 'output 2', 'pick']
+    const body = g.rows.map(({ c, left, right }) => [
+      `<span class="sd-mono">${esc(c.name ?? c.id)}</span>`,
+      ...(hasContext ? [c.context ? `<span class="sd-muted">${esc(c.context)}</span>` : '—'] : []),
+      esc(left),
+      esc(right),
       widget({
         type: 'vote',
         id: uniqueWidgetId(`cmp-${c.id}`),
-        prompt: `${c.id}: which is better?`,
         options: ['output-1', 'output-2', 'tie'],
+        compact: true,
       }),
+    ])
+    return [
+      '<section class="sd-section">',
+      g.name ? `<h2>${esc(g.name)} <span class="sd-count">${g.rows.length}</span></h2>` : '',
+      table(head, body),
       '</section>',
-    ].join('\n')
+    ].filter(Boolean).join('\n')
   }).join('\n')
 }
 

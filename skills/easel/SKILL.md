@@ -19,7 +19,7 @@ easel open <file.html>                                                          
 | Template | The work is |
 |---|---|
 | `review` | a plan, design, or proposal to read, plus decisions to answer |
-| `eval` | eval output — dossiers, a blind two-column compare, or an item matrix; the data shape picks the mode. Blind compare is exactly 2 candidates with no per-case context — a compare needing 3+ arms, context above each pair, or images is a `page` for now |
+| `eval` | eval output — dossiers, a blind compare (dense table for one-liners, columns for prose; per-case context and grouping), or an item matrix; the data shape picks the mode. Still exactly 2 arms and no images — 3+ arms or image candidates is a `page` for now |
 | `answer-key` | hand-authored goldens laid out for the eval owner to approve |
 | `rulings` | labeled cases adjudicated one by one — a classification key, triage list, or model-vs-key disagreements; per-case votes, decision-first sections |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
