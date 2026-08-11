@@ -64,6 +64,8 @@ One table per case: `item | B | C | D`, one row per item, then a plain `best?` r
 
 Divergence highlighting is the matrix's core value: tokens not present in every sibling candidate render `<strong>`, so identical prose recedes and the differences pop. Matching strips edge punctuation but keeps interior `.`/`@`, so emails compare whole.
 
+**Candidate keys are reviewer-facing.** They render verbatim as column headers and vote buttons (`<key> best`), so name them `1`/`2`/`3` (or `A`/`B`/`C`) — never raw run ids or hashes. Record which arm each number maps to in `footer`; the harness that published the board keeps the mapping for unblinding.
+
 ## Errors
 
 Empty `cases`, duplicate case or widget ids, mixed case shapes, a case with none of the three shape fields, a missing/invalid blind key entry, candidate counts other than 2, and mismatched matrix candidate keys all throw a `TemplateError` naming the problem. A metric without a `value` throws rather than rendering a blank tile.
