@@ -63,7 +63,9 @@ To get the turn back while waiting, background the await only as a harness-track
 
 Applying three or more annotations: write one script that makes every edit and run it, rather than an Edit call per change. Guard each replacement with an assertion that it matched exactly once — a silent no-op and an unintended second match are the two failure modes — and leave deliberate global renames unguarded. Keep a global rename off short blocks: replacing most of a badge or cell's text drops it under the differ's similarity floor, so the round reads as remove+add rather than modified. Chat feedback usually can't be pre-committed to string literals; edit those directly.
 
-Apply feedback, then `easel publish <key> --note "round 2: ..." --agent ID` — same ID as your await so the daemon drops your parked listener in-turn; same key, diff markers show what changed. For a clean visual round with no diff markers, `easel end <key>` and re-open from the same data file (an ended board releases its (template, data) pair; the re-open returns a fresh round 1).
+Apply feedback, then `easel publish <key> --note "round 2: ..." --agent ID` — same ID as your await so the daemon drops your parked listener in-turn; same key, diff markers show what changed.
+
+**Earlier rounds are never buried.** The chrome carries a round picker — the r1/r2 pills top-left, Q/W to flip — so the reader can open any past round themselves, and an agent reads one with `GET /api/b/<key>/state?round=N`. Point at the round ("the map is r5"), never republish old content to resurface it — and don't stack unrelated status rounds onto a content board on the theory that the content is otherwise lost. For a clean visual round with no diff markers, `easel end <key>` and re-open from the same data file (an ended board releases its (template, data) pair; the re-open returns a fresh round 1).
 
 ## Cleanup
 
