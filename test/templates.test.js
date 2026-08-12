@@ -626,10 +626,53 @@ describe('rulings', () => {
     assert.throws(() => rulings.render(data), /px must be a number 16\.\.800/)
   })
 
-  test('a counter verdict renders as a marked dissent block', async () => {
+  test('a counter puts both verdicts in the title pills, reasoning below', async () => {
     const html = rulings.render(await base())
-    assert.match(html, /model disagreed — said out/)
+    assert.match(html, /sd-badge sd-badge-info"[^>]*>key says: in</)
+    assert.match(html, /sd-badge sd-badge-warning"[^>]*>model says: out</)
+    assert.match(html, /model rationale/)
     assert.match(html, /Model saw no promise\./)
+    assert.doesNotMatch(html, /model disagreed — said/, 'the verdict belongs in the pill, not repeated in the block header')
+  })
+
+  test('a recorded model verdict that matches the key renders as one aligned pill', async () => {
+    const data = await base()
+    const plain = data.sections.flatMap((s) => s.cases).find((x) => !x.counter && x.rationale)
+    const before = rulings.render(data).match(/model says/g)?.length ?? 0
+    plain.model = plain.label
+    const html = rulings.render(data)
+    assert.match(html, /key \+ model aligned/)
+    assert.equal(html.match(/model says/g)?.length ?? 0, before, 'agreement is one pill, not a second verdict')
+  })
+
+  test('a bare model label that differs from the key contests the case like a counter', async () => {
+    const data = await base()
+    const plain = data.sections.flatMap((s) => s.cases).find((x) => !x.counter && x.rationale)
+    plain.model = 'out'
+    plain.label = 'in'
+    const html = rulings.render(data)
+    assert.match(html, /sd-badge sd-badge-warning"[^>]*>model says: out</)
+    assert.ok(html.includes('data-option="model is good: out"'), 'a recorded disagreement earns the adjudication vote')
+    assert.doesNotMatch(html, /key \+ model aligned/)
+  })
+
+  test('an undefined model label throws like an undefined case label', async () => {
+    const data = await base()
+    data.sections[0].cases[0].model = 'nonesuch'
+    assert.throws(() => rulings.render(data), /model "nonesuch" has no entry in rulings\.labels/)
+  })
+
+  test('counter.saw renders the model input above its rationale, and must be a string', async () => {
+    const data = await base()
+    const c = data.sections.flatMap((s) => s.cases).find((x) => x.counter)
+    c.counter.saw = 'Only the thread text, no calendar.'
+    const html = rulings.render(data)
+    const sawAt = html.indexOf('what the model saw')
+    const reasonAt = html.indexOf('model rationale')
+    assert.ok(sawAt >= 0 && sawAt < reasonAt, 'what the model saw must precede its rationale')
+    assert.match(html, /Only the thread text, no calendar\./)
+    c.counter.saw = 42
+    assert.throws(() => rulings.render(data), /counter\.saw must be a non-empty string/)
   })
 
   test('questions render as decision widgets before any section', async () => {

@@ -1,7 +1,7 @@
 /* rulings template — labeled cases adjudicated one by one, grouped by decision:
    sections ordered by judgment needed, one vote per case, skim sections one line each. */
 
-import { esc, markdown, widget, attr, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
+import { esc, markdown, widget, attr, badge, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
 
 export const name = 'rulings'
 
@@ -129,7 +129,8 @@ function section(s, i, ctx) {
   if (explicitOptions !== undefined) requireArray(explicitOptions, `${at}.options`)
   const caseOptions = (c) => {
     if (explicitOptions !== undefined) return explicitOptions
-    if (c.counter?.label) return [`key is good: ${c.label}`, `model is good: ${c.counter.label}`, 'neither']
+    const dissent = dissentLabel(c)
+    if (dissent) return [`key is good: ${c.label}`, `model is good: ${dissent}`, 'neither']
     return DEFAULT_CASE_OPTIONS
   }
   const sectionOptions = requireArray(ctx.data.section_options ?? DEFAULT_SECTION_OPTIONS, 'rulings.section_options')
@@ -151,6 +152,14 @@ function section(s, i, ctx) {
   ].filter(Boolean).join('\n')
 }
 
+/* The model's verdict when it differs from the key's; null when they agree or
+   when none was recorded — different states, both pill-less here. */
+function dissentLabel(c) {
+  if (c.counter?.label) return c.counter.label
+  if (typeof c.model === 'string' && c.model && c.model !== c.label) return c.model
+  return null
+}
+
 function caseBlock(c, at, caseOptions, ctx) {
   requireObject(c, at)
   requireString(c.title, `${at}.title`)
@@ -159,15 +168,32 @@ function caseBlock(c, at, caseOptions, ctx) {
     fail(`${at}.label "${label}" has no entry in rulings.labels — a reviewer must never meet an undefined label`)
   }
 
-  const badges = [`<span class="sd-tag" title="${attr(ctx.labels.get(label))}">${esc(label)}</span>`]
-  if (c.borderline) badges.push('<span class="sd-tag" title="keyed away from the penalized label under the tie-break; this ruling moves the metric">borderline</span>')
+  if (c.model !== undefined) {
+    const m = requireString(c.model, `${at}.model`)
+    if (!ctx.labels.has(m)) fail(`${at}.model "${m}" has no entry in rulings.labels`)
+  }
+  /* The verdicts lead the body — the contest, or its absence, reads before any prose. */
+  const verdicts = []
+  const dissent = dissentLabel(c)
+  if (c.model !== undefined && !dissent) {
+    verdicts.push(badge('key + model aligned', 'success', at, 'the model returned the same label the key did — nothing to adjudicate'))
+  }
+  verdicts.push(badge(`key says: ${label}`, 'info', at, ctx.labels.get(label)))
+  if (dissent) {
+    verdicts.push(badge(`model says: ${dissent}`, 'warning', at, ctx.labels.get(dissent) ?? "the model's verdict on this case"))
+  }
+  if (c.borderline) verdicts.push(badge('borderline', 'neutral', at, 'keyed away from the penalized label under the tie-break; this ruling moves the metric'))
+  const verdictRow = `<div class="sd-verdicts">${verdicts.join('')}</div>`
 
   const counter = c.counter
     ? (() => {
         requireObject(c.counter, `${at}.counter`)
         requireString(c.counter.label, `${at}.counter.label`)
         requireString(c.counter.reason, `${at}.counter.reason`)
-        return `<div class="sd-note sd-counter"><span class="sd-eyebrow sd-eyebrow-strict">model disagreed — said ${esc(c.counter.label)}</span>${markdown(c.counter.reason)}</div>`
+        const saw = c.counter.saw !== undefined
+          ? `<div class="sd-note sd-saw"><span class="sd-eyebrow">what the model saw</span>${markdown(requireString(c.counter.saw, `${at}.counter.saw`))}</div>`
+          : ''
+        return saw + `<div class="sd-note sd-counter"><span class="sd-eyebrow sd-eyebrow-strict">model rationale</span>${markdown(c.counter.reason)}</div>`
       })()
     : ''
 
@@ -241,13 +267,14 @@ function caseBlock(c, at, caseOptions, ctx) {
     ask,
     c.footnote ? `<div class="sd-case-footnote">${esc(c.footnote)}</div>` : '',
   ].filter(Boolean).join('')
-  // A case with a body folds; title-only cases (skim sections) stay plain lines.
-  if (!body) return `<li><div class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</div></li>`
+  /* A case with a body folds, and its verdicts lead that body; a skim case has
+     nothing to fold, so they ride the title or the line would say nothing. */
+  if (!body) return `<li><div class="sd-case-title">${esc(c.title)} ${verdicts.join('')}</div></li>`
   return [
     '<li>',
     '<details class="sd-collapse" open>',
-    `<summary><span class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</span></summary>`,
-    `<div class="sd-collapse-body">${body}</div>`,
+    `<summary><span class="sd-case-title">${esc(c.title)}</span></summary>`,
+    `<div class="sd-collapse-body">${verdictRow}${body}</div>`,
     '</details>',
     '</li>',
   ].join('')
