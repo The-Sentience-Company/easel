@@ -71,7 +71,7 @@ Alignment is carried on a class, not a `style` attribute. The publish sanitizer 
 
 Decisions and votes render as widgets. A click queues the choice as a draft on the same queue as annotations — reselecting replaces it — and **Send** delivers everything together; nothing reaches the agent before that.
 
-Diagrams in a `mermaid` fence are rendered to inline SVG when the board is published. Write `<br/>` normally in a node label.
+Diagrams in a `mermaid` fence are rendered to inline SVG when the board is published. Write `<br/>` normally in a node label. Unstyled diagrams render every node one uniform colour — when the nodes differ in kind (pipeline vs external system, happy vs failure path), paint them with the palette in `mermaid.md`'s authoring section.
 
 ## Errors
 

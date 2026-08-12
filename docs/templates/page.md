@@ -226,6 +226,6 @@ The daemon binds the click and queues the value as a draft; Send delivers it.
 
 ## Diagrams
 
-Put mermaid source in `<pre class="mermaid">…</pre>`. It is rendered to inline SVG at publish time, so there is no client-side renderer to configure and no startup race. Write `<br/>` normally in node labels — the source is entity-decoded before rendering, and the sketch and whiteboard render it as a line break.
+Put mermaid source in `<pre class="mermaid">…</pre>`. It is rendered to inline SVG at publish time, so there is no client-side renderer to configure and no startup race. Write `<br/>` normally in node labels — the source is entity-decoded before rendering, and the sketch and whiteboard render it as a line break. Unstyled diagrams render every node one uniform colour — when the nodes differ in kind, paint them with the palette in `mermaid.md`'s authoring section.
 
 Avoid `subgraph`: the excalidraw converter reports it unsupported, so the diagram silently falls back to a plain mermaid SVG with no whiteboard scene and no look toggle. Redraw grouped flows without subgraphs (e.g. prefix node labels) to keep the diagram whiteboardable.

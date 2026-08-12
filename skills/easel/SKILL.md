@@ -26,7 +26,7 @@ easel open <file.html>                                                          
 
 **Then Read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file; never write the JSON from memory of the schema.** Memory silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its schema and the rules that only matter inside that flow, so this file doesn't repeat them and they can't drift.
 
-Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time (`references/templates/mermaid.md`).
+Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time — **before writing any fence, read `references/templates/mermaid.md`**: an unstyled diagram renders every node one uniform colour, and its authoring section carries the palette that paints node kinds apart.
 
 **Always pass `--title`: 4–6 words naming the work, not the document.** It is the only handle on the dashboard, where boards outlive the session that made them. "Extractor arms — 2.5-flash vs 3.5-flash-lite", not "Eval results".
 
