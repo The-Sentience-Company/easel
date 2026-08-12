@@ -1882,20 +1882,21 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 .sd-saw > p { color: var(--color-muted-content); margin: 0; }
 /* Verdict pills lead a case body. Solid fills, never a tint over an unknown
    backdrop — the two verdicts must be told apart at a glance while skimming. */
-.sd-verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.sd-verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+/* Verdicts are read, not scanned as chrome — body scale and sentence case, not
+   the caps-mono microtype that made the widget prompts unreadable. */
 .sd-verdict {
   display: inline-flex;
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 13px;
   line-height: 1.5;
-  padding: 2px 9px;
+  padding: 3px 11px;
   border-radius: 999px;
   border: 1px solid transparent;
   white-space: nowrap;
 }
+.sd-verdict-value { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; }
 /* Tinted via color-mix against the page, so each fill is a solid colour — the
    hue reads without the glare a saturated pill puts next to body text. */
 .sd-verdict-key {

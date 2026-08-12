@@ -177,10 +177,10 @@ function caseBlock(c, at, caseOptions, ctx) {
   if (c.model !== undefined && !dissentLabel(c)) {
     verdicts.push('<span class="sd-verdict sd-verdict-aligned" title="the model returned the same label the key did — nothing to adjudicate">key + model aligned</span>')
   }
-  verdicts.push(`<span class="sd-verdict sd-verdict-key" title="${attr(ctx.labels.get(label))}">key says: ${esc(label)}</span>`)
+  verdicts.push(`<span class="sd-verdict sd-verdict-key" title="${attr(ctx.labels.get(label))}">key says<span class="sd-verdict-value">${esc(label)}</span></span>`)
   const dissent = dissentLabel(c)
   if (dissent) {
-    verdicts.push(`<span class="sd-verdict sd-verdict-model" title="${attr(ctx.labels.get(dissent) ?? "the model's verdict on this case")}">model vote: ${esc(dissent)}</span>`)
+    verdicts.push(`<span class="sd-verdict sd-verdict-model" title="${attr(ctx.labels.get(dissent) ?? "the model's verdict on this case")}">model says<span class="sd-verdict-value">${esc(dissent)}</span></span>`)
   }
   if (c.borderline) verdicts.push('<span class="sd-verdict sd-verdict-flag" title="keyed away from the penalized label under the tie-break; this ruling moves the metric">borderline</span>')
   const verdictRow = `<div class="sd-verdicts">${verdicts.join('')}</div>`

@@ -628,8 +628,8 @@ describe('rulings', () => {
 
   test('a counter puts both verdicts in the title pills, reasoning below', async () => {
     const html = rulings.render(await base())
-    assert.match(html, /key says: in/)
-    assert.match(html, /model vote: out/)
+    assert.match(html, /key says<span class="sd-verdict-value">in</)
+    assert.match(html, /model says<span class="sd-verdict-value">out</)
     assert.match(html, /model rationale/)
     assert.match(html, /Model saw no promise\./)
     assert.doesNotMatch(html, /model disagreed — said/, 'the verdict belongs in the pill, not repeated in the block header')
@@ -638,11 +638,11 @@ describe('rulings', () => {
   test('a recorded model verdict that matches the key renders as one aligned pill', async () => {
     const data = await base()
     const plain = data.sections.flatMap((s) => s.cases).find((x) => !x.counter && x.rationale)
-    const before = rulings.render(data).match(/model vote:/g)?.length ?? 0
+    const before = rulings.render(data).match(/model says/g)?.length ?? 0
     plain.model = plain.label
     const html = rulings.render(data)
     assert.match(html, /key \+ model aligned/)
-    assert.equal(html.match(/model vote:/g)?.length ?? 0, before, 'agreement is one pill, not a second verdict')
+    assert.equal(html.match(/model says/g)?.length ?? 0, before, 'agreement is one pill, not a second verdict')
   })
 
   test('a bare model label that differs from the key contests the case like a counter', async () => {
@@ -651,7 +651,7 @@ describe('rulings', () => {
     plain.model = 'out'
     plain.label = 'in'
     const html = rulings.render(data)
-    assert.match(html, /model vote: out/)
+    assert.match(html, /model says<span class="sd-verdict-value">out</)
     assert.ok(html.includes('data-option="model is good: out"'), 'a recorded disagreement earns the adjudication vote')
     assert.doesNotMatch(html, /key \+ model aligned/)
   })
