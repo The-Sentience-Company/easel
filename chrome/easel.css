@@ -1896,8 +1896,23 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
   border: 1px solid transparent;
   white-space: nowrap;
 }
-.sd-verdict-key { background: var(--color-info); color: var(--color-status-content); }
-.sd-verdict-model { background: var(--color-warning); color: var(--color-status-content); }
+/* Tinted via color-mix against the page, so each fill is a solid colour — the
+   hue reads without the glare a saturated pill puts next to body text. */
+.sd-verdict-key {
+  background: color-mix(in oklch, var(--color-info) 14%, var(--color-base-100));
+  border-color: color-mix(in oklch, var(--color-info) 40%, var(--color-base-100));
+  color: color-mix(in oklch, var(--color-info) 78%, var(--color-base-content));
+}
+.sd-verdict-model {
+  background: color-mix(in oklch, var(--color-warning) 14%, var(--color-base-100));
+  border-color: color-mix(in oklch, var(--color-warning) 40%, var(--color-base-100));
+  color: color-mix(in oklch, var(--color-warning) 78%, var(--color-base-content));
+}
+.sd-verdict-aligned {
+  background: color-mix(in oklch, var(--color-success) 14%, var(--color-base-100));
+  border-color: color-mix(in oklch, var(--color-success) 40%, var(--color-base-100));
+  color: color-mix(in oklch, var(--color-success) 78%, var(--color-base-content));
+}
 .sd-verdict-flag { background: none; border-color: var(--color-base-300); color: var(--color-muted-content); }
 .sd-ruling { margin-top: 8px; }
 .sd-ruling > .sd-eyebrow, .sd-ask > .sd-eyebrow, .sd-saw > .sd-eyebrow { display: block; margin-bottom: 2px; }

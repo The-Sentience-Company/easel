@@ -129,7 +129,8 @@ function section(s, i, ctx) {
   if (explicitOptions !== undefined) requireArray(explicitOptions, `${at}.options`)
   const caseOptions = (c) => {
     if (explicitOptions !== undefined) return explicitOptions
-    if (c.counter?.label) return [`key is good: ${c.label}`, `model is good: ${c.counter.label}`, 'neither']
+    const dissent = dissentLabel(c)
+    if (dissent) return [`key is good: ${c.label}`, `model is good: ${dissent}`, 'neither']
     return DEFAULT_CASE_OPTIONS
   }
   const sectionOptions = requireArray(ctx.data.section_options ?? DEFAULT_SECTION_OPTIONS, 'rulings.section_options')
@@ -151,6 +152,14 @@ function section(s, i, ctx) {
   ].filter(Boolean).join('\n')
 }
 
+/* The model's verdict when it differs from the key's; null when they agree or
+   when none was recorded — different states, both pill-less here. */
+function dissentLabel(c) {
+  if (c.counter?.label) return c.counter.label
+  if (typeof c.model === 'string' && c.model && c.model !== c.label) return c.model
+  return null
+}
+
 function caseBlock(c, at, caseOptions, ctx) {
   requireObject(c, at)
   requireString(c.title, `${at}.title`)
@@ -159,11 +168,19 @@ function caseBlock(c, at, caseOptions, ctx) {
     fail(`${at}.label "${label}" has no entry in rulings.labels — a reviewer must never meet an undefined label`)
   }
 
-  /* The verdicts lead the body as colored pills — the contest reads before any prose. */
-  const verdicts = [`<span class="sd-verdict sd-verdict-key" title="${attr(ctx.labels.get(label))}">key says: ${esc(label)}</span>`]
-  if (c.counter?.label) {
-    const cl = c.counter.label
-    verdicts.push(`<span class="sd-verdict sd-verdict-model" title="${attr(ctx.labels.get(cl) ?? "the model's verdict on this case")}">model vote: ${esc(cl)}</span>`)
+  if (c.model !== undefined) {
+    const m = requireString(c.model, `${at}.model`)
+    if (!ctx.labels.has(m)) fail(`${at}.model "${m}" has no entry in rulings.labels`)
+  }
+  /* The verdicts lead the body as pills — the contest, or its absence, reads before any prose. */
+  const verdicts = []
+  if (c.model !== undefined && !dissentLabel(c)) {
+    verdicts.push('<span class="sd-verdict sd-verdict-aligned" title="the model returned the same label the key did — nothing to adjudicate">key + model aligned</span>')
+  }
+  verdicts.push(`<span class="sd-verdict sd-verdict-key" title="${attr(ctx.labels.get(label))}">key says: ${esc(label)}</span>`)
+  const dissent = dissentLabel(c)
+  if (dissent) {
+    verdicts.push(`<span class="sd-verdict sd-verdict-model" title="${attr(ctx.labels.get(dissent) ?? "the model's verdict on this case")}">model vote: ${esc(dissent)}</span>`)
   }
   if (c.borderline) verdicts.push('<span class="sd-verdict sd-verdict-flag" title="keyed away from the penalized label under the tie-break; this ruling moves the metric">borderline</span>')
   const verdictRow = `<div class="sd-verdicts">${verdicts.join('')}</div>`

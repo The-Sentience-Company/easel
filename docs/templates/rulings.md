@@ -45,6 +45,9 @@ The section grouping IS the decision structure: sections come in the order of ju
           "ask": "string",              // optional — YOUR commentary to the reviewer, a labeled "your agent" callout
                                         //   after the vote; or { "text": "…", "options": ["…"] } when you need an
                                         //   answer — the options render as the callout's own decision widget
+          "model": "internal_name",     // optional — the model's verdict on this case; same label as the
+                                        //   key renders one green "key + model aligned" pill, a different
+                                        //   one contests the case exactly as `counter` does
           "borderline": true,           // optional — renders a tie-break badge
           "image": "https://…",         // optional — the judged object, rendered under the title;
                                         //   or { "src": "https://…", "px": 44, "round": true }
@@ -69,6 +72,8 @@ The section grouping IS the decision structure: sections come in the order of ju
 A case's `label` must appear in `labels` — an undefined label throws: a reviewer must never meet an internal name without a plain-word definition.
 
 **The verdicts open the case as colored pills, the reasoning follows.** A case body leads with `key says: <label>` and, when contested, `model vote: <counter label>` — colored apart so the disagreement registers before any prose and a reader can skip cases where the two agree. That is why the blocks underneath name only their *reasoning* ("key rationale", "model rationale"): repeating the verdict in a block header is the noise the pills exist to remove. A skim case (no rationale, no vote) has no body to lead, so its pills sit on the title line instead.
+
+**Record the model's verdict on every case, not only the disagreements.** On a key-vs-model board, a case with no model pill is indistinguishable from one where the model agreed — the reviewer cannot tell "we checked and it matched" from "nobody looked", and asks. Carry `model` on every case: matching the key renders a single green `key + model aligned` pill, and differing contests the case (orange `model vote:` pill plus the adjudication vote) exactly as `counter` does. Use `counter` instead of `model` when you also have the model's reasoning to show; the two express the same disagreement, so a case needs only one.
 
 **Give the model's input when it explains the split.** `counter.saw` renders as "what the model saw", muted, directly above the model's rationale. Reach for it when the key and the model were working from different information — the usual cause of a defensible-looking model error, and impossible to adjudicate without seeing what the model had. When both judged the same text, leave it out; the `quote` block already carries the evidence.
 

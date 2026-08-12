@@ -635,6 +635,33 @@ describe('rulings', () => {
     assert.doesNotMatch(html, /model disagreed — said/, 'the verdict belongs in the pill, not repeated in the block header')
   })
 
+  test('a recorded model verdict that matches the key renders as one aligned pill', async () => {
+    const data = await base()
+    const plain = data.sections.flatMap((s) => s.cases).find((x) => !x.counter && x.rationale)
+    const before = rulings.render(data).match(/model vote:/g)?.length ?? 0
+    plain.model = plain.label
+    const html = rulings.render(data)
+    assert.match(html, /key \+ model aligned/)
+    assert.equal(html.match(/model vote:/g)?.length ?? 0, before, 'agreement is one pill, not a second verdict')
+  })
+
+  test('a bare model label that differs from the key contests the case like a counter', async () => {
+    const data = await base()
+    const plain = data.sections.flatMap((s) => s.cases).find((x) => !x.counter && x.rationale)
+    plain.model = 'out'
+    plain.label = 'in'
+    const html = rulings.render(data)
+    assert.match(html, /model vote: out/)
+    assert.ok(html.includes('data-option="model is good: out"'), 'a recorded disagreement earns the adjudication vote')
+    assert.doesNotMatch(html, /key \+ model aligned/)
+  })
+
+  test('an undefined model label throws like an undefined case label', async () => {
+    const data = await base()
+    data.sections[0].cases[0].model = 'nonesuch'
+    assert.throws(() => rulings.render(data), /model "nonesuch" has no entry in rulings\.labels/)
+  })
+
   test('counter.saw renders the model input above its rationale, and must be a string', async () => {
     const data = await base()
     const c = data.sections.flatMap((s) => s.cases).find((x) => x.counter)
