@@ -628,8 +628,8 @@ describe('rulings', () => {
 
   test('a counter puts both verdicts in the title pills, reasoning below', async () => {
     const html = rulings.render(await base())
-    assert.match(html, /sd-badge-key">key says<\/span><span class="sd-badge-value">in</)
-    assert.match(html, /sd-badge-key">model says<\/span><span class="sd-badge-value">out</)
+    assert.match(html, /sd-badge sd-badge-info"[^>]*>key says: in</)
+    assert.match(html, /sd-badge sd-badge-warning"[^>]*>model says: out</)
     assert.match(html, /model rationale/)
     assert.match(html, /Model saw no promise\./)
     assert.doesNotMatch(html, /model disagreed — said/, 'the verdict belongs in the pill, not repeated in the block header')
@@ -651,7 +651,7 @@ describe('rulings', () => {
     plain.model = 'out'
     plain.label = 'in'
     const html = rulings.render(data)
-    assert.match(html, /sd-badge-key">model says<\/span><span class="sd-badge-value">out</)
+    assert.match(html, /sd-badge sd-badge-warning"[^>]*>model says: out</)
     assert.ok(html.includes('data-option="model is good: out"'), 'a recorded disagreement earns the adjudication vote')
     assert.doesNotMatch(html, /key \+ model aligned/)
   })

@@ -1,7 +1,7 @@
 /* rulings template — labeled cases adjudicated one by one, grouped by decision:
    sections ordered by judgment needed, one vote per case, skim sections one line each. */
 
-import { esc, markdown, widget, attr, badge, keyedBadge, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
+import { esc, markdown, widget, attr, badge, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
 
 export const name = 'rulings'
 
@@ -178,9 +178,9 @@ function caseBlock(c, at, caseOptions, ctx) {
   if (c.model !== undefined && !dissent) {
     verdicts.push(badge('key + model aligned', 'success', at, 'the model returned the same label the key did — nothing to adjudicate'))
   }
-  verdicts.push(keyedBadge('key says', label, 'info', at, ctx.labels.get(label)))
+  verdicts.push(badge(`key says: ${label}`, 'info', at, ctx.labels.get(label)))
   if (dissent) {
-    verdicts.push(keyedBadge('model says', dissent, 'warning', at, ctx.labels.get(dissent) ?? "the model's verdict on this case"))
+    verdicts.push(badge(`model says: ${dissent}`, 'warning', at, ctx.labels.get(dissent) ?? "the model's verdict on this case"))
   }
   if (c.borderline) verdicts.push(badge('borderline', 'neutral', at, 'keyed away from the penalized label under the tie-break; this ruling moves the metric'))
   const verdictRow = `<div class="sd-verdicts">${verdicts.join('')}</div>`
