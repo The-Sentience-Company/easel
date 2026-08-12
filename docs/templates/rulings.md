@@ -49,7 +49,11 @@ The section grouping IS the decision structure: sections come in the order of ju
           "image": "https://…",         // optional — the judged object, rendered under the title;
                                         //   or { "src": "https://…", "px": 44, "round": true }
           "quote": { "text": "…", "source": "table:id" },          // optional evidence block
-          "counter": { "label": "…", "reason": "…" },              // optional dissent (e.g. the model's verdict)
+          "counter": {                                             // optional dissent (e.g. the model's verdict)
+            "label": "…",                                          // required — renders as the "model vote:" pill
+            "saw": "string",                                       // optional, markdown — the input the model judged
+            "reason": "…"                                          // required — the model's own reasoning
+          },
           "footnote": "string"          // optional — muted small print, rendered last (citations, dates)
         }
       ]
@@ -63,6 +67,10 @@ The section grouping IS the decision structure: sections come in the order of ju
 ```
 
 A case's `label` must appear in `labels` — an undefined label throws: a reviewer must never meet an internal name without a plain-word definition.
+
+**The verdicts ride in the title, the reasoning below it.** A case's pills are `key says: <label>` and, when contested, `model vote: <counter label>` — so the reader sees the disagreement before any prose and can skip cases where they already agree. That is why the blocks underneath name only their *reasoning* ("key rationale", "model rationale"): repeating the verdict in a block header is the noise the pills exist to remove.
+
+**Give the model's input when it explains the split.** `counter.saw` renders as "what the model saw", muted, directly above the model's rationale. Reach for it when the key and the model were working from different information — the usual cause of a defensible-looking model error, and impossible to adjudicate without seeing what the model had. When both judged the same text, leave it out; the `quote` block already carries the evidence.
 
 **The vote names what it rules on.** When a section simply has no `options` field (leave it out — no explicit `null` needed), a case that carries a `counter` votes on the actual contest — `key is good: <label>` / `model is good: <counter label>` / `neither` — and an uncontested case gets the plain `good` / `bad` confirm. Set options explicitly only when the ruling isn't label-shaped. And `ask` is not the vote: give it options only when you genuinely need the reviewer's answer to a separate question — a reflex ask on every case competes with the vote for attention, which is the exact failure this design removed.
 

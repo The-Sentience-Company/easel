@@ -1877,8 +1877,12 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 /* rulings template — each case block carries its voice label */
 .sd-case-title { font-weight: 600; color: var(--color-base-content); }
 .sd-counter { border-left: 2px solid var(--color-warning); padding-left: 10px; margin-top: 6px; }
+/* the model's input, muted — context for its rationale, not a claim to weigh */
+.sd-saw { border-left: 2px solid var(--color-base-300); padding-left: 10px; margin-top: 8px; }
+.sd-saw > p { color: var(--color-muted-content); margin: 0; }
+.sd-tag-counter { border-color: var(--color-warning); color: var(--color-warning); }
 .sd-ruling { margin-top: 8px; }
-.sd-ruling > .sd-eyebrow, .sd-ask > .sd-eyebrow { display: block; margin-bottom: 2px; }
+.sd-ruling > .sd-eyebrow, .sd-ask > .sd-eyebrow, .sd-saw > .sd-eyebrow { display: block; margin-bottom: 2px; }
 .sd-ruling > p { color: var(--color-base-content); margin: 0; }
 .sd-ask {
   margin-top: 10px;

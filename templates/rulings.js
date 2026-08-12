@@ -159,7 +159,12 @@ function caseBlock(c, at, caseOptions, ctx) {
     fail(`${at}.label "${label}" has no entry in rulings.labels — a reviewer must never meet an undefined label`)
   }
 
-  const badges = [`<span class="sd-tag" title="${attr(ctx.labels.get(label))}">${esc(label)}</span>`]
+  /* The verdicts ride in the title pills so the contest reads before any prose. */
+  const badges = [`<span class="sd-tag" title="${attr(ctx.labels.get(label))}">key says: ${esc(label)}</span>`]
+  if (c.counter?.label) {
+    const cl = c.counter.label
+    badges.push(`<span class="sd-tag sd-tag-counter" title="${attr(ctx.labels.get(cl) ?? 'the model\'s verdict on this case')}">model vote: ${esc(cl)}</span>`)
+  }
   if (c.borderline) badges.push('<span class="sd-tag" title="keyed away from the penalized label under the tie-break; this ruling moves the metric">borderline</span>')
 
   const counter = c.counter
@@ -167,7 +172,10 @@ function caseBlock(c, at, caseOptions, ctx) {
         requireObject(c.counter, `${at}.counter`)
         requireString(c.counter.label, `${at}.counter.label`)
         requireString(c.counter.reason, `${at}.counter.reason`)
-        return `<div class="sd-note sd-counter"><span class="sd-eyebrow sd-eyebrow-strict">model disagreed — said ${esc(c.counter.label)}</span>${markdown(c.counter.reason)}</div>`
+        const saw = c.counter.saw !== undefined
+          ? `<div class="sd-note sd-saw"><span class="sd-eyebrow">what the model saw</span>${markdown(requireString(c.counter.saw, `${at}.counter.saw`))}</div>`
+          : ''
+        return saw + `<div class="sd-note sd-counter"><span class="sd-eyebrow sd-eyebrow-strict">model rationale</span>${markdown(c.counter.reason)}</div>`
       })()
     : ''
 

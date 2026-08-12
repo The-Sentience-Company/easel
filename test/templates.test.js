@@ -626,10 +626,26 @@ describe('rulings', () => {
     assert.throws(() => rulings.render(data), /px must be a number 16\.\.800/)
   })
 
-  test('a counter verdict renders as a marked dissent block', async () => {
+  test('a counter puts both verdicts in the title pills, reasoning below', async () => {
     const html = rulings.render(await base())
-    assert.match(html, /model disagreed — said out/)
+    assert.match(html, /key says: in/)
+    assert.match(html, /model vote: out/)
+    assert.match(html, /model rationale/)
     assert.match(html, /Model saw no promise\./)
+    assert.doesNotMatch(html, /model disagreed — said/, 'the verdict belongs in the pill, not repeated in the block header')
+  })
+
+  test('counter.saw renders the model input above its rationale, and must be a string', async () => {
+    const data = await base()
+    const c = data.sections.flatMap((s) => s.cases).find((x) => x.counter)
+    c.counter.saw = 'Only the thread text, no calendar.'
+    const html = rulings.render(data)
+    const sawAt = html.indexOf('what the model saw')
+    const reasonAt = html.indexOf('model rationale')
+    assert.ok(sawAt >= 0 && sawAt < reasonAt, 'what the model saw must precede its rationale')
+    assert.match(html, /Only the thread text, no calendar\./)
+    c.counter.saw = 42
+    assert.throws(() => rulings.render(data), /counter\.saw must be a non-empty string/)
   })
 
   test('questions render as decision widgets before any section', async () => {
