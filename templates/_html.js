@@ -200,6 +200,13 @@ export function badge(label, style, path, title) {
   return `<span class="sd-badge${cls}"${titleAttr}>${esc(label)}</span>`
 }
 
+/** Two-voice badge: a tone-filled key segment beside its value. */
+export function keyedBadge(key, value, style, path, title) {
+  const shell = badge('', style, path, title)
+  const inner = `<span class="sd-badge-key">${esc(key)}</span><span class="sd-badge-value">${esc(value)}</span>`
+  return shell.replace('></span>', `>${inner}</span>`)
+}
+
 /** Widget markup only — client.js owns behavior. Options are native buttons so
     the annotation layer cannot swallow the click. */
 export function widget({ type, id, prompt, help, options, compact }) {
