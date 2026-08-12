@@ -159,13 +159,14 @@ function caseBlock(c, at, caseOptions, ctx) {
     fail(`${at}.label "${label}" has no entry in rulings.labels — a reviewer must never meet an undefined label`)
   }
 
-  /* The verdicts ride in the title pills so the contest reads before any prose. */
-  const badges = [`<span class="sd-tag" title="${attr(ctx.labels.get(label))}">key says: ${esc(label)}</span>`]
+  /* The verdicts lead the body as colored pills — the contest reads before any prose. */
+  const verdicts = [`<span class="sd-verdict sd-verdict-key" title="${attr(ctx.labels.get(label))}">key says: ${esc(label)}</span>`]
   if (c.counter?.label) {
     const cl = c.counter.label
-    badges.push(`<span class="sd-tag sd-tag-counter" title="${attr(ctx.labels.get(cl) ?? 'the model\'s verdict on this case')}">model vote: ${esc(cl)}</span>`)
+    verdicts.push(`<span class="sd-verdict sd-verdict-model" title="${attr(ctx.labels.get(cl) ?? "the model's verdict on this case")}">model vote: ${esc(cl)}</span>`)
   }
-  if (c.borderline) badges.push('<span class="sd-tag" title="keyed away from the penalized label under the tie-break; this ruling moves the metric">borderline</span>')
+  if (c.borderline) verdicts.push('<span class="sd-verdict sd-verdict-flag" title="keyed away from the penalized label under the tie-break; this ruling moves the metric">borderline</span>')
+  const verdictRow = `<div class="sd-verdicts">${verdicts.join('')}</div>`
 
   const counter = c.counter
     ? (() => {
@@ -249,13 +250,14 @@ function caseBlock(c, at, caseOptions, ctx) {
     ask,
     c.footnote ? `<div class="sd-case-footnote">${esc(c.footnote)}</div>` : '',
   ].filter(Boolean).join('')
-  // A case with a body folds; title-only cases (skim sections) stay plain lines.
-  if (!body) return `<li><div class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</div></li>`
+  /* A case with a body folds, and its verdicts lead that body; a skim case has
+     nothing to fold, so they ride the title or the line would say nothing. */
+  if (!body) return `<li><div class="sd-case-title">${esc(c.title)} ${verdicts.join('')}</div></li>`
   return [
     '<li>',
     '<details class="sd-collapse" open>',
-    `<summary><span class="sd-case-title">${esc(c.title)} ${badges.join(' ')}</span></summary>`,
-    `<div class="sd-collapse-body">${body}</div>`,
+    `<summary><span class="sd-case-title">${esc(c.title)}</span></summary>`,
+    `<div class="sd-collapse-body">${verdictRow}${body}</div>`,
     '</details>',
     '</li>',
   ].join('')

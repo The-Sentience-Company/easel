@@ -68,7 +68,7 @@ The section grouping IS the decision structure: sections come in the order of ju
 
 A case's `label` must appear in `labels` — an undefined label throws: a reviewer must never meet an internal name without a plain-word definition.
 
-**The verdicts ride in the title, the reasoning below it.** A case's pills are `key says: <label>` and, when contested, `model vote: <counter label>` — so the reader sees the disagreement before any prose and can skip cases where they already agree. That is why the blocks underneath name only their *reasoning* ("key rationale", "model rationale"): repeating the verdict in a block header is the noise the pills exist to remove.
+**The verdicts open the case as colored pills, the reasoning follows.** A case body leads with `key says: <label>` and, when contested, `model vote: <counter label>` — colored apart so the disagreement registers before any prose and a reader can skip cases where the two agree. That is why the blocks underneath name only their *reasoning* ("key rationale", "model rationale"): repeating the verdict in a block header is the noise the pills exist to remove. A skim case (no rationale, no vote) has no body to lead, so its pills sit on the title line instead.
 
 **Give the model's input when it explains the split.** `counter.saw` renders as "what the model saw", muted, directly above the model's rationale. Reach for it when the key and the model were working from different information — the usual cause of a defensible-looking model error, and impossible to adjudicate without seeing what the model had. When both judged the same text, leave it out; the `quote` block already carries the evidence.
 

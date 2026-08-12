@@ -1880,7 +1880,25 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 /* the model's input, muted — context for its rationale, not a claim to weigh */
 .sd-saw { border-left: 2px solid var(--color-base-300); padding-left: 10px; margin-top: 8px; }
 .sd-saw > p { color: var(--color-muted-content); margin: 0; }
-.sd-tag-counter { border-color: var(--color-warning); color: var(--color-warning); }
+/* Verdict pills lead a case body. Solid fills, never a tint over an unknown
+   backdrop — the two verdicts must be told apart at a glance while skimming. */
+.sd-verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.sd-verdict {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.sd-verdict-key { background: var(--color-info); color: var(--color-status-content); }
+.sd-verdict-model { background: var(--color-warning); color: var(--color-status-content); }
+.sd-verdict-flag { background: none; border-color: var(--color-base-300); color: var(--color-muted-content); }
 .sd-ruling { margin-top: 8px; }
 .sd-ruling > .sd-eyebrow, .sd-ask > .sd-eyebrow, .sd-saw > .sd-eyebrow { display: block; margin-bottom: 2px; }
 .sd-ruling > p { color: var(--color-base-content); margin: 0; }
