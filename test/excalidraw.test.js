@@ -170,7 +170,7 @@ describe('excalidraw conversion at publish', () => {
 
   test('an explicit theme keeps the single-variant contract', SLOW, async () => {
     const out = await preRender(wrap(GANTT), { theme: 'dark' })
-    assert.match(out, /<div class="sd-diagram" data-diagram-index="0"><svg/)
+    assert.match(out, /<div class="sd-diagram" data-diagram-index="0" data-diagram-hash="[0-9a-f]{12}"><svg/)
     assert.ok(!out.includes('sd-svg-light'))
   })
 
@@ -178,7 +178,7 @@ describe('excalidraw conversion at publish', () => {
     const out = await preRender(wrap(FLOW), { theme: 'dark' })
     assert.ok(!out.includes('sd-diagram-dual'), 'explicit theme was ignored for a supported diagram')
     assert.ok(!out.includes('sd-svg-dark'), 'explicit theme still produced both variants')
-    assert.match(out, /<div class="sd-diagram" data-diagram-index="0"><svg/)
+    assert.match(out, /<div class="sd-diagram" data-diagram-index="0" data-diagram-hash="[0-9a-f]{12}"><svg/)
   })
 
   test('a converter that fails after launch closes its browser', SLOW, async () => {

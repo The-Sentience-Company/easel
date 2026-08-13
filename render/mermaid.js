@@ -148,8 +148,10 @@ export async function preRender(html, options = {}) {
       // Ordinal of the block, not of the successful renders: the whiteboard
       // keys scenes on it, so a failed diagram must not shift its neighbours.
       const slot = rendered.length
-      const at = ` data-diagram-index="${slot}"`
       const source = decodeEntities(match[1]).trim()
+      // Wrapper carries the SOURCE hash: baked SVG is not byte-stable (sketch-path
+      // jitter), so change detection reads this attribute, never the svg markup.
+      const at = ` data-diagram-index="${slot}" data-diagram-hash="${sourceHash(source)}"`
       if (source === '') {
         rendered.push(errorBlock('empty diagram source', '', slot))
         continue

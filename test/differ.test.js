@@ -387,4 +387,26 @@ describe('diagrams diff as one unit', () => {
     const r2 = annotateAndDiff(page, r1.html)
     assert.deepEqual(r2.diff, { added: [], removed: [], removedDetail: [], modified: [], moved: [] })
   })
+
+  // Re-rendering the same source jitters svg path coordinates (sketch look), so
+  // sameness must key on the wrapper's data-diagram-hash, never the svg bodies.
+  const hashed = (hash, path) =>
+    `<div class="sd-diagram sd-diagram-themed" data-diagram-index="0" data-diagram-hash="${hash}">` +
+    ['sd-svg-light', 'sd-svg-dark'].map((v) =>
+      `<span class="${v}"><svg><foreignObject><div><span>stable label</span></div></foreignObject><path d="${path}"/></svg></span>`).join('') +
+    '</div>'
+
+  test('svg-only jitter with the same diagram hash is not modified', () => {
+    const r1 = annotateAndDiff(`<p>anchor</p>${hashed('abc123', 'M0 0 L1.56 -83')}`)
+    const r2 = annotateAndDiff(`<p>anchor</p>${hashed('abc123', 'M0 0.66 L233.07 8')}`, r1.html)
+    assert.deepEqual(r2.diff, { added: [], removed: [], removedDetail: [], modified: [], moved: [] })
+  })
+
+  test('a changed diagram hash with identical labels is modified', () => {
+    const r1 = annotateAndDiff(`<p>anchor</p>${hashed('abc123', 'M0 0')}`)
+    const r2 = annotateAndDiff(`<p>anchor</p>${hashed('def456', 'M0 0')}`, r1.html)
+    assert.equal(r2.diff.modified.length, 1)
+    assert.deepEqual(r2.diff.added, [])
+    assert.deepEqual(r2.diff.removed, [])
+  })
 })

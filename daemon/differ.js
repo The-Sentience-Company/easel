@@ -132,9 +132,11 @@ function freshSid(block, taken) {
 }
 
 // Serialized shape of a node minus data-sid, for attribute-change detection.
+// SVG bodies are dropped — baked diagram output is not byte-stable (sketch-path
+// jitter); the wrapper's data-diagram-hash still pins the diagram's source.
 function shapeOf(block) {
   const clone = serialize({ nodeName: '#document-fragment', childNodes: [block.node] })
-  return clone.replace(/\s*data-sid="[^"]*"/g, '')
+  return clone.replace(/\s*data-sid="[^"]*"/g, '').replace(/<svg[\s\S]*?<\/svg>/g, '<svg/>')
 }
 
 function longestIncreasingSubsequence(indices) {

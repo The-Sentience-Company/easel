@@ -390,6 +390,10 @@ function unwatchBoard(key) {
   wipTimers.delete(key)
 }
 
+// Equality vs the last round ignores svg bodies: baked diagram SVG is not
+// byte-stable (sketch-path jitter); data-diagram-hash still pins each source.
+const stableHtml = (html) => html.replace(/<svg[\s\S]*?<\/svg>/g, '<svg/>')
+
 async function rebuildWip(key) {
   const board = store.board(key)
   if (!board || board.status !== 'open') return
@@ -407,7 +411,7 @@ async function rebuildWip(key) {
   // An island-only edit leaves the host html identical — compare payloads too.
   const sameIslands =
     JSON.stringify(islands ?? []) === JSON.stringify(store.roundIslands(key, last?.seq) ?? [])
-  if (last && sidHtml === last.html && sameIslands) {
+  if (last && stableHtml(sidHtml) === stableHtml(last.html) && sameIslands) {
     store.setWip(key, null)
   } else {
     store.setWip(key, sidHtml, rendered.diagrams, islands)

@@ -38,6 +38,15 @@ describe('preRender', () => {
     assert.doesNotMatch(out, /<pre class="mermaid">/)
   })
 
+  test('wrapper carries the source hash so change detection survives svg jitter', async () => {
+    const out = await preRender(block(VALID))
+    const hash = out.match(/data-diagram-hash="([0-9a-f]{12})"/)?.[1]
+    assert.ok(hash, 'baked wrapper is missing data-diagram-hash')
+    // Same source → same hash on a fresh render, whatever the svg bodies do.
+    const again = await preRender(block(VALID))
+    assert.equal(again.match(/data-diagram-hash="([0-9a-f]{12})"/)?.[1], hash)
+  })
+
   test('decodes escaped br so the label line-breaks instead of showing markup', async () => {
     const out = await preRender(block(BR_LABEL))
     assert.match(out, /<svg/)
