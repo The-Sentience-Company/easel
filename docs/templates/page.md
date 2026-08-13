@@ -25,6 +25,14 @@ Input is rejected with a `TemplateError` if it contains:
 - `data-sid` — the daemon assigns stable node ids at publish, and annotations anchor to them.
 - any `sf-` class — that prefix belongs to the chrome.
 
+## Pages a script builds
+
+Grep the built HTML for a string you know belongs in it before publishing. A generator bug lands on
+the content and spares everything around it — headings, row counts, badges computed from `len(...)`
+never touch the payload — so a table of empty-state dashes passes every check you would think to run.
+Give "the generator lost this" a different mark from "this ran and found nothing", or the page states
+your bug as a fact about the data.
+
 ## Compose, don't transcribe
 
 A `page` is a layout, not a document. Content drafted as markdown and wrapped in a card arrives as headings and paragraphs — the only structure markdown can say — so the design system is out of the game before a single class is chosen. Author the HTML directly, and pick structure from the shape of the content:
