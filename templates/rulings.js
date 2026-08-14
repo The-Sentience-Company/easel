@@ -261,7 +261,7 @@ function caseBlock(c, at, caseOptions, ctx) {
   // "i cant vote on these without seeing what date the run is for" — provenance
   // rides above the verdict, not in the footnote's small print.
   const context = c.context !== undefined
-    ? `<div class="sd-note sd-case-context"><span class="sd-eyebrow">what this case is</span>${markdown(requireString(c.context, `${at}.context`))}</div>`
+    ? `<div class="sd-note sd-case-context">${markdown(requireString(c.context, `${at}.context`))}</div>`
     : ''
 
   const body = [

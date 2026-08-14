@@ -21,7 +21,6 @@ easel open --template review --data plan.json --title "Retry budget"
     {
       "heading": "string",           // required
       "body": "string",              // optional, markdown
-      "collapse": "string",          // optional — fold the body behind this summary label
       "badges": [                    // optional
         "plain label",
         { "label": "string", "tone": "success|warning|error|info" }
@@ -62,7 +61,7 @@ At least one of `sections`, `decisions`, or `votes` must be present. `id` values
 
 **Metrics frame the sections below them** — the 3–5 numbers that decide how the reader reads everything else (what it costs, how many, how often, what breaks). They render as a tile row above the first section. A board of only metrics throws: there is nothing to frame.
 
-**`collapse` folds depth, never the ask.** Give it the summary label the reader clicks (`"the full derivation"`, `"all 41 rows"`) and the section's prose starts closed; badges, decisions, and votes stay outside the fold, so a collapsed section still shows what it wants from the reader. Use it for background a reader may already hold — not to hide something they need in order to answer. This is authored, default-closed depth; the chrome separately gives *every* headed section a reader-controlled collapse toggle, which starts open.
+**Sections do not carry an authored fold.** The chrome gives *every* headed section a reader-controlled collapse toggle that starts open, so depth is the reader's call, not the author's — a board that opens with its content already hidden reads as a board with nothing in it.
 
 ## Markdown supported in prose fields
 

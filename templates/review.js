@@ -74,13 +74,7 @@ export function render(data) {
   const sectionHtml = sections.map((s, i) => {
     requireObject(s, `review.sections[${i}]`)
     requireString(s.heading, `review.sections[${i}].heading`)
-    // Depth folds; the ask never does — a decision inside a closed drawer is
-    // one the reader never sees.
-    const prose = markdown(s.body ?? '')
-    const fold = s.collapse === undefined ? null : requireString(s.collapse, `review.sections[${i}].collapse`)
-    const body = fold
-      ? `<details class="sd-collapse"><summary>${esc(fold)}</summary><div class="sd-collapse-body">${prose}</div></details>`
-      : prose
+    const body = markdown(s.body ?? '')
     const badges = requireArray(s.badges ?? [], `review.sections[${i}].badges`)
       .map((b) => {
         const label = typeof b === 'string' ? b : b.label

@@ -1902,7 +1902,6 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 /* the model's input, muted — context for its rationale, not a claim to weigh */
 .sd-case-context { border-left: 2px solid var(--color-base-300); padding-left: 10px; margin-bottom: 8px; }
 .sd-case-context > p { color: var(--color-body-content); margin: 0; }
-.sd-case-context > .sd-eyebrow { display: block; margin-bottom: 2px; }
 .sd-saw { border-left: 2px solid var(--color-base-300); padding-left: 10px; margin-top: 8px; }
 .sd-saw > p { color: var(--color-muted-content); margin: 0; }
 /* Verdict pills lead a case body. Solid fills, never a tint over an unknown

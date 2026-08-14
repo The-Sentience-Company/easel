@@ -275,6 +275,16 @@ describe('widgets', () => {
 })
 
 describe('review', () => {
+  test('a section never ships pre-closed — an old collapse key is inert, not an error', () => {
+    const html = review.render({
+      title: 't',
+      sections: [{ heading: 'Background', body: 'the derivation', collapse: 'the full derivation' }],
+    })
+    assert.doesNotMatch(html, /<details/, 'the author cannot hand the reader a closed section')
+    assert.match(html, /the derivation/, 'the body still renders')
+    assert.doesNotMatch(html, /the full derivation/, 'the old summary label is not emitted')
+  })
+
   test('renders decisions and votes as widgets', async () => {
     const html = review.render(await sample('review'))
     assert.match(html, /data-widget="decision"/)
