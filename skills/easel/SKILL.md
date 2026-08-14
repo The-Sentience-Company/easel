@@ -65,6 +65,7 @@ Blocks until real feedback, cancel, or board end — it re-attaches across long-
 - **Ack what you've handled**: relaunch with `--ack <upto>` from the batch you just applied, or the backlog re-delivers and you answer the same annotations twice.
 - **`--agent` IDs are workspace-scoped and durable** — worktree basename + callsign (`my-project-a3:a3`); a bare callsign collides with other workspaces. A NEW ID replays the board's whole history. A handoff that names live boards must name the agent ID they were listened on.
 - **Refer to feedback by chip ID (A1, A2 …), never internal item ids** — the chips are what the user sees. Derivation, and placing feedback via anchor `context`: `references/listening.md`.
+- **An answer given in prose is still an answer.** When the reader states a decision plainly — in board chat, in an annotation, or in the session itself — record it and act on it. Never hold a decision open waiting for the matching widget click, and never re-ask what they already answered; the widget is one way to answer, not the only one.
 
 ## Iterate
 
