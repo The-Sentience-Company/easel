@@ -487,6 +487,25 @@ describe('eval', () => {
     assert.doesNotMatch(out, /<strong>/, 'edge punctuation must not fake a divergence')
   })
 
+  test('a value most arms share is baseline, not divergence', () => {
+    const arms = ['7', '7', '4', '7']
+    const at = (i) => evalT.emphasize(arms[i], arms.filter((_, n) => n !== i))
+    assert.doesNotMatch(at(0), /<strong>/, 'the shared 7 must recede')
+    assert.match(at(2), /<strong>4<\/strong>/, 'the lone 4 must carry the emphasis')
+  })
+
+  test('a row that shares nothing emphasizes nothing — no baseline to diverge from', () => {
+    const arms = ['33', '32', '30', '31']
+    const at = (i) => evalT.emphasize(arms[i], arms.filter((_, n) => n !== i))
+    for (let i = 0; i < arms.length; i++) assert.doesNotMatch(at(i), /<strong>/)
+  })
+
+  test('two- and three-arm emphasis is unchanged — only 4+ arms shifted', () => {
+    assert.match(evalT.emphasize('a x', ['a y']), /<strong>x<\/strong>/)
+    assert.doesNotMatch(evalT.emphasize('a x', ['a y']), /<strong>a<\/strong>/)
+    assert.match(evalT.emphasize('a x', ['a y', 'a z']), /<strong>x<\/strong>/)
+  })
+
   test('matrix mode rejects items whose candidate keys differ from the case', () => {
     const data = matrix()
     data.cases[0].items[1].candidates = { B: 'x', D: 'y' }

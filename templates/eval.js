@@ -37,12 +37,16 @@ const statusBadge = (c, i) => {
 const norm = (w) => w.toLowerCase().replace(/^[^\p{L}\p{N}@]+|[^\p{L}\p{N}]+$/gu, '')
 
 export function emphasize(text, siblings) {
-  const sets = siblings.map((s) => new Set(String(s).split(/\s+/).map(norm).filter(Boolean)))
+  const sets = [text, ...siblings].map((s) => new Set(String(s).split(/\s+/).map(norm).filter(Boolean)))
+  // A token most cells share is baseline, not divergence — "7 7 4 7" emphasizes
+  // only the 4; a row sharing nothing has no baseline, so emphasizing all says nothing.
+  const shared = (n) => sets.filter((set) => set.has(n)).length * 2 > sets.length
+  const hasBaseline = sets.length > 1 && sets.some((set) => [...set].some(shared))
   return String(text).split(/(\s+)/).map((tok) => {
     if (/^\s*$/.test(tok)) return tok
     const n = norm(tok)
     if (!n) return esc(tok)
-    return sets.length && sets.every((set) => set.has(n)) ? esc(tok) : `<strong>${esc(tok)}</strong>`
+    return hasBaseline && !shared(n) ? `<strong>${esc(tok)}</strong>` : esc(tok)
   }).join('')
 }
 
@@ -243,10 +247,10 @@ function renderMatrix(cases, itemColumn, uniqueWidgetId, picks = true) {
         fail(`eval.cases[${i}].items[${j}] candidates (${itemKeys.join(', ')}) do not match the case's (${candKeys.join(', ')})`)
       }
       const texts = Object.values(item.candidates)
-      const cells = candKeys.map((k) => {
+      const cells = candKeys.map((k, n) => {
         const text = String(item.candidates[k])
-        const others = texts.filter((t) => t !== item.candidates[k])
-        return `<td>${emphasize(text, others.length ? others : [text])}</td>`
+        // Exclude self by position: filtering by value dropped identical siblings too.
+        return `<td>${emphasize(text, texts.filter((_, m) => m !== n))}</td>`
       }).join('')
       // A reader asked to rule on every row rules on none — `picks: false`
       // keeps the table readable and leaves the per-case verdict as the ask.
