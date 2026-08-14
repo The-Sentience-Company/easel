@@ -1169,19 +1169,6 @@ button.sf-marker:hover { filter: brightness(1.12); }
   #sf-content .sf-flash::after { animation-duration: 0.01s; }
 }
 
-/* In-place ghosts from diff.removedDetail; hidden until the Removed toggle. */
-.sf-ghost-item { display: none; }
-#sf-content.sf-show-removed .sf-ghost-item {
-  display: block;
-  padding: 6px 14px;
-  margin: 4px 0;
-  font-size: 0.88rem;
-  color: var(--color-muted-content);
-  opacity: 0.7;
-  text-decoration: line-through;
-  overflow-wrap: anywhere;
-  box-shadow: inset 3px 0 0 var(--color-error);
-}
 #sf-content.sf-wip { border-top: 2px dashed var(--color-warning); }
 
 /* ----------------------------------------------------------------- chrome -- */
@@ -1385,11 +1372,41 @@ button.sf-end-session:hover { border-color: var(--color-error); color: var(--col
   background: var(--color-base-100);
   border-bottom: 1px solid var(--border);
 }
+/* Scrolls instead of wrapping, so sixty rounds still spend one line on the
+   pills; position anchors their offsetLeft for the auto-centring. */
+.sf-round-strip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Basis 0, not auto: a wrap container measures children at their max-content
+     width, so an auto basis would push the legend and toggles onto their own line. */
+  flex: 1 1 0;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sf-round-strip::-webkit-scrollbar { display: none; }
+.sf-round-strip.sf-expanded { flex-wrap: wrap; overflow-x: visible; row-gap: 6px; flex-basis: 100%; }
+button.sf-rounds-expand {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--color-muted-content);
+  border-radius: 999px;
+  padding: 3px 12px;
+  min-height: 1.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex: none;
+}
+button.sf-rounds-expand:hover { color: var(--color-base-content); border-color: var(--color-primary); }
 .sf-round-keys {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--color-muted-content);
   cursor: default;
+  flex: none;
 }
 button.sf-round-pill {
   border: 1px solid var(--border);
@@ -1400,21 +1417,10 @@ button.sf-round-pill {
   min-height: 1.85rem;
   font-size: 0.82rem;
   font-weight: 600;
+  flex: none;
 }
 button.sf-round-pill.sf-round-current { border-color: var(--color-primary); }
 button.sf-round-pill.sf-round-active { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
-
-button.sf-removed-toggle {
-  border: 1px solid var(--border);
-  background: var(--color-base-200);
-  color: var(--color-base-content);
-  border-radius: 999px;
-  padding: 3px 12px;
-  min-height: 1.85rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-button.sf-removed-toggle.sf-on { background: var(--color-error); color: var(--color-status-content); border-color: transparent; }
 
 .sf-diff-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 0.78rem; color: var(--color-muted-content); min-width: 0; }
 .sf-diff-legend > * { display: inline-flex; align-items: center; gap: 5px; }

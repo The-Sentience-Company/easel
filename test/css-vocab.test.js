@@ -15,7 +15,7 @@ const CHROME_CLASSES = [
   'sf-queue', 'sf-queue-header', 'sf-chat', 'sf-chat-header', 'sf-chat-log',
   'sf-chat-msg', 'sf-chat-form', 'sf-chat-input', 'sf-open',
   'sf-diff-added', 'sf-diff-modified', 'sf-diff-moved', 'sf-diff-removed',
-  'sf-ghost-item', 'sf-removed-toggle', 'sf-show-removed',
+  'sf-round-strip', 'sf-rounds-expand',
   'sf-wb-open', 'sf-wb-overlay', 'sf-wb-frame', 'sf-wb-error', 'sf-diagram-look',
   'sf-wrap-toggle', 'sf-wrappable', 'sf-wrap-mark',
   'sf-gate', 'sf-gate-card', 'sf-gate-title', 'sf-gate-copy', 'sf-gate-show',

@@ -44,8 +44,6 @@ const CHAT_HOTKEY = 'c'
 const CHAT_HOTKEY_LABEL = 'press c'
 const THEME_HOTKEY = 't'
 const ANNOTATE_HOTKEY = 'a'
-// 'x', not 'r': E/R are the width nudge pair.
-const REMOVED_HOTKEY = 'x'
 const ROUND_BACK_HOTKEY = 'q'
 const ROUND_FORWARD_HOTKEY = 'w'
 const WIDTH_NARROW_HOTKEY = 'e'
@@ -61,7 +59,7 @@ const state = {
   viewingRound: null,  // null = follow latest
   annotating: false,
   diffView: true,
-  showRemoved: false,
+  roundsExpanded: false, // false = pills scroll on one line; true = wrap to a grid
   draftsByKey: new Map(), // anchor key (sid, or sid@x,y for pins) -> draft items, for page-side removal
 }
 
@@ -587,6 +585,43 @@ function markRecordedWidgets(items) {
   }
 }
 
+// Outside the strip while it scrolls (so the hint cannot scroll away), inside it
+// once expanded (where the full-width strip would otherwise strand it on its own line).
+function placeRoundKeys(strip) {
+  if (state.roundsExpanded) strip.prepend(ui.roundKeys)
+  else strip.before(ui.roundKeys)
+}
+
+function centreActivePill(strip, pill) {
+  if (!pill) return
+  strip.scrollLeft = pill.offsetLeft - strip.clientWidth / 2 + pill.offsetWidth / 2
+}
+
+// Offered only once the pills really overflow their line — on a short board the
+// strip already fits, so a collapse control would name a problem nobody has.
+function renderRoundsToggle(strip, activePill, count) {
+  const btn = el('button', 'sf-rounds-expand')
+  btn.type = 'button'
+  const paint = () => {
+    btn.textContent = state.roundsExpanded ? '[⌃] One line' : `[⌄] All ${count}`
+    btn.title = state.roundsExpanded ? 'Collapse the revisions back to one line' : 'Show every revision at once'
+  }
+  paint()
+  btn.onclick = () => {
+    state.roundsExpanded = !state.roundsExpanded
+    strip.classList.toggle('sf-expanded', state.roundsExpanded)
+    placeRoundKeys(strip)
+    paint()
+    if (!state.roundsExpanded) centreActivePill(strip, activePill)
+  }
+  show(btn, false)
+  ui.rounds.appendChild(btn)
+  requestAnimationFrame(() => {
+    show(btn, state.roundsExpanded || strip.scrollWidth > strip.clientWidth + 1)
+    if (!state.roundsExpanded) centreActivePill(strip, activePill)
+  })
+}
+
 function renderRounds(d) {
   ui.rounds.replaceChildren()
   const showPills = d.rounds.length >= 2
@@ -597,10 +632,16 @@ function renderRounds(d) {
   if (!showPills && !annotated) return
   const latest = d.rounds.length ? d.rounds[d.rounds.length - 1].seq : null
   const active = state.viewingRound ?? latest
+  // The strip scrolls rather than wraps, so sixty rounds cost one line, not four.
+  const strip = el('div', 'sf-round-strip')
+  strip.classList.toggle('sf-expanded', state.roundsExpanded)
+  let activePill = null
   if (showPills) {
     const keys = el('span', 'sf-round-keys', '[Q]·[W]')
     keys.title = 'Q: previous revision · W: next revision'
-    ui.rounds.appendChild(keys)
+    ui.roundKeys = keys
+    ui.rounds.appendChild(strip)
+    placeRoundKeys(strip)
   }
   for (const r of showPills ? d.rounds : []) {
     const pill = el('button', 'sf-round-pill', `r${r.seq}`)
@@ -608,13 +649,17 @@ function renderRounds(d) {
     pill.dataset.round = String(r.seq)
     if (r.note) pill.title = r.note
     if (r.seq === latest) pill.classList.add('sf-round-current')
-    if (r.seq === active) pill.classList.add('sf-round-active')
+    if (r.seq === active) {
+      pill.classList.add('sf-round-active')
+      activePill = pill
+    }
     pill.onclick = () => {
       state.viewingRound = r.seq === latest ? null : r.seq
       sync(r.seq === latest ? null : r.seq)
     }
-    ui.rounds.appendChild(pill)
+    strip.appendChild(pill)
   }
+  if (showPills) renderRoundsToggle(strip, activePill, d.rounds.length)
   const legend = el('div', 'sf-diff-legend')
   if (showPills) {
     for (const k of ['added', 'removed', 'modified', 'moved']) legend.appendChild(el('span', `sf-legend-${k}`, k))
@@ -625,21 +670,6 @@ function renderRounds(d) {
     legend.appendChild(entry)
   }
   ui.rounds.appendChild(legend)
-  ui.removedToggle = null
-  const removedCount = d.diff?.removedDetail?.length || 0
-  if (showPills && removedCount) {
-    const btn = el('button', 'sf-removed-toggle', `[X] Show removed (${removedCount})`)
-    btn.type = 'button'
-    btn.title = `Show removed content where it was removed from (press ${REMOVED_HOTKEY})`
-    ui.removedToggle = btn
-    btn.classList.toggle('sf-on', state.showRemoved)
-    btn.onclick = () => {
-      state.showRemoved = !state.showRemoved
-      btn.classList.toggle('sf-on', state.showRemoved)
-      CONTENT.classList.toggle('sf-show-removed', state.showRemoved)
-    }
-    ui.rounds.appendChild(btn)
-  }
 }
 
 function applyDiff(diff) {
@@ -648,25 +678,6 @@ function applyDiff(diff) {
       const node = CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
       if (node) node.classList.add(`sf-diff-${k}`)
     }
-  }
-  // Removed nodes exist only in the previous round — render each as a ghost at
-  // the spot it was removed from, revealed by the Removed toggle.
-  CONTENT.classList.toggle('sf-show-removed', state.showRemoved)
-  // Ghosts sharing an anchor chain after each other — a bare afterend on the
-  // anchor every time would reverse adjacent removals.
-  const lastAt = new Map()
-  const bySid = (sid) => sid && CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
-  for (const r of diff.removedDetail || []) {
-    const item = el('aside', 'sf-ghost-item', r.excerpt || '(no text)')
-    item.dataset.sid = r.sid
-    const key = r.afterSid ? `a:${r.afterSid}` : r.withinSid ? `w:${r.withinSid}` : 'start'
-    const prev = lastAt.get(key)
-    const after = prev || bySid(r.afterSid)
-    const within = bySid(r.withinSid)
-    if (after) after.insertAdjacentElement('afterend', item)
-    else if (within) within.insertAdjacentElement('afterbegin', item)
-    else CONTENT.insertAdjacentElement('afterbegin', item)
-    lastAt.set(key, item)
   }
 }
 
@@ -1196,7 +1207,7 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (typingInFormField(e.target)) return
   const key = e.key.toLowerCase()
-  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, REMOVED_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY].includes(key)) return
+  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY].includes(key)) return
   e.preventDefault()
   if (key === QUEUE_HOTKEY) toggleQueue()
   else if (key === CHAT_HOTKEY) toggleChat()
@@ -1205,8 +1216,7 @@ document.addEventListener('keydown', (e) => {
   else if (key === ROUND_BACK_HOTKEY) stepRound(-1)
   else if (key === ROUND_FORWARD_HOTKEY) stepRound(1)
   else if (key === WIDTH_NARROW_HOTKEY) nudgeWidth(-1)
-  else if (key === WIDTH_WIDEN_HOTKEY) nudgeWidth(1)
-  else ui.removedToggle?.click()
+  else nudgeWidth(1)
 })
 
 // ---------------------------------------------------------------- widgets

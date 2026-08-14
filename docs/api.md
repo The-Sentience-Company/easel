@@ -251,15 +251,16 @@ body.sf-shell
 │   │   ├── button.sf-queue-toggle       opens/closes the queue panel (.sf-on while open); contains .sf-queue-count; hotkey "f"
 │   │   └── button.sf-chat-toggle        opens/closes the chat panel (.sf-on while open)
 │   ├── .sf-rounds                       hidden when only 1 round
-│   │   ├── button.sf-round-pill         one per round; data-round="N";
+│   │   ├── .sf-round-keys               "[Q]·[W]" hint; sits outside the strip while it scrolls
+│   │   ├── .sf-round-strip              the pills; scrolls on one line, .sf-expanded wraps them all
+│   │   │   └── button.sf-round-pill     one per round; data-round="N";
 │   │   │                                .sf-round-current (latest), .sf-round-active (being viewed)
+│   │   ├── button.sf-rounds-expand      "[⌄] All N" / "[⌃] One line"; shown only when the strip overflows
 │   │   ├── .sf-diff-legend
 │   │   │   └── .sf-legend-added / .sf-legend-removed / .sf-legend-modified / .sf-legend-moved
 │   │           / .sf-legend-annotated   shows a live .sf-item-marker badge, not a swatch
 │   │                                    (legend renders whenever there are ≥2 rounds OR any annotation;
 │   │                                     the four diff entries only with pills)
-│   │   └── button.sf-removed-toggle     "Show [R]emoved (N)" — reveals in-place removal ghosts; .sf-on while
-│   │                                    active; only with pills and a non-empty removedDetail; hotkey "r"
 │   ├── aside.sf-queue                   feedback queue panel; .sf-open when expanded
 │   │   ├── .sf-queue-header             includes .sf-queue-count (draft count badge)
 │   │   ├── .sf-queue-list
@@ -311,7 +312,6 @@ body.sf-shell
 | `sf-linked` | anchored node or `.sf-queue-item` | Hover on either side of an annotation↔row pair highlights the other. |
 | `sf-flash` | node with `data-sid` | Transient, ~1.2s: a feedback row was clicked and scrolled its anchor into view. |
 | `sf-diff-added` / `sf-diff-modified` / `sf-diff-moved` | node with `data-sid` | Viewing a round with the diff view on. |
-| `sf-ghost-item` | `aside` inserted into `#sf-content` | Removed nodes exist only in the previous round; the client inserts each excerpt (with `data-sid`) at the spot it was removed from — after `removedDetail.afterSid`, or first inside `withinSid`. Hidden until `#sf-content.sf-show-removed`, toggled by `button.sf-removed-toggle` ("Removed (N)") in the rounds row. |
 | `sf-recorded` | `[data-widget]` node | Widget holds a queued (or sent) value; the queue panel's Remove drops a queued one. |
 | `sf-diagram-look` | `button` appended to `.sd-diagram-dual` | Dual-baked diagrams only: flips every diagram between the plain mermaid look (default) and the sketch look by toggling `data-diagram-look="sketch"` on `<html>`; preference persists in localStorage `sf-diagram-look`. Older rounds baked with one look carry no button. |
 | `sf-wrappable` / `sf-wrap-toggle` | `pre` measured wider than its box, and the `button` appended to it | The button wraps long lines in every `<pre>` (except `.sd-diff`, which already wraps) by toggling `data-wrap-code="on"` on `<html>`; preference persists in localStorage `sf-wrap-code`. The class reserves the corner the button sits in. Only overflowing blocks get either, so short snippets stay clean. While wrap is on, a `span.sf-wrap-mark` (`↵`) is parked in the right padding beside every line box that continues below — a soft wrap breaks no element, so the client measures each logical line's rects and re-measures on resize. |

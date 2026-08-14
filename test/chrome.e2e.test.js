@@ -1,5 +1,5 @@
 /* Chrome behavior contracts under one shared daemon + browser: ended-board
-   locking, removal ghosts, round hotkeys, theme toggle, topbar, tuner. */
+   locking, removed content, round hotkeys, theme toggle, topbar, tuner. */
 
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -98,67 +98,35 @@ describe('ended board chrome', () => {
   })
 })
 
-/* Removal ghosts render where the content was removed from, and only while
-   the Removed toggle is on. */
-describe('removal ghosts', () => {
+/* A round that deleted content still renders only the surviving content. */
+describe('removed content', () => {
   const PAGE = join(DATA_DIR, 'removed.html')
   let key
 
   before(async () => {
     writeFileSync(PAGE, '<p>first paragraph</p><p>doomed middle paragraph</p><p>last paragraph</p>')
-    key = await open(PAGE, 'removed toggle')
+    key = await open(PAGE, 'removed content')
     writeFileSync(PAGE, '<p>first paragraph</p><p>last paragraph</p>')
     await api('POST', `/api/b/${key}/publish`, { note: 'round 2: middle removed' })
   })
 
-  test('the ghost sits where the removal happened, gated by the toggle', async () => {
+  test('deleted content leaves no ghost, no toggle, and no x hotkey behind', async () => {
     const pg = await browser.newPage()
     await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    const probe = () => pg.evaluate(`(() => ({
+      ghosts: document.querySelectorAll('.sf-ghost-item').length,
+      toggles: document.querySelectorAll('.sf-removed-toggle').length,
+      onContent: document.querySelector('#sf-content').classList.contains('sf-show-removed'),
+      body: document.querySelector('#sf-content').textContent.includes('doomed middle paragraph'),
+    }))()`)
 
-    const state = () => pg.evaluate(`(() => {
-      const ghost = document.querySelector('.sf-ghost-item')
-      const toggle = document.querySelector('.sf-removed-toggle')
-      return {
-        ghostText: ghost?.textContent ?? null,
-        visible: ghost ? getComputedStyle(ghost).display !== 'none' : null,
-        // In-place means directly after the surviving predecessor.
-        afterFirst: ghost?.previousElementSibling?.textContent ?? null,
-        toggleLabel: toggle?.textContent ?? null,
-        toggleOn: toggle?.classList.contains('sf-on') ?? null,
-      }
-    })()`)
-
-    let s = await state()
-    assert.equal(s.toggleLabel, '[X] Show removed (1)')
-    assert.equal(s.ghostText, 'doomed middle paragraph')
-    assert.equal(s.visible, false, 'ghost must be hidden while the toggle is off')
-    assert.equal(s.toggleOn, false)
-
-    await pg.click('.sf-removed-toggle')
-    s = await state()
-    assert.equal(s.visible, true, 'toggle on must reveal the ghost')
-    assert.equal(s.afterFirst, 'first paragraph', 'ghost must sit where the removal happened')
-    assert.equal(s.toggleOn, true)
+    assert.deepEqual(await probe(), { ghosts: 0, toggles: 0, onContent: false, body: false })
+    // The differ still reports the removal; only the reader-side rendering is gone.
+    const { diff } = (await api('GET', `/api/b/${key}/state?clientId=seed`)).data
+    assert.equal(diff.removedDetail.length, 1)
 
     await pg.keyboard.press('x')
-    s = await state()
-    assert.equal(s.visible, false, 'the x hotkey must toggle removed off again')
-    await pg.close()
-  })
-
-  test('adjacent removals keep their document order', async () => {
-    const PAGE2 = join(DATA_DIR, 'removed-order.html')
-    writeFileSync(PAGE2, '<p>anchor para</p><p>doomed A</p><p>doomed B</p><p>tail</p>')
-    const k = await open(PAGE2, 'order')
-    writeFileSync(PAGE2, '<p>anchor para</p><p>tail</p>')
-    await api('POST', `/api/b/${k}/publish`, { note: 'round 2' })
-
-    const pg = await browser.newPage()
-    await pg.goto(`${BASE}/b/${k}`, { waitUntil: 'networkidle0' })
-    const ghosts = await pg.evaluate(
-      "[...document.querySelectorAll('.sf-ghost-item')].map((g) => g.textContent)",
-    )
-    assert.deepEqual(ghosts, ['doomed A', 'doomed B'], 'ghosts must read in document order')
+    assert.deepEqual(await probe(), { ghosts: 0, toggles: 0, onContent: false, body: false })
     await pg.close()
   })
 
@@ -175,6 +143,79 @@ describe('removal ghosts', () => {
 
     await pg.evaluate(`[...document.querySelectorAll('.sf-round-pill')].find((p) => p.dataset.round === '1').click()`)
     await pg.waitForFunction("document.querySelectorAll('.sf-queue-item').length === 1", { timeout: 5000 })
+    await pg.close()
+  })
+})
+
+/* A long-running board must not spend four lines of chrome on its pills. */
+describe('many rounds collapse to one line', () => {
+  const PAGE = join(DATA_DIR, 'many-rounds.html')
+  let key
+
+  before(async () => {
+    writeFileSync(PAGE, '<p>body 1</p>')
+    key = await open(PAGE, 'many rounds')
+    for (let i = 2; i <= 40; i++) {
+      writeFileSync(PAGE, `<p>body ${i}</p>`)
+      await api('POST', `/api/b/${key}/publish`, { note: `round ${i}` })
+    }
+  })
+
+  test('the pills scroll on one line until the reader expands them', async () => {
+    const pg = await browser.newPage()
+    await pg.setViewport({ width: 1200, height: 800 })
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.waitForFunction("document.querySelectorAll('.sf-round-pill').length === 40", { timeout: 15000 })
+
+    const strip = () => pg.evaluate(`(() => {
+      const s = document.querySelector('.sf-round-strip')
+      const pills = [...document.querySelectorAll('.sf-round-pill')]
+      const expand = document.querySelector('.sf-rounds-expand')
+      return {
+        lines: new Set(pills.map((p) => Math.round(p.getBoundingClientRect().top))).size,
+        overflows: s.scrollWidth > s.clientWidth + 1,
+        expandLabel: expand && getComputedStyle(expand).display !== 'none' ? expand.textContent : null,
+        // The active round must be reachable without the reader hunting for it.
+        activeInView: (() => {
+          const a = document.querySelector('.sf-round-active').getBoundingClientRect()
+          const box = s.getBoundingClientRect()
+          return a.left >= box.left - 1 && a.right <= box.right + 1
+        })(),
+      }
+    })()`)
+
+    let s = await strip()
+    assert.equal(s.lines, 1, 'collapsed pills must occupy exactly one line')
+    assert.equal(s.overflows, true, '40 pills at 1200px must overflow, else this test proves nothing')
+    assert.equal(s.expandLabel, '[⌄] All 40')
+    assert.equal(s.activeInView, true, 'the active pill must be scrolled into view')
+
+    await pg.click('.sf-rounds-expand')
+    s = await strip()
+    assert.ok(s.lines > 1, 'expanding must wrap the pills across lines')
+    assert.equal(s.expandLabel, '[⌃] One line')
+
+    await pg.click('.sf-rounds-expand')
+    s = await strip()
+    assert.equal(s.lines, 1, 'collapsing must restore the single line')
+    await pg.close()
+  })
+
+  test('a short board is not offered a collapse it does not need', async () => {
+    const SHORT = page('short-rounds.html', '<p>one</p>')
+    const k = await open(SHORT, 'short rounds')
+    writeFileSync(SHORT, '<p>two</p>')
+    await api('POST', `/api/b/${k}/publish`, { note: 'round 2' })
+
+    const pg = await browser.newPage()
+    await pg.setViewport({ width: 1200, height: 800 })
+    await pg.goto(`${BASE}/b/${k}`, { waitUntil: 'networkidle0' })
+    await pg.waitForFunction("document.querySelectorAll('.sf-round-pill').length === 2", { timeout: 15000 })
+    const shown = await pg.evaluate(`(() => {
+      const e = document.querySelector('.sf-rounds-expand')
+      return e ? getComputedStyle(e).display !== 'none' : false
+    })()`)
+    assert.equal(shown, false, 'two pills fit, so no collapse control belongs on the bar')
     await pg.close()
   })
 })
