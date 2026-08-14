@@ -46,15 +46,15 @@ Every cell object must carry a key for **every** arm — a missing arm throws ra
 
 ## The two modes
 
-**`rows` — aligned comparison.** One table, one row per topic, one column per arm. Tokens that are not present in every sibling cell render `<strong>`, so identical prose recedes and the divergence pops. This is the mode for "make the entries that are the same side by side so I can easily see the diffs" — the reader's eye should land on what differs without reading both cells.
+**`rows` — aligned comparison.** One table, one row per topic, one column per arm. A token most cells share is the baseline and renders plain; only the deviation renders `<strong>`, so the eye lands on what differs without reading both cells. A row that shares nothing emphasizes nothing — there is no baseline to diverge from, and marking all of it says the same as marking none.
 
-**`columns` — whole documents.** One `sd-card` per arm in a grid, arm name as the card title, markdown inside. Use when the arms are long enough that a table cell would be unreadable and the reader wants to read each one through.
+**`columns` — whole documents.** One `sd-card` per arm in a grid, arm name as the card title, markdown inside. Use when a table cell would be too small to read the arm through.
 
 ## One verdict per case
 
 Each case renders exactly one vote widget, after the comparison. Options default to the arms plus `tie` and `all-bad`.
 
-**There is no per-row widget and adding one is not an oversight.** A reader asked to rule on every line stops reading and rules on none; the recorded ask is "which arm wins this case", and per-row detail belongs in annotations, which anchor to the row anyway. When the reader only wants to look and not vote — a variance or before/after board published for information — set `"verdict": false` on the case.
+**There is no per-row widget and adding one is not an oversight.** A reader asked to rule on every line rules on none; per-row detail belongs in annotations, which anchor to the row anyway. For a board published to be looked at rather than voted on, set `"verdict": false` on the case.
 
 ## Errors
 
