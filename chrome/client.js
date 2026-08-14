@@ -670,6 +670,13 @@ function renderRounds(d) {
     legend.appendChild(entry)
   }
   ui.rounds.appendChild(legend)
+  // The note said what changed and only a hover revealed it, so nobody read it.
+  const activeRound = d.rounds.find((r) => r.seq === active)
+  if (showPills && activeRound?.note) {
+    const note = el('div', 'sf-round-note')
+    note.append(el('span', 'sf-round-note-seq', `r${activeRound.seq}`), activeRound.note)
+    ui.rounds.appendChild(note)
+  }
 }
 
 function applyDiff(diff) {

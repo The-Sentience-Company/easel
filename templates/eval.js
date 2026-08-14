@@ -112,25 +112,26 @@ export function render(data) {
       }</section>`
     : ''
 
-  const body = mode === 'dossier' ? renderDossiers(cases, uniqueWidgetId)
+  const body = mode === 'dossier' ? renderDossiers(cases, uniqueWidgetId, data.verdicts !== false)
     : mode === 'compare' ? renderCompare(cases, data.blindKey, uniqueWidgetId)
-    : renderMatrix(cases, data.itemColumn, uniqueWidgetId)
+    : renderMatrix(cases, data.itemColumn, uniqueWidgetId, data.picks !== false)
 
   return [head, metricsHtml, summaryTable, body].filter(Boolean).join('\n')
 }
 
-function renderDossiers(cases, uniqueWidgetId) {
+function renderDossiers(cases, uniqueWidgetId, verdicts = true) {
   const fold = cases.length > FOLD_PASSES_ABOVE
   return cases.map((c, i) => {
+    // A dossier board published to be read, not ruled on, takes verdicts: false.
     const inner = [
       `<div class="sd-card">${markdown(requireString(c.notes, `eval.cases[${i}].notes`))}</div>`,
-      widget({
+      verdicts ? widget({
         type: 'rating',
         id: uniqueWidgetId(`verdict-${c.id}`),
         prompt: `${c.id}: verdict`,
         options: requireArray(c.verdictOptions ?? ['pass', 'needs-work'], `eval.cases[${c.id}].verdictOptions`),
-      }),
-    ].join('\n')
+      }) : '',
+    ].filter(Boolean).join('\n')
     if (fold && String(c.status) === 'pass') {
       return [
         '<section class="sd-section">',
@@ -225,7 +226,7 @@ function renderCompareTable(rows, uniqueWidgetId) {
   }).join('\n')
 }
 
-function renderMatrix(cases, itemColumn, uniqueWidgetId) {
+function renderMatrix(cases, itemColumn, uniqueWidgetId, picks = true) {
   return cases.map((c, i) => {
     const items = requireArray(c.items, `eval.cases[${i}].items`)
     if (items.length === 0) fail(`eval.cases[${i}].items must not be empty`)
@@ -247,13 +248,17 @@ function renderMatrix(cases, itemColumn, uniqueWidgetId) {
         const others = texts.filter((t) => t !== item.candidates[k])
         return `<td>${emphasize(text, others.length ? others : [text])}</td>`
       }).join('')
+      // A reader asked to rule on every row rules on none — `picks: false`
+      // keeps the table readable and leaves the per-case verdict as the ask.
+      const row = `<tr><td><strong>${esc(item.label)}</strong>${item.note ? `<div class="sd-muted">${esc(item.note)}</div>` : ''}</td>${cells}</tr>`
+      if (!picks) return row
       const pick = widget({
         type: 'vote',
         id: uniqueWidgetId(item.id ?? `best-${c.id}-${j}`),
         options: [...candKeys.map((k) => ({ value: k, label: `${k} best` })), 'tie', 'all-bad'],
       })
       return [
-        `<tr><td><strong>${esc(item.label)}</strong>${item.note ? `<div class="sd-muted">${esc(item.note)}</div>` : ''}</td>${cells}</tr>`,
+        row,
         `<tr><td class="sd-muted">best?</td><td colspan="${candKeys.length}">${pick}</td></tr>`,
       ].join('')
     }).join('')

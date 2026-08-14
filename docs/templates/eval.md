@@ -2,7 +2,7 @@
 
 One template, three modes, switched on the case shape: `notes` renders dossiers, `candidates` renders a blind two-column compare, `items` renders an N-way item matrix. The comparison types serve different jobs, so the data decides — there is no mode flag.
 
-Know the edges before committing to this template: blind compare takes exactly two candidates, and no mode renders images. A compare needing 3+ arms or image candidates belongs on a `page` (see the "Eval shapes that land here" recipe in page.md); adjudicating labeled cases one by one belongs on `rulings`.
+Know the edges before committing to this template: blind compare takes exactly two candidates, and no mode renders images. **A compare with 3+ arms, or named arms the reader is meant to see, is `compare`; image candidates are `gallery`**; adjudicating labeled cases one by one belongs on `rulings`.
 
 ```
 easel open --template eval --data results.json --title "Preference extraction run 41"
@@ -24,6 +24,8 @@ easel open --template eval --data results.json --title "Preference extraction ru
   "cases": [ /* required, non-empty; every case carries the SAME one of notes / candidates / items */ ]
 }
 ```
+
+Two top-level flags turn the per-item asks off when the board is published to be read rather than ruled on: **`"verdicts": false`** drops the per-case verdict widget in dossier mode, **`"picks": false`** drops the per-row `best?` widget in matrix mode (the per-case overall vote stays). Reach for them when the reader has said they only want to look — a widget on every row asks for a ruling per line and gets none.
 
 Every case requires a unique `id`; `name`, `status` (`pass|fail|error|skip|partial`), and `score` are optional. A heading name that starts with the id shows the id once. The Cases summary table renders only when at least one case has a status or score.
 

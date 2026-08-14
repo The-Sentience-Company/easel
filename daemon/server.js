@@ -12,6 +12,7 @@ import { HttpError, readBody } from './body.js'
 import { createStore } from './store.js'
 import { now, DATA_DIR } from './db.js'
 import { annotateAndDiff, contextForSid, excerptForSid, extractIslands } from './differ.js'
+import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
@@ -63,7 +64,7 @@ function buildInfo() {
 // A scene carries excalidraw's embedded `files`, so one pasted image dwarfs the
 // generic limit — and a 413 on the close flush would trap the drawing unsaved.
 const MAX_SCENE_BYTES = 32 * 1024 * 1024
-const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings'])
+const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery'])
 
 const store = createStore()
 
@@ -116,12 +117,20 @@ function extractBody(raw) {
 
 // Returns { html, raw, diagrams }: html is post-mermaid render, raw is the
 // pre-render source.
+/* The author of a bad data file usually never loaded the skill, so the error is
+   the only place the schema doc can reach them. */
+const renderFailed = (board, err) =>
+  `render failed: ${err.message}` +
+  (board.template ? ` (schema: docs/templates/${board.template}.md)` : '')
+
 async function renderSource(board) {
   let raw
   if (board.template) {
     const mod = await loadTemplate(board.template)
     const data = JSON.parse(await readFile(board.data_file, 'utf8'))
     raw = mod.render(data)
+  } else if (/\.md$/i.test(board.file)) {
+    raw = markdown(await readFile(board.file, 'utf8'))
   } else {
     raw = extractBody(await readFile(board.file, 'utf8'))
   }
@@ -728,7 +737,7 @@ async function handleOpen(req, res) {
   if (template && !data) return json(res, 400, { error: `template ${template} needs data` })
   // Contract: file boards are html, template data is json. Anything else is
   // stored verbatim as round html — no sids, no diffs, silent degradation.
-  if (file && !/\.html?$/i.test(file)) return json(res, 400, { error: 'file must be .html (see docs/api.md)' })
+  if (file && !/\.(html?|md)$/i.test(file)) return json(res, 400, { error: 'file must be .html or .md (see docs/api.md)' })
   if (data && !/\.json$/i.test(data)) return json(res, 400, { error: 'data must be .json (see docs/api.md)' })
 
   const existing = store.findOpen({ file: file ?? null, template, data_file: data ?? null })
@@ -749,7 +758,7 @@ async function handleOpen(req, res) {
     rendered = await renderSource(board)
   } catch (err) {
     store.setStatus(key, 'archived')
-    return json(res, 422, { error: `render failed: ${err.message}` })
+    return json(res, 422, { error: renderFailed(board, err) })
   }
   const { html: hostHtml, islands } = extractIslands(rendered.html)
   const { html: sidHtml } = annotateAndDiff(hostHtml)
@@ -769,7 +778,7 @@ async function handlePublish(req, res, match) {
   try {
     rendered = await renderSource(board)
   } catch (err) {
-    return json(res, 422, { error: `render failed: ${err.message}` })
+    return json(res, 422, { error: renderFailed(board, err) })
   }
   // Boards opened before the data title was read stay nameless otherwise, and a
   // source that gains a title should get to use it.
@@ -780,6 +789,21 @@ async function handlePublish(req, res, match) {
   const last = store.lastRound(board.key)
   const { html: hostHtml, islands } = extractIslands(rendered.html)
   const { html: sidHtml, diff } = annotateAndDiff(hostHtml, last?.html ?? null)
+  // A round identical to the one before it is a phantom: the picker gains a pill
+  // the reader clicks into and finds no diff. Same test the wip path uses.
+  const sameIslands =
+    JSON.stringify(islands ?? []) === JSON.stringify(store.roundIslands(board.key, last?.seq) ?? [])
+  if (last && stableHtml(sidHtml) === stableHtml(last.html) && sameIslands) {
+    store.setWip(board.key, null)
+    const listenerDropped = dropAgentWaiter(board.key, body.agent)
+    return json(res, 200, {
+      round: last.seq,
+      unchanged: true,
+      listenerDropped,
+      diff: { added: [], removed: [], modified: [], moved: [] },
+      audit: null,
+    })
+  }
   const seq = (last?.seq ?? 0) + 1
   const audit = auditHtml(sidHtml)
   store.addRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)

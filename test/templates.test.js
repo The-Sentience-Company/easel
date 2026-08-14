@@ -11,13 +11,15 @@ import * as page from '../templates/page.js'
 import * as answerKey from '../templates/answer-key.js'
 import * as queue from '../templates/queue.js'
 import * as rulings from '../templates/rulings.js'
+import * as compareT from '../templates/compare.js'
+import * as gallery from '../templates/gallery.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
 
-const TEMPLATES = [review, evalT, page, answerKey, queue, rulings]
+const TEMPLATES = [review, evalT, page, answerKey, queue, rulings, compareT, gallery]
 
 describe('contract: every template', () => {
   test('renders sample data to body-inner HTML with no document tags', async () => {

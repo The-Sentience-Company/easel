@@ -258,7 +258,14 @@ function caseBlock(c, at, caseOptions, ctx) {
     ask = `<div class="sd-ask"><span class="sd-eyebrow">your agent</span>${markdown(text)}${askWidget}</div>`
   }
 
+  // "i cant vote on these without seeing what date the run is for" — provenance
+  // rides above the verdict, not in the footnote's small print.
+  const context = c.context !== undefined
+    ? `<div class="sd-note sd-case-context"><span class="sd-eyebrow">what this case is</span>${markdown(requireString(c.context, `${at}.context`))}</div>`
+    : ''
+
   const body = [
+    context,
     image,
     c.rationale ? `<div class="sd-ruling"><span class="sd-eyebrow">key rationale</span>${markdown(requireString(c.rationale, `${at}.rationale`))}</div>` : '',
     quote,

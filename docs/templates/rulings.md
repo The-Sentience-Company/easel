@@ -41,6 +41,8 @@ The section grouping IS the decision structure: sections come in the order of ju
         {
           "title": "string",            // required
           "label": "internal_name",     // required, must appear in labels
+          "context": "string",          // optional, markdown — what this case IS: run date/window, source,
+                                        //   which arm produced it. Renders first, above the verdict.
           "rationale": "string",        // optional, markdown — the KEY'S reasoning only (renders labeled "key rationale")
           "ask": "string",              // optional — YOUR commentary to the reviewer, a labeled "your agent" callout
                                         //   after the vote; or { "text": "…", "options": ["…"] } when you need an
@@ -78,6 +80,8 @@ A case's `label` must appear in `labels` — an undefined label throws: a review
 **Give the model's input when it explains the split.** `counter.saw` renders as "what the model saw", muted, directly above the model's rationale. Reach for it when the key and the model were working from different information — the usual cause of a defensible-looking model error, and impossible to adjudicate without seeing what the model had. When both judged the same text, leave it out; the `quote` block already carries the evidence.
 
 **The vote names what it rules on.** When a section simply has no `options` field (leave it out — no explicit `null` needed), a case that carries a `counter` votes on the actual contest — `key is good: <label>` / `model is good: <counter label>` / `neither` — and an uncontested case gets the plain `good` / `bad` confirm. Set options explicitly only when the ruling isn't label-shaped. And `ask` is not the vote: give it options only when you genuinely need the reviewer's answer to a separate question — a reflex ask on every case competes with the vote for attention, which is the exact failure this design removed.
+
+**A case the reviewer cannot place is a case they will not rule on.** `context` renders first, above the verdict pills, and carries what the case IS — the run's date window, the source, which arm produced the output. A reviewer who has to ask "what date is this run for" stops voting on the whole board, and the `footnote` is too quiet to carry it.
 
 **One voice per field — never merge them.** A case speaks in up to four voices and each has its own field with its own labeled treatment: the key's reasoning in `rationale` ("key rationale"), the source excerpt in `quote`, the model's dissent in `counter` ("model disagreed"), and *your* framing or question to the reviewer in `ask` ("your agent"). Prose like "Key says X… iterate the prompt or accept the miss?" is your voice and belongs in `ask` — packing it into `rationale` leaves the reviewer unable to tell your commentary from the ruling they are reviewing, which has made a real board near-unreadable.
 

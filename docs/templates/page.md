@@ -48,14 +48,16 @@ A `page` is a layout, not a document. Content drafted as markdown and wrapped in
 
 The pre-publish test: when most body text sits in `<p>` runs inside one `sd-card`, the page is a transcription — restructure it.
 
-### Eval shapes that land here, for now
+### Eval shapes that have graduated — do not rebuild them here
 
-Adjudicating labeled cases and goldens have their own template (`rulings`); two-candidate blind compares have `eval`. Two eval shapes still have no template and belong on a page — a season of boards converged on the same structure, so use it rather than reinventing:
+Both recipes that used to live in this section now have templates, and hand-building either on a page loses their validation:
 
-- **Blind compare with 3+ arms or per-case context**: one `sd-section` per case with the context (the day's input, the run's parameters) above the candidates, candidates as an `sd-grid` of `sd-card`s labelled A/B/…, and one `vote` widget per case whose options are the labels plus `tie`/`all-bad`. Keep the blind key in the harness, never in the page.
-- **Image votes**: an `sd-grid` of `sd-card`s, each an image plus its `vote` widget; keep per-image options identical so votes aggregate.
+- **3+ arms, or per-case context, or an aligned row-by-row comparison** → [`compare`](compare.md). It carries per-case context, divergence highlighting on rows mode, and one verdict per case.
+- **Image candidates** → [`gallery`](gallery.md). It pins each image to its shipped width and keeps the vote options aligned across candidates.
 
-The shape, compressed:
+Adjudicating labeled cases and goldens is `rulings`; two-candidate *blind* compares stay on `eval`.
+
+The page shape, compressed:
 
 ```html
 <div class="sd-metrics">

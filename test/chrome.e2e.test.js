@@ -531,6 +531,10 @@ describe('code wrap toggle', () => {
     const pg = await unwrapped()
     await pg.click('.sf-wrap-toggle')
 
+    // The re-render needs a real edit: an unchanged publish is a no-op round.
+    // A plain para keeps the one overflowing pre the only chip on the page.
+    writeFileSync(PAGE, `<pre><code>${LONG}\nshort last line</code></pre>` +
+      `<pre>short</pre><pre class="sd-diff">+${LONG}</pre><p>round two</p>`)
     await api('POST', `/api/b/${key}/publish`, { note: 'round 2' })
     await pg.waitForFunction("document.querySelectorAll('.sf-round-pill').length === 2", { timeout: 5000 })
 

@@ -13,10 +13,15 @@ easel open --template review --data plan.json --title "Retry budget"
   "title": "string",                 // required
   "summary": "string",               // optional, markdown
 
+  "metrics": [                       // optional — stat tiles above the first section
+    { "label": "string", "value": "string|number", "note": "string" }
+  ],
+
   "sections": [                      // optional
     {
       "heading": "string",           // required
       "body": "string",              // optional, markdown
+      "collapse": "string",          // optional — fold the body behind this summary label
       "badges": [                    // optional
         "plain label",
         { "label": "string", "tone": "success|warning|error|info" }
@@ -54,6 +59,10 @@ easel open --template review --data plan.json --title "Retry budget"
 At least one of `sections`, `decisions`, or `votes` must be present. `id` values must be unique across decisions *and* votes on the board — inline and top-level alike — a collision throws, because two widgets sharing an id would record to the same key.
 
 **Placement rule: put each decision inside the section that motivates it** (`sections[].decisions`), so the reader answers with the relevant context directly above — never make them scroll back up from a pile at the bottom. Top-level `decisions`/`votes` render in a trailing "Decisions"/"Votes" section; reserve those for calls that genuinely span the whole board (final approve, overall verdict). A board whose every decision sits at the bottom is almost always mis-authored.
+
+**Metrics frame the sections below them** — the 3–5 numbers that decide how the reader reads everything else (what it costs, how many, how often, what breaks). They render as a tile row above the first section. A board of only metrics throws: there is nothing to frame.
+
+**`collapse` folds depth, never the ask.** Give it the summary label the reader clicks (`"the full derivation"`, `"all 41 rows"`) and the section's prose starts closed; badges, decisions, and votes stay outside the fold, so a collapsed section still shows what it wants from the reader. Use it for background a reader may already hold — not to hide something they need in order to answer. This is authored, default-closed depth; the chrome separately gives *every* headed section a reader-controlled collapse toggle, which starts open.
 
 ## Markdown supported in prose fields
 

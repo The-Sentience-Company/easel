@@ -166,11 +166,14 @@ test('auto-open: off by default, opt-in opens unwatched boards on wait/publish, 
     const attach = papi('POST', `/api/b/${k}/await`, { agent: 'ao-agent', timeoutS: 1 })
     assert.deepEqual(await openedAtLeast(1), [`${base}/b/${k}`], 'wait-start must open the board')
 
+    // Each publish edits the source: an unchanged one is a no-op round by design.
+    writeFileSync(page, '<p>auto</p><p>second</p>')
     await papi('POST', `/api/b/${k}/publish`, {})
     assert.equal(opened().length, 1, 'publish inside the cooldown must not reopen')
     await attach
 
     await new Promise((r) => setTimeout(r, 1200))
+    writeFileSync(page, '<p>auto</p><p>second</p><p>third</p>')
     await papi('POST', `/api/b/${k}/publish`, {})
     assert.equal((await openedAtLeast(2)).length, 2, 'publish after the cooldown must open again')
 
@@ -236,6 +239,24 @@ test('publish after edit yields round 2 with a diff', async () => {
   assert.equal(data.round, 2)
   assert.equal(data.diff.modified.length, 1)
   assert.equal(data.diff.added.length, 1)
+})
+
+test('a template render failure names the schema doc — the author usually never loaded the skill', async () => {
+  const bad = join(DATA_DIR, 'bad-queue.json')
+  writeFileSync(bad, JSON.stringify({ title: 'no campaign' }))
+  const { status, data } = await api('POST', '/api/open', { template: 'queue', data: bad })
+  assert.equal(status, 422)
+  assert.match(data.error, /queue\.campaign/)
+  assert.match(data.error, /docs\/templates\/queue\.md/)
+})
+
+test('publish with no source change is a no-op, not a phantom round', async () => {
+  const before = (await api('GET', `/api/b/${key}/status`)).data.rounds
+  const { status, data } = await api('POST', `/api/b/${key}/publish`, { note: 'round 3?' })
+  assert.equal(status, 200)
+  assert.equal(data.unchanged, true, 'the publisher is told nothing shipped')
+  assert.equal(data.round, before, 'the round it points at is the one already published')
+  assert.equal((await api('GET', `/api/b/${key}/status`)).data.rounds, before, 'no round was added')
 })
 
 test('await without ack re-delivers the same batch verbatim; ack stops re-delivery', async () => {

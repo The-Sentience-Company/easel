@@ -11,9 +11,13 @@ export function render(data) {
   const sections = requireArray(data.sections ?? [], 'review.sections')
   const decisions = requireArray(data.decisions ?? [], 'review.decisions')
   const votes = requireArray(data.votes ?? [], 'review.votes')
+  const metrics = requireArray(data.metrics ?? [], 'review.metrics')
 
   if (sections.length === 0 && decisions.length === 0 && votes.length === 0) {
     fail('review: needs at least one of sections, decisions, or votes')
+  }
+  if (metrics.length && sections.length === 0) {
+    fail('review: metrics frame the sections below them — a board of only metrics has nothing to frame')
   }
 
   const uniqueId = makeIdGuard('review')
@@ -50,10 +54,33 @@ export function render(data) {
     data.summary ? `<div class="sd-muted">${markdown(data.summary)}</div>` : '',
   ].filter(Boolean).join('\n')
 
+  const metricsHtml = metrics.length
+    ? `<section class="sd-section"><div class="sd-metrics">${
+        metrics.map((m, i) => {
+          requireObject(m, `review.metrics[${i}]`)
+          requireString(m.label, `review.metrics[${i}].label`)
+          if (m.value === undefined || m.value === null) fail(`review.metrics[${i}].value is required`)
+          return [
+            '<div class="sd-metric">',
+            `<div class="sd-metric-label">${esc(m.label)}</div>`,
+            `<div class="sd-metric-value">${esc(m.value)}</div>`,
+            m.note ? `<div class="sd-metric-note">${esc(m.note)}</div>` : '',
+            '</div>',
+          ].filter(Boolean).join('')
+        }).join('')
+      }</div></section>`
+    : ''
+
   const sectionHtml = sections.map((s, i) => {
     requireObject(s, `review.sections[${i}]`)
     requireString(s.heading, `review.sections[${i}].heading`)
-    const body = markdown(s.body ?? '')
+    // Depth folds; the ask never does — a decision inside a closed drawer is
+    // one the reader never sees.
+    const prose = markdown(s.body ?? '')
+    const fold = s.collapse === undefined ? null : requireString(s.collapse, `review.sections[${i}].collapse`)
+    const body = fold
+      ? `<details class="sd-collapse"><summary>${esc(fold)}</summary><div class="sd-collapse-body">${prose}</div></details>`
+      : prose
     const badges = requireArray(s.badges ?? [], `review.sections[${i}].badges`)
       .map((b) => {
         const label = typeof b === 'string' ? b : b.label
@@ -93,5 +120,5 @@ export function render(data) {
       ].join('\n')
     : ''
 
-  return [head, sectionHtml, decisionHtml, voteHtml].filter(Boolean).join('\n')
+  return [head, metricsHtml, sectionHtml, decisionHtml, voteHtml].filter(Boolean).join('\n')
 }

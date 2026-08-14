@@ -1,0 +1,27 @@
+{
+  "title": "Life Threads UI — seven concepts",
+  "summary": "Judge these at the size they ship. Vote once per group; annotate any single card to say why.",
+  "groups": [
+    {
+      "id": "thumbs",
+      "heading": "Thumbnail motif",
+      "context": "All seven render at 154px in the home header. The carousel dots are the open question — see the second group.",
+      "badges": [{ "label": "round 2", "tone": "info" }],
+      "candidates": [
+        { "label": "orbs", "src": "https://example.com/motif-orbs.jpg", "width": 154, "note": "the shipped one" },
+        { "label": "ribbon", "src": "https://example.com/motif-ribbon.jpg", "width": 154 },
+        { "label": "grain", "src": "https://example.com/motif-grain.jpg", "width": 154, "note": "warmest of the three" }
+      ],
+      "ask": "Which motif ships?"
+    },
+    {
+      "id": "dots",
+      "heading": "Making all five visible without carousel dots",
+      "candidates": [
+        { "label": "peek", "src": "https://example.com/dots-peek.png" },
+        { "label": "stack", "src": "https://example.com/dots-stack.png" }
+      ],
+      "options": ["peek", "stack", "neither — try again"]
+    }
+  ]
+}

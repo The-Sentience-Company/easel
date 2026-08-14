@@ -27,12 +27,18 @@ const api = makeApi(BASE)
 
 let key
 
-test('open rejects non-html file and non-json data with 400', async () => {
+test('open takes markdown, rejects other file types and non-json data with 400', async () => {
   const md = join(DATA_DIR, 'notes.md')
-  writeFileSync(md, '# raw markdown')
+  writeFileSync(md, '# raw markdown\n\nA finished doc publishes without an HTML wrapper.')
   const mdOpen = await api('POST', '/api/open', { file: md })
-  assert.equal(mdOpen.status, 400)
-  assert.match(mdOpen.data.error, /\.html/)
+  assert.equal(mdOpen.status, 200)
+  const state = await api('GET', `/api/b/${mdOpen.data.key}/state`)
+  assert.match(state.data.currentRound.html, /<h2[^>]*>raw markdown<\/h2>/)
+  const txt = join(DATA_DIR, 'notes.txt')
+  writeFileSync(txt, 'plain')
+  const txtOpen = await api('POST', '/api/open', { file: txt })
+  assert.equal(txtOpen.status, 400)
+  assert.match(txtOpen.data.error, /\.html/)
   const badData = await api('POST', '/api/open', { template: 'review', data: '/tmp/data.yaml' })
   assert.equal(badData.status, 400)
   assert.match(badData.data.error, /\.json/)

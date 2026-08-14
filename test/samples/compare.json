@@ -1,0 +1,50 @@
+{
+  "title": "Preference extractor — flat vs split vs certified",
+  "summary": "Three arms over the same frozen day. **Divergent tokens are bolded**; identical prose recedes.",
+  "run": { "dataset": "frozen-2026-08-11", "day": "2026-08-04", "judge": "claude-opus-5" },
+  "arms": ["flat", "split", "certified"],
+  "rowColumn": "preference",
+  "cases": [
+    {
+      "id": "sam",
+      "name": "sam — 4 preferences",
+      "context": "The split arm runs personal-details and principles as separate calls; `certified` is the pinned production prompt.",
+      "badges": [{ "label": "regression", "tone": "warning" }],
+      "rows": [
+        {
+          "label": "Dinner timing",
+          "note": "principle tense",
+          "cells": {
+            "flat": "Sam likes to eat dinner around 7:30pm",
+            "split": "Keep dinner plans around 7:30",
+            "certified": "Keep dinner plans around 7:30"
+          }
+        },
+        {
+          "label": "Hiring order",
+          "cells": {
+            "flat": "When hiring prioritize values then abilities then skills",
+            "split": "When hiring, prioritize values and beliefs, then abilities, then skills",
+            "certified": "When hiring, prioritize values and beliefs, then abilities, then skills"
+          }
+        }
+      ],
+      "ask": "Which arm ships for personal details?"
+    },
+    {
+      "id": "teddy",
+      "name": "teddy — 2 preferences",
+      "rows": [
+        {
+          "label": "Standup",
+          "cells": {
+            "flat": "Teddy prefers async standups",
+            "split": "Prefer async standups over live ones",
+            "certified": "Prefer async standups over live ones"
+          }
+        }
+      ],
+      "verdict": false
+    }
+  ]
+}

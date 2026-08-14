@@ -7,11 +7,24 @@ description: Publish review boards (docs, evals, decisions) via the local easel 
 
 The daemon (`easeld`) runs under launchd on `http://127.0.0.1:4400` and owns all state; nothing is tied to the session that published. A published artifact is a **board**. If the daemon is not running, `install/install.sh` in the easel repo registers it (repo: `/Users/aleks/repos/easel`; if moved, the root is named in the comment atop `~/.local/bin/easel`).
 
+## When to publish instead of typing
+
+Publishing is not the last step of a long reply — it replaces it. Publish when the reply would carry **more than one table, more than ~25 lines of analysis, a before/after or N-way comparison, or more than two coupled decisions**. Eval results, root-cause writeups with open decisions, and "here are N things I need your judgment on" are never chat.
+
+Two failure modes, both common:
+
+- **The thread crept.** No single message crossed the bar, but the last two or three carried tables or run comparisons — the board is already overdue. Publish instead of sending a fourth.
+- **A decision needed evidence.** A picker with no evidence in front of it is a board, not a question.
+
+After publishing, the chat message is the link, one line on what changed, and where the widget is — the substance lives on the board. While a board is open it IS the status surface: a chat message restating what is already on it is the signal to publish a round. Any correction or answer that lands in chat must also land on the board before the session ends, or the artifact outlives the session still asserting what you no longer believe.
+
+**A subagent has the Artifact tool and does not have this skill.** When you delegate work that ends in something the user reviews, say in the prompt that the deliverable is an easel board and hand over the key — otherwise it publishes an Artifact the user cannot annotate.
+
 ## Publish
 
 ```
-easel open --template <review|eval|rulings|page|queue> --data <file.json> --title T   # → key + URL
-easel open <file.html>                                                                # plain doc
+easel open --template <review|eval|compare|gallery|rulings|page|queue> --data <file.json> --title T   # → key + URL
+easel open <file.html|file.md>                                                                        # plain doc
 ```
 
 **Pick the template by the shape of the work:**
@@ -19,12 +32,16 @@ easel open <file.html>                                                          
 | Template | The work is |
 |---|---|
 | `review` | a plan, design, or proposal to read, plus decisions to answer |
-| `eval` | eval output — dossiers, a 2-arm blind compare, or an item matrix; the data shape picks the mode. 3+ arms or image candidates is a `page` for now |
+| `eval` | eval output — dossiers, a *blind* 2-arm compare, or an item matrix; the data shape picks the mode |
+| `compare` | 2–6 *named* arms side by side — before/after, variants, shipped vs certified — one verdict per case |
+| `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states |
 | `rulings` | labeled cases adjudicated one by one — an answer key, goldens, triage list, or model-vs-key disagreements |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | none of the above — hand-authored HTML through the same chrome and annotation layer |
 
 **Then Read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file; never write the JSON from memory of the schema.** Memory silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its schema and the rules that only matter inside that flow, so this file doesn't repeat them and they can't drift.
+
+**The template decides the shape; `references/authoring.md` decides whether the reader can act on it** — glossing internal names, shipping the diff rather than describing the edit, giving a decision the basis for answering it, sourcing claims, and the run manifest behind any model output. Read it before authoring any board, not only ones carrying decisions.
 
 Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time — **before writing any fence, read `references/templates/mermaid.md`**: an unstyled diagram renders every node one uniform colour, and its authoring section carries the palette that paints node kinds apart.
 

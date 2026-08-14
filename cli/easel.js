@@ -10,8 +10,8 @@ import { spawnSync } from 'node:child_process'
 const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
 
 const USAGE = `usage:
-  easel open <file> [--title T] [--json]
-  easel open --template <review|eval|rulings|page|queue> --data <file.json> [--title T] [--json]
+  easel open <file.html|file.md> [--title T] [--json]
+  easel open --template <review|eval|compare|gallery|rulings|page|queue> --data <file.json> [--title T] [--json]
   easel publish <key> [--note "..."] [--json]
   easel await <key> [--agent ID] [--cursor N] [--ack M] [--timeout-s T] [--json]
   easel feedback <key> [--since N] [--json]
@@ -62,8 +62,10 @@ function output(data, asJson, human) {
 }
 
 /* One clone means the daemon serves the tree you edit. Name that once, on the
-   two commands that expose it, rather than leaving it to look like a bug. */
-async function warnServingTree() {
+   two commands that expose it, rather than leaving it to look like a bug.
+   Silent under --json: callers pipe stderr in and the banner corrupts the parse. */
+async function warnServingTree(asJson) {
+  if (asJson) return
   let info
   try {
     info = await request('GET', '/health')
@@ -118,11 +120,13 @@ const commands = {
       allowPositionals: true,
     })
     const key = positionals[0] || fail(USAGE)
-    await warnServingTree()
+    await warnServingTree(values.json)
     // Identify the publisher so the daemon drops their own parked listener in-turn.
     const agent = values.agent || process.env.CLAUDE_SESSION_ID || null
     const data = await call('POST', `/api/b/${key}/publish`, { note: values.note, agent })
-    output(data, values.json, (d) => `published round ${d.round}` +
+    output(data, values.json, (d) => (d.unchanged
+      ? `nothing to publish — the source renders identical to round ${d.round}; write your changes to the registered path first (\`easel status ${key}\`)`
+      : `published round ${d.round}`) +
       (d.listenerDropped ? `\nyour parked listener was dropped — relaunch \`easel await\`` : '') +
       (d.audit?.findings?.length ? `\naudit (advisory): ${JSON.stringify(d.audit.findings)}` : ''))
   },
@@ -149,7 +153,7 @@ const commands = {
       fail(`bad --timeout-s value: ${values['timeout-s']} (window seconds, 1..3600)`)
     }
     // Before the block, not inside the loop — a re-attach must stay silent.
-    await warnServingTree()
+    await warnServingTree(values.json)
     const body = { agent, timeoutS }
     if (values.ack != null) body.ack = Number(values.ack)
     if (values.cursor != null) body.cursor = Number(values.cursor)
