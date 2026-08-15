@@ -87,8 +87,11 @@ export function markdown(src) {
       // replaces at publish time. Source stays escaped until then.
       // A diff fence becomes the pre.sd-diff element render/diff.js expands at
       // publish time, the same arrangement as mermaid above.
+      // A chart fence becomes the pre.sd-chart element render/chart.js replaces
+      // with an inline SVG at publish time, likewise.
       out.push(lang === 'mermaid' ? `<pre class="mermaid">${esc(code)}</pre>`
         : lang === 'diff' ? `<pre class="sd-diff">${esc(code)}</pre>`
+        : lang === 'chart' ? `<pre class="sd-chart">${esc(code)}</pre>`
         : `<pre><code${lang ? ` class="language-${attr(lang)}"` : ''}>${esc(code)}</code></pre>`)
       continue
     }
