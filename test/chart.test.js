@@ -159,7 +159,7 @@ describe('bar geometry', () => {
     const html = render(bars('bar', [100, -50]))
     const [pos, neg] = paths(html).map(bbox)
     const base = axisY(html)
-    const bottom = 12 + 220
+    const bottom = 12 + 300
     assert.ok(base < bottom, `zero line should sit above the plot floor, got ${base} of ${bottom}`)
     assert.ok(pos.y0 < base, 'the positive bar should rise above zero')
     assert.ok(neg.y1 > base, 'the negative bar should hang below zero')
@@ -219,7 +219,7 @@ describe('horizontal bar geometry', () => {
     const two = render(bars('hbar', [1, 2]))
     const four = render(bars('hbar', [1, 2, 3, 4]))
     const h = (html) => +html.match(/viewBox="0 0 \d+ (\d+)"/)[1]
-    assert.equal(h(four) - h(two), 2 * 26)
+    assert.equal(h(four) - h(two), 2 * 32)
   })
 })
 
@@ -278,8 +278,8 @@ describe('x-axis labels thin out before they collide', () => {
   test('dense categories are sampled to the size budget', () => {
     const x = Array.from({ length: 36 }, (_, i) => `c${i}`)
     const html = render({ type: 'bar', x, series: [{ values: x.map(() => 1) }] })
-    assert.equal(labelTexts(html).length, 9)
-    assert.deepEqual(labelTexts(html).slice(0, 2), ['c0', 'c4'])
+    assert.equal(labelTexts(html).length, 12)
+    assert.deepEqual(labelTexts(html).slice(0, 2), ['c0', 'c3'])
   })
 
   test('labels wider than their slot are rotated', () => {
@@ -293,13 +293,20 @@ describe('sizes change the box, not the data', () => {
   const widthOf = (html) => +html.match(/<svg viewBox="0 0 (\d+)/)[1]
 
   test('md is the default and sm/lg step around it', () => {
-    assert.equal(widthOf(render(bars('bar', [1, 2]))), 480)
-    assert.equal(widthOf(render({ ...bars('bar', [1, 2]), size: 'sm' })), 320)
-    assert.equal(widthOf(render({ ...bars('bar', [1, 2]), size: 'lg' })), 640)
+    assert.equal(widthOf(render(bars('bar', [1, 2]))), 640)
+    assert.equal(widthOf(render({ ...bars('bar', [1, 2]), size: 'sm' })), 480)
+    assert.equal(widthOf(render({ ...bars('bar', [1, 2]), size: 'lg' })), 800)
   })
 
   test('the svg carries a width attribute so a small chart renders small', () => {
-    assert.match(render({ ...bars('bar', [1, 2]), size: 'sm' }), /<svg viewBox="0 0 320 \d+" width="320"/)
+    assert.match(render({ ...bars('bar', [1, 2]), size: 'sm' }), /<svg viewBox="0 0 480 \d+" width="480"/)
+  })
+
+  test('two sm charts fit the content column side by side; two md never do', () => {
+    // The column is 1040px at its widest and narrower once the reader pulls it
+    // in, so pairing is an sm-only affordance. 16px is the figure's gutter.
+    assert.ok(480 * 2 + 16 <= 1040, 'two sm charts should fit')
+    assert.ok(640 * 2 + 16 > 1040, 'two md charts should not fit')
   })
 
   test('the same data reads the same ticks at every size', () => {

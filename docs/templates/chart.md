@@ -66,7 +66,13 @@ Unknown keys are ignored. Grouped bar is not a type — it is `bar` (or `hbar`) 
 
 ## Sizes
 
-`md` (480px) is the default and the right answer most of the time. `sm` (320px) is for a chart that supports a sentence you already wrote. `lg` (640px) is only for a chart that is the subject of its section. All three use the same text size, so `sm` is genuinely smaller rather than a shrunken `lg` — and every chart shrinks to fit a narrow column.
+`md` (640 units) is the default and the right answer most of the time. `sm` (480) is for thin data — a couple of series, or a chart supporting a sentence you already wrote. `lg` (800) is for data that needs room to be read: many categories, several series, anything a reader has to work at. All three use the same text size, so `sm` is genuinely smaller rather than a shrunken `lg`, and every chart shrinks to fit a narrow column.
+
+## Side by side
+
+Charts flow inline, so **two adjacent fences sit side by side when the column has room for both** and stack when it doesn't. No syntax for it — put the fences back to back.
+
+Only `sm` pairs in practice: the content column is 1040 units at its widest and the reader can pull it narrower, so two `sm` charts (960 plus the gutter) just fit, while two `md` never do. Pair charts that are meant to be read against each other — the same measure across two cohorts, before and after. Two unrelated charts side by side invite a comparison that isn't there.
 
 ## Colours carry identity
 

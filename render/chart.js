@@ -23,10 +23,12 @@ const fail = (message) => { throw new ChartDataError(message) }
 
 /* Only the drawing box varies by size; text stays 11/12px throughout, so a
    small chart is genuinely smaller rather than a shrunken large one. */
+/* sm is the only size two charts can sit side by side in: the content column
+   is 1040px at its widest and narrower once the reader pulls it in. */
 const SIZES = {
-  sm: { W: 320, plotH: 150, rowH: 20, maxLabels: 6 },
-  md: { W: 480, plotH: 220, rowH: 26, maxLabels: 9 },
-  lg: { W: 640, plotH: 300, rowH: 32, maxLabels: 12 },
+  sm: { W: 480, plotH: 220, rowH: 26, maxLabels: 9 },
+  md: { W: 640, plotH: 300, rowH: 32, maxLabels: 12 },
+  lg: { W: 800, plotH: 380, rowH: 38, maxLabels: 15 },
 }
 
 const TYPES = new Set(['bar', 'hbar', 'line'])

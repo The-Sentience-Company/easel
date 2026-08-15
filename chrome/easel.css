@@ -883,9 +883,15 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 
 /* Charts are baked SVG at publish time; colour rides these classes so the
    theme toggle repaints them and the publish sanitizer has nothing to scrub. */
-/* fit-content, not a full-width block: a chart narrower than the column must
-   not sit inside an empty box the reader has to scan across. */
-.sd-chart { width: fit-content; max-width: 100%; margin: 1.25rem 0; }
+/* inline-flex, not a block: shrink-wraps the chart so it never sits in an empty
+   box, and lets two adjacent charts pair up when the column has room for both. */
+.sd-chart {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: top;
+  max-width: 100%;
+  margin: 1.25rem 1rem 1.25rem 0;
+}
 .sd-chart svg { max-width: 100%; height: auto; display: block; }
 .sd-chart figcaption { color: var(--color-base-content); font-weight: 600; margin: 0 0 6px; }
 .sd-chart-grid { stroke: var(--color-base-300); stroke-width: 1; }
