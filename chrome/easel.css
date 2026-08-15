@@ -46,6 +46,13 @@ html[data-theme="fig-light"] {
   --diff-add-word: oklch(0.818 0.125 155);
   --diff-del-edge: oklch(0.800 0.090 25);
   --diff-add-edge: oklch(0.800 0.090 155);
+  /* Chart series, fixed assignment order s0→s4. Validated colorblind-safe as an
+     ordered set against base-100 — do not reorder or restep casually. */
+  --color-chart-1: oklch(0.52 0.13 45);
+  --color-chart-2: oklch(0.55 0.14 210);
+  --color-chart-3: oklch(0.62 0.13 85);
+  --color-chart-4: oklch(0.47 0.12 290);
+  --color-chart-5: oklch(0.58 0.13 150);
   --border: oklch(0.885 0.014 80);
   /* Lighter than --border: internal table rules, so the outer edge still reads
      as the stronger line instead of every rule shouting equally. */
@@ -89,6 +96,11 @@ html[data-theme="fig-dark"] {
   --diff-add-word: oklch(0.352 0.088 155);
   --diff-del-edge: oklch(0.520 0.110 25);
   --diff-add-edge: oklch(0.520 0.110 155);
+  --color-chart-1: oklch(0.62 0.13 48);
+  --color-chart-2: oklch(0.60 0.12 210);
+  --color-chart-3: oklch(0.66 0.13 85);
+  --color-chart-4: oklch(0.56 0.12 290);
+  --color-chart-5: oklch(0.64 0.13 150);
   --border: oklch(0.315 0.013 85);
   --border-subtle: oklch(0.245 0.011 85);
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 14px oklch(0 0 0 / 0.28);
@@ -868,6 +880,41 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   margin: 0 0 1em;
 }
 .sd-diagram svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+/* Charts are baked SVG at publish time; colour rides these classes so the
+   theme toggle repaints them and the publish sanitizer has nothing to scrub. */
+/* fit-content, not a full-width block: a chart narrower than the column must
+   not sit inside an empty box the reader has to scan across. */
+.sd-chart { width: fit-content; max-width: 100%; margin: 1.25rem 0; }
+.sd-chart svg { max-width: 100%; height: auto; display: block; }
+.sd-chart figcaption { color: var(--color-base-content); font-weight: 600; margin: 0 0 6px; }
+.sd-chart-grid { stroke: var(--color-base-300); stroke-width: 1; }
+.sd-chart-axis { stroke: var(--color-muted-content); stroke-width: 1; }
+.sd-chart-tick, .sd-chart-label { fill: var(--color-muted-content); font-size: 11px; }
+.sd-chart-bar.sd-chart-s0 { fill: var(--color-chart-1); }
+.sd-chart-bar.sd-chart-s1 { fill: var(--color-chart-2); }
+.sd-chart-bar.sd-chart-s2 { fill: var(--color-chart-3); }
+.sd-chart-bar.sd-chart-s3 { fill: var(--color-chart-4); }
+.sd-chart-bar.sd-chart-s4 { fill: var(--color-chart-5); }
+.sd-chart-line { fill: none; }
+.sd-chart-line.sd-chart-s0 { stroke: var(--color-chart-1); }
+.sd-chart-line.sd-chart-s1 { stroke: var(--color-chart-2); }
+.sd-chart-line.sd-chart-s2 { stroke: var(--color-chart-3); }
+.sd-chart-line.sd-chart-s3 { stroke: var(--color-chart-4); }
+.sd-chart-line.sd-chart-s4 { stroke: var(--color-chart-5); }
+.sd-chart-dot.sd-chart-s0 { fill: var(--color-chart-1); }
+.sd-chart-dot.sd-chart-s1 { fill: var(--color-chart-2); }
+.sd-chart-dot.sd-chart-s2 { fill: var(--color-chart-3); }
+.sd-chart-dot.sd-chart-s3 { fill: var(--color-chart-4); }
+.sd-chart-dot.sd-chart-s4 { fill: var(--color-chart-5); }
+.sd-chart-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-top: .5rem; font-size: .85em; color: var(--color-body-content); }
+.sd-chart-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .4em; vertical-align: -1px; }
+.sd-chart-swatch.sd-chart-s0 { background: var(--color-chart-1); }
+.sd-chart-swatch.sd-chart-s1 { background: var(--color-chart-2); }
+.sd-chart-swatch.sd-chart-s2 { background: var(--color-chart-3); }
+.sd-chart-swatch.sd-chart-s3 { background: var(--color-chart-4); }
+.sd-chart-swatch.sd-chart-s4 { background: var(--color-chart-5); }
+.sd-chart-key { display: inline-flex; align-items: center; }
 
 /* Markdown images: bounded so a full-size asset can't swallow the column. */
 .sd-md-img { display: block; max-width: 100%; max-height: 340px; height: auto; border-radius: var(--radius); margin: 0.5em 0; }

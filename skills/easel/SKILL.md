@@ -45,6 +45,8 @@ easel open <file.html|file.md>                                                  
 
 Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time — **before writing any fence, read `references/templates/mermaid.md`**: an unstyled diagram renders every node one uniform colour, and its authoring section carries the palette that paints node kinds apart.
 
+A ```` ```chart ```` fence renders a small themed bar/hbar/line chart at publish time — a table is the default for numbers, so before reaching for one, read `references/templates/chart.md`.
+
 **Always pass `--title`: 4–6 words naming the work, not the document.** It is the only handle on the dashboard, where boards outlive the session that made them. "Extractor arms — 2.5-flash vs 3.5-flash-lite", not "Eval results".
 
 **Sources need a durable home:** the daemon re-reads the source on every publish, and `/tmp`/scratchpad paths die on reboot. Put sources in `~/.easel/sources/<key-or-name>.json`, never a session scratchpad.

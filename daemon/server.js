@@ -107,6 +107,16 @@ async function diffRender(html) {
   }
 }
 
+// Distinct <pre> classes keep the three transforms off each other's blocks.
+async function chartRender(html) {
+  try {
+    const mod = await import(new URL('../render/chart.js', import.meta.url).href)
+    return mod.preRender(html)
+  } catch {
+    return html
+  }
+}
+
 function extractBody(raw) {
   const open = raw.match(/<body[^>]*>/i)
   if (!open) return raw
@@ -135,7 +145,7 @@ async function renderSource(board) {
     raw = extractBody(await readFile(board.file, 'utf8'))
   }
   const rendered = await mermaidRender(raw)
-  return { ...rendered, html: await diffRender(rendered.html), raw }
+  return { ...rendered, html: await chartRender(await diffRender(rendered.html)), raw }
 }
 
 // Advisory-only static checks; the headless-render audit can extend this later.
