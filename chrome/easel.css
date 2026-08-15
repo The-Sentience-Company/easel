@@ -871,6 +871,8 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 
 /* ---------------------------------------------------------- diagram/svg --- */
 
+/* Hugs its diagram rather than filling the column: a box far wider than what it
+   holds makes the reader scan dead space to find the content. */
 .sd-diagram {
   background: var(--color-base-100);
   border: 1px solid var(--border);
@@ -878,8 +880,10 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   padding: 16px;
   overflow-x: auto;
   margin: 0 0 1em;
+  width: fit-content;
+  max-width: 100%;
 }
-.sd-diagram svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.sd-diagram svg { max-width: 100%; height: auto; display: block; }
 
 /* Charts are baked SVG at publish time; colour rides these classes so the
    theme toggle repaints them and the publish sanitizer has nothing to scrub. */
@@ -893,6 +897,10 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   margin: 1.25rem 1rem 1.25rem 0;
 }
 .sd-chart svg { max-width: 100%; height: auto; display: block; }
+/* Charts that must sit side by side whatever the column width: the row scrolls
+   rather than wrapping, so a size-to-size comparison stays a comparison. */
+.sd-chartrow { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; margin: 1.25rem 0; }
+.sd-chartrow .sd-chart { margin: 0; flex: none; max-width: none; }
 .sd-chart figcaption { color: var(--color-base-content); font-weight: 600; margin: 0 0 6px; }
 .sd-chart-grid { stroke: var(--color-base-300); stroke-width: 1; }
 .sd-chart-axis { stroke: var(--color-muted-content); stroke-width: 1; }
