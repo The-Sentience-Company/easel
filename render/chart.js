@@ -23,8 +23,8 @@ const fail = (message) => { throw new ChartDataError(message) }
 
 /* Only the drawing box varies by size; text stays 11/12px throughout, so a
    small chart is genuinely smaller rather than a shrunken large one. */
-/* sm is the only size two charts can sit side by side in: the content column
-   is 1040px at its widest and narrower once the reader pulls it in. */
+/* Pairing headroom: the column is 600-1400px (1040 default), so two sm pair at
+   the default width, two md only near 1400, and two lg never. */
 const SIZES = {
   sm: { W: 480, plotH: 220, rowH: 26, maxLabels: 9 },
   md: { W: 640, plotH: 300, rowH: 32, maxLabels: 12 },

@@ -72,7 +72,7 @@ Unknown keys are ignored. Grouped bar is not a type — it is `bar` (or `hbar`) 
 
 Charts flow inline, so **two adjacent fences sit side by side when the column has room for both** and stack when it doesn't. No syntax for it — put the fences back to back.
 
-Only `sm` pairs in practice: the content column is 1040 units at its widest and the reader can pull it narrower, so two `sm` charts (960 plus the gutter) just fit, while two `md` never do.
+The column runs 600–1400 units, defaulting to 1040. Two `sm` (960 plus the gutter) fit at the default width; two `md` (1296) fit only once the reader widens the page toward 1400; two `lg` never fit. Write for the default and let the wide case be a bonus — or use a chart row when the pairing must hold at any width.
 
 **Do not pair the same measure across two cohorts.** Each fence scales to its own data, so a 500ms bar in one chart and a 900ms bar in the next are drawn the same height — putting them side by side invites exactly the height comparison the axes quietly contradict. Same measure, two cohorts, is **one grouped chart**, which shares a scale by construction.
 
