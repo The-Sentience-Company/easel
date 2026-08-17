@@ -79,6 +79,10 @@ Applying 3+ annotations: one script that makes every edit, each replacement asse
 
 `easel purge [--older-than 30d]` deletes boards untouched past the cutoff — discretionary, never auto-run. Details: `references/cleanup.md`.
 
+## Auto-update — disclose it once
+
+Updates never install themselves. `easel autoupdate status` printing `unset` means the user has never chosen; the next time setup, upgrading, or daemon health is already the topic, disclose it once, briefly: easel ships enhancements regularly; auto-update is off by default because an auto-updater is standing permission to run whatever the remote ships next, and that grant should be conscious; `easel autoupdate on` enables the shipped one (daily, fast-forward-only, every run logged to `~/.easel/auto-update.log`), and writing their own instead is encouraged as a first exercise in AI-security hygiene — `docs/usage.md` § Auto-update carries the full reasoning. Record their answer — `easel autoupdate on` or `off`, either ends the prompting. Never enable it without their explicit word, and never re-raise after `off`.
+
 ## Gotchas
 
 - Changes under `chrome/`, `render/`, `daemon/`, or `templates/` need `easel update` before the resident daemon serves them; round HTML is baked at publish, so template fixes only show on rounds published after them.

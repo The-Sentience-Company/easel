@@ -20,7 +20,8 @@ const USAGE = `usage:
   easel end <key> [--reopen] [--json]
   easel gc [--older-than 7d] [--json]
   easel purge [--older-than 30d] [--json]
-  easel update`
+  easel update
+  easel autoupdate on [--at HH:MM] | off | status`
 
 // Throws {connection: true} on transport failure, {http: true} on a non-2xx.
 async function request(method, path, body, { timeoutMs } = {}) {
@@ -262,6 +263,23 @@ const commands = {
   async update() {
     const script = resolve(dirname(fileURLToPath(import.meta.url)), '../install/update.sh')
     const { status, error } = spawnSync('bash', [script], { stdio: 'inherit' })
+    if (error) fail(error.message)
+    process.exit(status ?? 1)
+  },
+
+  // Local like update: the opt-in unattended updater, off until turned on.
+  async autoupdate() {
+    const { values, positionals } = parseArgs({
+      args: rest,
+      options: { at: { type: 'string' } },
+      allowPositionals: true,
+    })
+    const flag = { on: '--enable', off: '--disable', status: '--status' }[positionals[0]]
+    if (!flag) fail(USAGE)
+    const script = resolve(dirname(fileURLToPath(import.meta.url)), '../install/auto-update.sh')
+    const args = [script, flag]
+    if (values.at) args.push('--at', values.at)
+    const { status, error } = spawnSync('bash', args, { stdio: 'inherit' })
     if (error) fail(error.message)
     process.exit(status ?? 1)
   },
