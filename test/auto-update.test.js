@@ -41,12 +41,25 @@ describe('auto-update.sh: shipped form', () => {
     execFileSync('bash', ['-n', SCRIPT])
   })
 
+  /* update.sh pulls again after the incoming range was logged, so a moving
+     origin can land more than was promised — the landed range must be recorded. */
+  test('a run records the landed range, not only the planned one', () => {
+    const body = extract('run')
+    assert.match(body, /landed:/)
+    assert.match(body, /\$before\.\.HEAD/)
+  })
+
+  test('enable waits out launchd teardown before bootstrapping again', () => {
+    assert.match(extract('enable_agent'), /bootout_if_loaded/)
+  })
+
   /* The script lifts these by sed range instead of forking them; if either
      source stops matching the range, the lift silently evals nothing. */
   test('the functions it lifts from install.sh and the launcher still extract', () => {
     for (const [name, file] of [
       ['xml_escape', INSTALL],
       ['subst_value', INSTALL],
+      ['bootout_if_loaded', INSTALL],
       ['resolve_node', LAUNCHER],
     ]) {
       const body = runBash(`sed -n '/^${name}() {/,/^}/p' ${JSON.stringify(file)}`)
@@ -220,6 +233,73 @@ describe('auto-update.sh: status', () => {
 
   test('a decline never shadows an installed agent', () => {
     assert.match(status({ plist: true, optout: true }), /^on/)
+  })
+})
+
+describe('install.sh: migrate_updater', () => {
+  const fn = extract('migrate_updater', INSTALL)
+  const genHelpers = [extract('xml_escape', INSTALL), extract('subst_value', INSTALL), extract('write_agent_plist')].join('\n')
+
+  /** A fake root whose auto-update.sh just records how it was called. */
+  const fakeRoot = (box, name) => {
+    const root = join(box, name)
+    mkdirSync(join(root, 'install'), { recursive: true })
+    const stub = join(root, 'install', 'auto-update.sh')
+    writeFileSync(stub, `#!/bin/sh\necho "$@" > ${JSON.stringify(join(box, 'stub-args'))}\n`, { mode: 0o755 })
+    return root
+  }
+
+  const migrate = ({ plistRoot, installRoot }) => {
+    const box = mkdtempSync(join(tmpdir(), 'easel-migrate-'))
+    const plistDir = join(box, 'LaunchAgents')
+    mkdirSync(plistDir)
+    const oldRoot = fakeRoot(box, 'old')
+    const newRoot = fakeRoot(box, 'new')
+    const roots = { old: oldRoot, new: newRoot }
+    runBash(`
+      LABEL=com.sentience.easeld-update
+      ROOT=${JSON.stringify(roots[plistRoot])}
+      STATE_DIR=/s HOUR=9 MINUTE=30
+      TEMPLATE=${JSON.stringify(TEMPLATE)}
+      ${genHelpers}
+      write_agent_plist ${JSON.stringify(join(plistDir, 'com.sentience.easeld-update.plist'))}
+    `)
+    const out = runBash(`
+      say() { printf '  %s\\n' "$*"; }
+      PLIST_DIR=${JSON.stringify(plistDir)}
+      ROOT=${JSON.stringify(roots[installRoot])}
+      STATE_DIR=/s
+      ${fn}
+      migrate_updater
+    `)
+    let stubArgs = null
+    try { stubArgs = readFileSync(join(box, 'stub-args'), 'utf8').trim() } catch { /* not called */ }
+    return { out, stubArgs }
+  }
+
+  test('rebinds an updater left pointing at a previous checkout, keeping its schedule', () => {
+    const { out, stubArgs } = migrate({ plistRoot: 'old', installRoot: 'new' })
+    assert.equal(stubArgs, '--enable --at 09:30')
+    assert.match(out, /rebound/)
+  })
+
+  test('leaves an updater already bound to this checkout alone', () => {
+    const { stubArgs } = migrate({ plistRoot: 'new', installRoot: 'new' })
+    assert.equal(stubArgs, null, 're-bootstrapped an updater that did not move')
+  })
+
+  test('is a no-op when auto-update was never enabled', () => {
+    const box = mkdtempSync(join(tmpdir(), 'easel-migrate-'))
+    mkdirSync(join(box, 'LaunchAgents'))
+    const out = runBash(`
+      say() { printf '  %s\\n' "$*"; }
+      PLIST_DIR=${JSON.stringify(join(box, 'LaunchAgents'))}
+      ROOT=/nowhere
+      STATE_DIR=/s
+      ${fn}
+      migrate_updater
+    `)
+    assert.equal(out.trim(), '')
   })
 })
 

@@ -29,7 +29,9 @@ EOF
 }
 
 # Escaping and teardown live in install.sh; lift them rather than fork them.
-eval "$(sed -n '/^xml_escape() {/,/^}/p;/^subst_value() {/,/^}/p' "$ROOT/install/install.sh")"
+# bootout_if_loaded matters here too: launchd teardown is asynchronous, and an
+# immediate re-bootstrap of the same label fails with an I/O error.
+eval "$(sed -n '/^xml_escape() {/,/^}/p;/^subst_value() {/,/^}/p;/^bootout_if_loaded() {/,/^}/p' "$ROOT/install/install.sh")"
 
 # 24h HH:MM into HOUR/MINUTE integers (launchd rejects leading zeros as octal-ish).
 parse_at() {
@@ -101,7 +103,11 @@ run() {
   case "$plan" in update\ *) ;; *) exit 0 ;; esac
   # The incoming commits, logged before they land — the log is the audit trail.
   git -C "$ROOT" log --oneline 'HEAD..@{u}' | sed 's/^/  + /'
+  local before; before="$(cut -d' ' -f2 <<<"$plan")"
   bash "$ROOT/install/update.sh"
+  # update.sh pulls again, so origin may have moved past the plan — record what
+  # actually landed, or the trail could omit code that is now running.
+  echo "landed:"; git -C "$ROOT" log --oneline "$before..HEAD" | sed 's/^/  = /'
   echo "== done $(stamp)"
 }
 
@@ -110,7 +116,7 @@ enable_agent() {
   local tmp; tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT
   write_agent_plist "$tmp"
   cp "$tmp" "$PLIST"
-  launchctl bootout "gui/$UID/$LABEL" 2>/dev/null || true
+  bootout_if_loaded
   launchctl bootstrap "gui/$UID" "$PLIST"
   rm -f "$OPTOUT"
   printf '== %s enabled — daily at %02d:%02d\n' "$(stamp)" "$HOUR" "$MINUTE" >> "$LOG"

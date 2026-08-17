@@ -149,6 +149,19 @@ relocate_stale_entries() {
   done
 }
 
+# An enabled updater must follow the root on relocation, or the old checkout's
+# schedule keeps rewriting the plist and shim back to the previous install.
+migrate_updater() {
+  local uplist="$PLIST_DIR/com.sentience.easeld-update.plist" prog h m
+  [ -f "$uplist" ] || return 0
+  prog="$(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:0' "$uplist" 2>/dev/null || true)"
+  [ "$prog" = "$ROOT/install/auto-update.sh" ] && return 0
+  h="$(/usr/libexec/PlistBuddy -c 'Print :StartCalendarInterval:Hour' "$uplist" 2>/dev/null || echo 10)"
+  m="$(/usr/libexec/PlistBuddy -c 'Print :StartCalendarInterval:Minute' "$uplist" 2>/dev/null || echo 0)"
+  EASEL_DATA_DIR="$STATE_DIR" "$ROOT/install/auto-update.sh" --enable --at "$(printf '%02d:%02d' "$h" "$m")"
+  say "auto-update agent rebound to this checkout"
+}
+
 # An unrelated entry on PATH belongs to someone else, on install and uninstall alike.
 remove_owned_link() {
   local link="$1/$2"
@@ -271,6 +284,8 @@ bootout_if_loaded
 launchctl bootstrap "gui/$UID" "$PLIST"
 launchctl enable "gui/$UID/$LABEL" 2>/dev/null || true
 say "agent bootstrapped: $LABEL"
+
+migrate_updater
 
 printf '  waiting for daemon on port %s' "$PORT"
 ok=0
