@@ -120,9 +120,11 @@ run() {
 
 enable_agent() {
   mkdir -p "$STATE_DIR" "$(dirname "$PLIST")"
-  local tmp; tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT
-  write_agent_plist "$tmp"
-  cp "$tmp" "$PLIST"
+  # Not local: the EXIT trap runs after this function returns, and `set -u`
+  # aborts on the out-of-scope name — which failed a successful enable.
+  TMP_PLIST="$(mktemp)"; trap 'rm -f "$TMP_PLIST"' EXIT
+  write_agent_plist "$TMP_PLIST"
+  cp "$TMP_PLIST" "$PLIST"
   bootout_if_loaded
   launchctl bootstrap "gui/$UID" "$PLIST"
   rm -f "$OPTOUT"
