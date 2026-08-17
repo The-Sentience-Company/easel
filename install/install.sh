@@ -165,6 +165,13 @@ if [ "$UNINSTALL" -eq 1 ]; then
   bootout_if_loaded
   say "agent booted out"
   if [ -f "$PLIST" ]; then rm -f "$PLIST"; say "removed $PLIST"; else say "no plist at $PLIST"; fi
+  # The auto-update agent rides along; its log and opt-out marker live in
+  # ~/.easel and survive, like everything else there.
+  UPDATE_LABEL="com.sentience.easeld-update"
+  launchctl bootout "gui/$UID/$UPDATE_LABEL" 2>/dev/null || true
+  if [ -f "$PLIST_DIR/$UPDATE_LABEL.plist" ]; then
+    rm -f "$PLIST_DIR/$UPDATE_LABEL.plist"; say "removed the auto-update agent"
+  fi
   LINK_DIRS=("${SWEEP_DIRS[@]}")
   [ -n "$BIN_DIR" ] && LINK_DIRS+=("$BIN_DIR")
   for d in "${LINK_DIRS[@]}"; do

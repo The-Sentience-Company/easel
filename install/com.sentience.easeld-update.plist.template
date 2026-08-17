@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__ROOT__/install/auto-update.sh</string>
+    <string>--run</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__ROOT__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>EASEL_DATA_DIR</key>
+    <string>__STATE__</string>
+    <key>PATH</key>
+    <string>__PATH__</string>
+  </dict>
+
+  <!-- No RunAtLoad: enabling must never itself trigger an update. launchd runs
+       a missed interval once on wake, so a sleeping laptop still updates daily. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>__HOUR__</integer>
+    <key>Minute</key>
+    <integer>__MINUTE__</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__STATE__/auto-update.log</string>
+  <key>StandardErrorPath</key>
+  <string>__STATE__/auto-update.log</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

@@ -11,6 +11,8 @@ install/install.sh
 
 Idempotent — re-running converges to the same state. It writes `~/Library/LaunchAgents/com.sentience.easeld.plist` (derived from the clone's own location, never a hardcoded path), bootstraps the agent, puts an `easel` entry point on PATH, and waits for `/health`.
 
+Nothing updates itself after this: upgrading is `easel update`, manual by design, and the opt-in alternative is `easel autoupdate on` — [Auto-update](#auto-update) explains what it does and why it is not the default.
+
 `install.sh --uninstall` boots the agent out, removes the plist, and removes the entry point.
 
 **It deliberately leaves `~/.easel/` alone** — your boards, sources, whiteboards, and `easel.db` all survive an uninstall, so reinstalling later picks up exactly where you left off. Nothing prompts you about this, so if you meant to erase everything, that is a second, separate step:
@@ -54,6 +56,29 @@ easel update
 Pulls the installed checkout (`--ff-only`), reinstalls deps, rebuilds the excalidraw bundle, then re-runs `install.sh` — so plist/launcher/shim changes shipped by the pull actually converge — preserving the installed port, state dir, and node pin, and waits for `/health` on the installed port. It always targets the checkout the CLI shim was installed from — never your dev worktree — so the daemon's home can be a dedicated clone (e.g. `~/.easel/app`) that no development ever touches. To move the daemon's home, clone anywhere and re-run `install.sh` from the new clone; the shim and plist converge to it.
 
 **A verification done without that restart is invalid, and it fails in a way that looks like success:** the old template renders without erroring, so the board just quietly shows the pre-change behaviour. Publishing through `--template` after a kickstart is the check that actually exercises the daemon's template path — publishing pre-rendered HTML does not, because that path never loads a template at all.
+
+### Auto-update
+
+Off by default, and that is a position, not an omission. easel ships enhancements regularly and `easel update` is the whole upgrade — but an auto-updater is standing permission to execute whatever the remote ships next: `git pull` brings new code, `npm install` runs dependency lifecycle scripts, and the daemon restarts into all of it, unattended. A tool your agents drive deserves to have that decision made consciously, so nothing here installs itself until you say so.
+
+Worth saying before describing the shipped one: **writing your own auto-updater is a good first exercise in AI-security hygiene.** The questions it forces — which remote do I trust, what checks does new code pass before it runs on my machine, what may run at install time, where is the record of what changed — are exactly the questions worth asking of every agent-adjacent tool you allow to modify itself. A short shell script and a launchd plist will do it, and `install/auto-update.sh` is a readable reference.
+
+The shipped one:
+
+```
+easel autoupdate on            # daily, 10:00 by default; --at HH:MM picks the time
+easel autoupdate off           # removes the agent and records the choice, so agents stop suggesting it
+easel autoupdate status        # on / off / unset
+```
+
+What each run does, and refuses to do:
+
+- **Fast-forward only, default branch only, clean tree only.** A dirty checkout, a feature branch, or a diverged history (a force-push, say) is a situation for a human; each is skipped and logged, never resolved unattended.
+- **Nothing new, nothing touched.** When the checkout is already current it exits without reinstalling or restarting anything, so an enabled updater does not drop your live board tabs once a day for no reason.
+- **One update path.** An actual update delegates to the same `install/update.sh` → `install.sh` converge that a manual `easel update` uses, so auto and manual cannot drift apart.
+- **A written record.** Every run appends to `~/.easel/auto-update.log`: timestamp, verdict, and the incoming commit subjects logged before they land. "What changed on this machine, and when" always has an answer.
+
+What it does **not** do: verify anything beyond your clone's `origin` remote over its existing transport. If your trust model wants review-before-run, signature checks, or a canary period, that is precisely the write-your-own exercise above.
 
 ## The loop
 
