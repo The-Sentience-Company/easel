@@ -74,6 +74,12 @@ plan_update() {
   default="${default#origin/}"; [ -n "$default" ] || default=main
   [ "$branch" = "$default" ] || { echo "skip: on $branch, not $default"; return; }
   git fetch --quiet origin 2>/dev/null || { echo "skip: fetch failed"; return; }
+  # update.sh's bare `git pull` follows the configured upstream, so the branch
+  # tracking anything but origin/<default> would install from outside origin.
+  local upstream_ref
+  upstream_ref="$(git rev-parse --symbolic-full-name '@{u}' 2>/dev/null)" || { echo "skip: no upstream"; return; }
+  [ "$upstream_ref" = "refs/remotes/origin/$default" ] \
+    || { echo "skip: upstream is $upstream_ref, not origin/$default"; return; }
   upstream="$(git rev-parse '@{u}' 2>/dev/null)" || { echo "skip: no upstream"; return; }
   head="$(git rev-parse HEAD)"
   [ "$head" != "$upstream" ] || { echo "current $(git rev-parse --short HEAD)"; return; }
@@ -103,11 +109,12 @@ run() {
   case "$plan" in update\ *) ;; *) exit 0 ;; esac
   # The incoming commits, logged before they land — the log is the audit trail.
   git -C "$ROOT" log --oneline 'HEAD..@{u}' | sed 's/^/  + /'
-  local before; before="$(cut -d' ' -f2 <<<"$plan")"
-  bash "$ROOT/install/update.sh"
-  # update.sh pulls again, so origin may have moved past the plan — record what
-  # actually landed, or the trail could omit code that is now running.
+  local before rc=0; before="$(cut -d' ' -f2 <<<"$plan")"
+  # Failure still leaves a pull landed and lifecycle scripts run, so the range is
+  # logged either way — update.sh pulls again and origin may have moved past the plan.
+  bash "$ROOT/install/update.sh" || rc=$?
   echo "landed:"; git -C "$ROOT" log --oneline "$before..HEAD" | sed 's/^/  = /'
+  [ "$rc" -eq 0 ] || { echo "== failed rc=$rc $(stamp)"; exit "$rc"; }
   echo "== done $(stamp)"
 }
 

@@ -53,6 +53,16 @@ describe('auto-update.sh: shipped form', () => {
     assert.match(extract('enable_agent'), /bootout_if_loaded/)
   })
 
+  /* A failed install still leaves the pull landed and lifecycle scripts run, so
+     the range must be logged before the failure propagates. */
+  test('the landed range is logged even when update.sh fails', () => {
+    const body = extract('run')
+    const landed = body.indexOf('landed:')
+    const propagate = body.indexOf('rc=$rc')
+    assert.match(body, /update\.sh" \|\| rc=\$\?/, 'update.sh failure aborts before the range is logged')
+    assert.ok(landed > 0 && propagate > landed, 'failure propagates before the landed range is written')
+  })
+
   /* The script lifts these by sed range instead of forking them; if either
      source stops matching the range, the lift silently evals nothing. */
   test('the functions it lifts from install.sh and the launcher still extract', () => {
@@ -147,6 +157,18 @@ describe('auto-update.sh: plan_update', () => {
     git(seed, 'push', 'origin', 'main')
     git(clone, 'commit', '--allow-empty', '-m', 'local divergence')
     assert.equal(plan(clone), 'skip: history diverged')
+  })
+
+  /* update.sh's bare `git pull` follows the configured upstream, so tracking a
+     fork would install code from outside the documented origin trust boundary. */
+  test('a branch tracking something other than origin/<default> is refused', () => {
+    const { box, clone, git } = scratch()
+    const fork = join(box, 'fork.git')
+    execFileSync('git', ['clone', '--bare', clone, fork], { encoding: 'utf8' })
+    git(clone, 'remote', 'add', 'fork', fork)
+    git(clone, 'fetch', 'fork')
+    git(clone, 'branch', '--set-upstream-to=fork/main', 'main')
+    assert.equal(plan(clone), 'skip: upstream is refs/remotes/fork/main, not origin/main')
   })
 
   test('an unreachable origin skips instead of failing', () => {

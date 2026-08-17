@@ -73,7 +73,7 @@ easel autoupdate status        # on / off / unset
 
 What each run does, and refuses to do:
 
-- **Fast-forward only, default branch only, clean tree only.** A dirty checkout, a feature branch, or a diverged history (a force-push, say) is a situation for a human; each is skipped and logged, never resolved unattended.
+- **Fast-forward only, default branch only, clean tree only.** A dirty checkout, a feature branch, or a diverged history (a force-push, say) is a situation for a human; each is skipped and logged, never resolved unattended. The branch must also track `origin/<default>` itself — a default-named branch tracking a fork is refused, so an unattended update cannot install from outside the remote you think it is following.
 - **Nothing new, nothing touched.** When the checkout is already current it exits without reinstalling or restarting anything, so an enabled updater does not drop your live board tabs once a day for no reason.
 - **One update path.** An actual update delegates to the same `install/update.sh` → `install.sh` converge that a manual `easel update` uses, so auto and manual cannot drift apart.
 - **A written record.** Every run appends to `~/.easel/auto-update.log`: timestamp, verdict, the incoming commit subjects logged before they land, and the range that actually landed logged after — so an origin that moves mid-update cannot leave unlogged code running. "What changed on this machine, and when" always has an answer.
