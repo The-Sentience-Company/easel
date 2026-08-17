@@ -4,7 +4,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { readFileSync, mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, mkdtempSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -255,6 +255,50 @@ describe('auto-update.sh: status', () => {
 
   test('a decline never shadows an installed agent', () => {
     assert.match(status({ plist: true, optout: true }), /^on/)
+  })
+})
+
+/* Runs the real enable path with launchctl stubbed. The unit tests above all
+   exercised helpers, so a `set -u` abort in enable_agent itself reached a user. */
+describe('auto-update.sh: enable_agent', () => {
+  const run = () => {
+    const box = mkdtempSync(join(tmpdir(), 'easel-enable-'))
+    const bin = join(box, 'bin')
+    mkdirSync(bin)
+    writeFileSync(join(bin, 'launchctl'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
+    const out = execFileSync(
+      'bash',
+      ['-c', `
+        set -euo pipefail
+        PATH=${JSON.stringify(bin)}:$PATH
+        LABEL=com.sentience.easeld-update
+        ROOT=${JSON.stringify(join(HERE, '..'))}
+        STATE_DIR=${JSON.stringify(join(box, 'state'))}
+        PLIST=${JSON.stringify(join(box, 'agent.plist'))}
+        OPTOUT=${JSON.stringify(join(box, 'state', 'auto-update.off'))}
+        LOG=${JSON.stringify(join(box, 'state', 'auto-update.log'))}
+        TEMPLATE=${JSON.stringify(TEMPLATE)}
+        HOUR=10 MINUTE=0
+        say() { printf '  %s\\n' "$*"; }
+        stamp() { echo now; }
+        bootout_if_loaded() { :; }
+        ${[extract('xml_escape', INSTALL), extract('subst_value', INSTALL), extract('write_agent_plist'), extract('enable_agent')].join('\n')}
+        enable_agent
+      `],
+      { encoding: 'utf8' },
+    )
+    return { out, box }
+  }
+
+  test('exits clean and writes a valid plist — the EXIT trap must not abort it', () => {
+    const { out, box } = run()
+    assert.match(out, /auto-update on — daily at 10:00/)
+    execFileSync('plutil', ['-lint', join(box, 'agent.plist')], { encoding: 'utf8' })
+  })
+
+  test('clears a recorded opt-out', () => {
+    const { box } = run()
+    assert.ok(!existsSync(join(box, 'state', 'auto-update.off')))
   })
 })
 
