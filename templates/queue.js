@@ -35,6 +35,11 @@ function validateEntry(e, i) {
   if (status === 'open' && kind !== 'merge' && !e.body && !e.context_link) {
     fail(`${path} is an open ${kind} with no body and no context_link — the reader would be voting on one sentence; attach the brief or link the board that holds it`)
   }
+  if (e.resolution !== undefined) requireString(e.resolution, `${path}.resolution`)
+  if (e.resolved_at !== undefined) requireString(e.resolved_at, `${path}.resolved_at`)
+  if (status === 'open' && (e.resolution !== undefined || e.resolved_at !== undefined)) {
+    fail(`${path} carries a resolution but is still status "open", so it renders under "Waiting on you" as though nobody had answered it — set status to "answered"`)
+  }
   if (e.options !== undefined && requireArray(e.options, `${path}.options`).length === 0) {
     fail(`${path}.options must not be empty — omit it for the approve/reject/discuss default`)
   }
