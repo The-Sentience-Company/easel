@@ -73,6 +73,8 @@ Blocks until real feedback, cancel, or board end — it re-attaches across long-
 
 Applying 3+ annotations: one script that makes every edit, each replacement asserted to match exactly once — a silent no-op and a double match are the failure modes. Then `easel publish <key> --note "round 2: ..." --agent ID` — same key, diff markers show what changed.
 
+**The `--note` is one line, ~200 characters hard cap** — it renders on a single line in the round picker and anything longer is truncated. At the limit: `round 4: your three widget answers are recorded as decisions taken (history merge yes, backend-first rollout, account-linking as a hard billing gate). Dropped the post-deletion payment-traceability requirement`. Detail belongs on the board, not in the note.
+
 **Earlier rounds are never buried.** The chrome has a round picker (r1/r2 pills, Q/W); an agent reads one with `GET /api/b/<key>/state?round=N`. Point at the round ("the map is r5"), never republish old content to resurface it. For a clean visual round with no diff markers: `easel end <key>` and re-open from the same data file.
 
 ## Cleanup
