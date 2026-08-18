@@ -948,6 +948,27 @@ describe('queue', () => {
     assert.doesNotThrow(() => queue.render(data))
   })
 
+  test('a resolution on a still-open entry throws — that is how a board goes stale', async () => {
+    const data = await base()
+    data.entries[0].resolution = 'Approved — shipped in the follow-up PR.'
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /still status "open"/)
+      return true
+    })
+    data.entries[0].status = 'answered'
+    assert.doesNotThrow(() => queue.render(data))
+  })
+
+  test('resolved_at alone also throws, and an answered entry may carry both', async () => {
+    const data = await base()
+    data.entries[0].resolved_at = '2026-08-18T00:00:00Z'
+    assert.throws(() => queue.render(data), TemplateError)
+    data.entries[0].status = 'answered'
+    data.entries[0].resolution = 'Answered on the board.'
+    assert.doesNotThrow(() => queue.render(data))
+  })
+
   test('a seeded board with empty sections still renders', async () => {
     const html = queue.render({ campaign: 'fresh-campaign', entries: [], review_stamps: [], open_prs: [] })
     assert.ok(html.includes('Nothing waiting.'))
