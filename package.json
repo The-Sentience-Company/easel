@@ -12,7 +12,7 @@
     "daemon",
     "llm"
   ],
-  "license": "GPL-3.0-only",
+  "license": "Apache-2.0",
   "author": "The Sentience Company",
   "repository": {
     "type": "git",
@@ -42,7 +42,8 @@
     "skills/",
     "templates/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "test": "node --test test/*.test.js",

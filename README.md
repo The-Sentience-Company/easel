@@ -114,6 +114,6 @@ easel was built after using [lavish-axi](https://github.com/kunchenguid/lavish-a
 
 Copyright © 2026 The Sentience Company.
 
-easel is fully open source — not open core — under the GNU General Public License v3.0. See [LICENSE](LICENSE).
+easel is fully open source — not open core — under the [Apache License 2.0](LICENSE). Run it at work, modify it, put it on every machine in the company, ship it inside something you sell. Nothing you write stays open because of us: the boards easel renders are yours, and so is anything that drives it over the HTTP API or the `easel` command. There is no separate commercial edition; this is the whole thing.
 
-Use it, modify it, run it at work: internal use carries no obligations. What the GPL asks is that if you distribute easel or something built from it, that stays under the GPL too. If you want to build easel into a product under different terms, get in touch.
+The one reservation is the name. Apache 2.0 grants no trademark rights (§6) — a fork is yours to distribute, but call it something other than easel. See [NOTICE](NOTICE).
