@@ -31,6 +31,13 @@ after(async () => {
 
 const openBoard = async () => (await api('POST', '/api/open', { file: PAGE, title: 'gate' })).data.key
 
+/* End lives in the expanded bar, which only opens by default past 1500px. */
+const endPage = async () => {
+  const pg = await browser.newPage()
+  await pg.setViewport({ width: 1600, height: 700 })
+  return pg
+}
+
 const gateState = () => ({
   gated: document.body.classList.contains('sf-gated'),
   gateVisible: getComputedStyle(document.querySelector('.sf-gate')).display !== 'none',
@@ -167,7 +174,7 @@ test('a gate with nothing to reveal says so instead of showing a blank page', as
 
 test('ending sends drafts the tab has not synced yet', async () => {
   const key = await openBoard()
-  const page = await browser.newPage()
+  const page = await endPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
 
   const sid = await page.evaluate(() => document.querySelector('#sf-content [data-sid]').dataset.sid)
@@ -207,7 +214,7 @@ test('ending sends drafts the tab has not synced yet', async () => {
 
 test('End is two-stage, and ending sends the queued drafts first', async () => {
   const key = await openBoard()
-  const page = await browser.newPage()
+  const page = await endPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
 
   const sid = await page.evaluate(() => document.querySelector('#sf-content [data-sid]').dataset.sid)
@@ -234,7 +241,7 @@ test('End is two-stage, and ending sends the queued drafts first', async () => {
 
 test('End disarms itself rather than staying armed forever', async () => {
   const key = await openBoard()
-  const page = await browser.newPage()
+  const page = await endPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
   await page.click('.sf-end-session')
   assert.match(await page.evaluate(() => document.querySelector('.sf-end-session').textContent), /End session\?/)

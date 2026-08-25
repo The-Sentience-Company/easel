@@ -15,6 +15,8 @@ The shell page sets `data-theme` on the `<html>` element. Three families — def
 
 The family comes from the topbar picker (localStorage `sf-theme-family`) or a `?theme=<family>` URL pin; the mode from the `[T]heme` cycle. The ⚙ tuner popup layers per-browser inline token overrides (localStorage `sf-tuner-v2`) on top of whichever family is active.
 
+Both live in the expanded bar. Under 1500px — the width at which the full bar stops fitting one line — the chrome opens collapsed — one row of the controls a reader acts on, with theme, page width, the diff legend and the round note folded away — and the chevron at its right end expands it (localStorage `sf-chrome-compact`).
+
 **It has to be `<html>`, not a wrapper div.** A wrapper resolves the base rules against `:root`'s light defaults, so dark tables render dark-on-dark. This bit once and the rule is pinned in the contract between the daemon and the chrome.
 
 ## Text tiers

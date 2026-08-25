@@ -48,6 +48,7 @@ const ROUND_BACK_HOTKEY = 'q'
 const ROUND_FORWARD_HOTKEY = 'w'
 const WIDTH_NARROW_HOTKEY = 'e'
 const WIDTH_WIDEN_HOTKEY = 'r'
+const COMPACT_QUERY = '(max-width: 1500px)'
 const WIDTH_MIN = 600
 const WIDTH_MAX = 1400
 const WIDTH_KEY_STEP = 40
@@ -60,6 +61,7 @@ const state = {
   annotating: false,
   diffView: true,
   roundsExpanded: false, // false = pills scroll on one line; true = wrap to a grid
+  compact: false,      // true = the whole chrome collapses to one row
   draftsByKey: new Map(), // anchor key (sid, or sid@x,y for pins) -> draft items, for page-side removal
 }
 
@@ -86,6 +88,7 @@ const FAMILY_STORAGE = 'sf-theme-family'
 const LOOK_STORAGE = 'sf-diagram-look'
 const WRAP_STORAGE = 'sf-wrap-code'
 const WIDTH_STORAGE = 'sf-width'
+const COMPACT_STORAGE = 'sf-chrome-compact'
 const THEME_FAMILIES = [
   ['', 'Default'],
   ['lantern', 'Lantern'],
@@ -136,6 +139,19 @@ function nudgeWidth(dir) {
   applyWidth(next)
 }
 
+// Collapsing hides the settings cluster (theme, width), the diff legend and the
+// round note — everything a reader can re-open, nothing they act on.
+function applyCompact(on) {
+  state.compact = on
+  CHROME.classList.toggle('sf-compact', on)
+  ui.compactToggle.classList.toggle('sf-on', !on)
+  ui.compactToggle.setAttribute('aria-expanded', String(!on))
+  ui.compactToggle.title = on
+    ? 'Expand the bar: theme, page width, diff legend, round note'
+    : 'Collapse the bar to one row'
+  ui.compactToggle.setAttribute('aria-label', ui.compactToggle.title)
+}
+
 function cycleTheme() {
   const next = { auto: 'light', light: 'dark', dark: 'auto' }[themeMode()]
   if (next === 'auto') localStorage.removeItem(THEME_STORAGE)
@@ -167,6 +183,7 @@ function buildChrome() {
   ui.themePick.appendChild(ui.tunerToggle)
   ui.title = el('div', 'sf-title')
   ui.wipMarker = el('div', 'sf-wip-marker', 'unpublished changes')
+  ui.wipMarker.title = 'unpublished changes' // collapsed, it is a dot with no room for the words
   show(ui.wipMarker, false)
   ui.agent = el('div', 'sf-agent')
   ui.agentLabel = el('span', 'sf-agent-label', '')
@@ -206,7 +223,7 @@ function buildChrome() {
   ui.annotateToggle.onclick = () => setAnnotating(!state.annotating)
   // Panel launchers live in the always-visible topbar: the panels themselves are
   // display:none until sf-open, so nothing inside them can be the opener.
-  ui.queueToggle = el('button', 'sf-queue-toggle', '[F]eedback')
+  ui.queueToggle = el('button', 'sf-queue-toggle sf-empty', '[F]eedback')
   ui.queueToggle.type = 'button'
   ui.queueToggle.title = `Feedback panel (${QUEUE_HOTKEY_LABEL})`
   ui.queueToggleCount = el('span', 'sf-queue-count', '0')
@@ -226,8 +243,19 @@ function buildChrome() {
   ui.endSession.type = 'button'
   ui.endSession.title = 'End this board: the agent stops waiting and nothing more can be sent'
   ui.endSession.onclick = endSession
+  ui.compactToggle = el('button', 'sf-chrome-toggle') // the chevron is drawn in CSS
+  ui.compactToggle.type = 'button'
+  ui.compactToggle.onclick = () => {
+    applyCompact(!state.compact)
+    localStorage.setItem(COMPACT_STORAGE, state.compact ? '1' : '0')
+  }
 
-  topbar.append(brand, ui.themePick, ui.title, ui.wipMarker, ui.agent, ui.status, ui.themeToggle, ui.width, ui.annotateToggle, ui.sendNow, ui.queueToggle, ui.chatToggle, ui.endSession)
+  topbar.append(brand, ui.themePick, ui.title, ui.wipMarker, ui.agent, ui.status, ui.themeToggle, ui.width, ui.annotateToggle, ui.sendNow, ui.queueToggle, ui.chatToggle, ui.endSession, ui.compactToggle)
+
+  // A narrow viewport opens collapsed; once the button is pressed that choice
+  // is the browser's, at every width.
+  const storedCompact = localStorage.getItem(COMPACT_STORAGE)
+  applyCompact(storedCompact ? storedCompact === '1' : matchMedia(COMPACT_QUERY).matches)
 
   ui.rounds = el('div', 'sf-rounds')
   show(ui.rounds, false)
@@ -693,6 +721,7 @@ function renderQueue(items) {
   const drafts = items.filter((i) => i.state === 'draft')
   ui.queueCount.textContent = String(drafts.length)
   ui.queueToggleCount.textContent = String(drafts.length)
+  ui.queueToggle.classList.toggle('sf-empty', drafts.length === 0)
   ui.queueSend.textContent = drafts.length ? `Send ${drafts.length}` : 'Send'
   ui.queueSend.disabled = drafts.length === 0
   ui.sendNow.textContent = `Send ${drafts.length}`
@@ -859,6 +888,7 @@ function reportForcedReveal(reason) {
 function setAgentWaiting(waiting) {
   ui.agent.classList.toggle('sf-agent-waiting', waiting)
   ui.agentLabel.textContent = waiting ? 'agent waiting' : ''
+  ui.agent.title = waiting ? 'agent waiting' : '' // narrow enough, the label drops to the spinner
   show(ui.cancelWait, waiting)
 }
 

@@ -237,7 +237,8 @@ Everything the chrome creates uses the `sf-` prefix; templates never use `sf-` c
 
 ```
 body.sf-shell
-├── div#sf-chrome                        precedes content so the sticky topbar tops the page
+├── div#sf-chrome                        precedes content so the sticky topbar tops the page;
+│                                        .sf-compact folds both bars onto a single row
 │   ├── .sf-topbar
 │   │   ├── a.sf-brand                   links to "/"
 │   │   ├── .sf-theme-pick               family picker: button.sf-theme-pick-btn per family (data-family="" | "lantern" | "fig", .sf-on on the active one; choice in localStorage sf-theme-family) + button.sf-tuner-toggle (⚙, opens the tuner popup)
@@ -250,8 +251,10 @@ body.sf-shell
 │   │   ├── button.sf-theme-toggle       cycles auto → light → dark ("[T]heme: {mode}"); override in localStorage sf-theme; hotkey "t"
 │   │   ├── button.sf-annotate-toggle    .sf-on when annotate mode active (on at load); hotkey "a"
 │   │   ├── button.sf-send-now           "Send N" — visible only while drafts exist
-│   │   ├── button.sf-queue-toggle       opens/closes the queue panel (.sf-on while open); contains .sf-queue-count; hotkey "f"
-│   │   └── button.sf-chat-toggle        opens/closes the chat panel (.sf-on while open)
+│   │   ├── button.sf-queue-toggle       opens/closes the queue panel (.sf-on while open); contains .sf-queue-count, and .sf-empty while no draft is queued; hotkey "f"
+│   │   ├── button.sf-chat-toggle        opens/closes the chat panel (.sf-on while open)
+│   │   ├── button.sf-end-session        ends the board; .sf-armed on the confirming click
+│   │   └── button.sf-chrome-toggle      collapses the chrome to one row and back; .sf-on while expanded (choice in localStorage sf-chrome-compact, defaulting to collapsed under 1500px)
 │   ├── .sf-rounds                       hidden when only 1 round
 │   │   ├── .sf-round-keys               "[Q]·[W]" hint; sits outside the strip while it scrolls
 │   │   ├── .sf-round-strip              the pills; scrolls on one line, .sf-expanded wraps them all

@@ -82,6 +82,9 @@ function chromeFixture(title) {
     <div class="sf-status"><span class="sf-status-dot sf-connected"></span>connected</div>
     <button class="sf-annotate-toggle sf-on">Annotate</button>
     <button class="sf-send-now">Send 2</button>
+    <button class="sf-queue-toggle">[F]eedback <span class="sf-queue-count">2</span></button>
+    <button class="sf-chat-toggle">[C]hat</button>
+    <button class="sf-chrome-toggle sf-on"></button>
   </div>
   <div class="sf-rounds">
     <div class="sf-round-strip">

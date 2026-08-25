@@ -1262,7 +1262,12 @@ button.sf-marker:hover { filter: brightness(1.12); }
   border-bottom: 1px solid var(--border);
 }
 .sf-brand { font-weight: 700; letter-spacing: -0.01em; color: var(--color-base-content); text-decoration: none; flex: none; }
-.sf-title { font-weight: 560; color: var(--color-muted-content); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Basis 0, not auto: a wrap container measures children at max-content and
+   breaks the line before it shrinks anything, so an auto basis let a long title
+   exile the last buttons to a second row it could have made room for. At 0 the
+   title gives up its width first, and the bar wraps only when the controls
+   alone overflow. */
+.sf-title { font-weight: 560; color: var(--color-muted-content); flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .sf-wip-marker {
   flex: none;
@@ -1308,9 +1313,16 @@ button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--col
 .sf-status-dot.sf-reconnecting { background: var(--color-warning); animation: sf-pulse 1.2s ease-in-out infinite; }
 @keyframes sf-pulse { 50% { opacity: 0.3; } }
 
+/* The panel launchers shipped unstyled and rendered as native buttons next to
+   themed ones; they take the same treatment. */
 button.sf-theme-toggle,
-button.sf-annotate-toggle {
+button.sf-annotate-toggle,
+button.sf-queue-toggle,
+button.sf-chat-toggle {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: 1px solid var(--border);
   background: var(--color-base-200);
   color: var(--color-base-content);
@@ -1320,6 +1332,14 @@ button.sf-annotate-toggle {
   font-weight: 560;
 }
 button.sf-annotate-toggle.sf-on { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+button.sf-queue-toggle.sf-on, button.sf-chat-toggle.sf-on { border-color: var(--color-primary); color: var(--color-primary); }
+/* An empty queue's badge competed with the live controls for attention. */
+button.sf-queue-toggle.sf-empty .sf-queue-count {
+  background: none;
+  color: var(--color-muted-content);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
 /* Page-width control: slider drives --content-max live, E/R nudge it,
    double-click resets. */
 .sf-width { display: inline-flex; align-items: center; gap: 5px; flex: none; }
@@ -1510,6 +1530,110 @@ button.sf-round-pill.sf-round-active { background: var(--color-primary); color: 
    single swatch would name a colour that no particular mark has. */
 .sf-legend-annotated::before { display: none; }
 .sf-legend-annotated { --marker-color: var(--marker-0); gap: 6px; }
+
+/* compact chrome -------------------------------------------------------- */
+
+/* One row for everything. Both bars go display:contents so their controls land
+   on a single flex line of #sf-chrome, ordered by the rules below rather than
+   by DOM position; the bars' own padding, background and border move up here. */
+#sf-chrome.sf-compact {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 5px 14px;
+  background: var(--color-base-100);
+  border-bottom: 1px solid var(--border);
+  /* Last-resort valve: past every shrink below, the row scrolls rather than wraps. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#sf-chrome.sf-compact::-webkit-scrollbar { display: none; }
+.sf-compact .sf-topbar, .sf-compact .sf-rounds { display: contents; }
+
+.sf-compact .sf-brand { order: 1; }
+.sf-compact .sf-title { order: 2; }
+/* Bounded, never squeezed away: the title gives up its width first, and the
+   strip keeps at least the pill it scrolled the active round to. */
+.sf-compact .sf-round-strip { order: 3; flex: 0 0 auto; max-width: 32%; }
+.sf-compact .sf-wip-marker { order: 4; }
+.sf-compact .sf-agent { order: 5; }
+.sf-compact .sf-status { order: 6; }
+.sf-compact .sf-send-now { order: 7; }
+.sf-compact .sf-annotate-toggle { order: 8; }
+.sf-compact .sf-queue-toggle { order: 9; }
+.sf-compact .sf-chat-toggle { order: 10; }
+.sf-compact .sf-chrome-toggle { order: 11; }
+
+/* !important because show() writes an inline display on several of these. */
+.sf-compact .sf-theme-pick,
+.sf-compact .sf-theme-toggle,
+.sf-compact .sf-width,
+.sf-compact .sf-end-session,
+.sf-compact .sf-round-keys,
+.sf-compact .sf-rounds-expand,
+.sf-compact .sf-diff-legend,
+.sf-compact .sf-round-note,
+.sf-compact .sf-status-label { display: none !important; }
+
+/* The marker keeps its warning colour but spends a dot's worth of room; the
+   full wording stays on its tooltip. */
+.sf-compact .sf-wip-marker {
+  width: 9px;
+  height: 9px;
+  min-height: 0;
+  padding: 0;
+  font-size: 0;
+  border-radius: 50%;
+}
+/* An expanded pill grid left over from before the collapse must not re-wrap. */
+.sf-compact .sf-round-strip.sf-expanded { flex-wrap: nowrap; flex-basis: auto; overflow-x: auto; }
+.sf-compact button.sf-round-pill { padding: 2px 10px; min-height: 1.6rem; font-size: 0.78rem; }
+.sf-compact button.sf-annotate-toggle,
+.sf-compact button.sf-queue-toggle,
+.sf-compact button.sf-chat-toggle,
+.sf-compact button.sf-send-now { padding: 4px 10px; min-height: 1.85rem; font-size: 0.85rem; }
+.sf-compact .sf-queue-count { min-width: 1.3rem; min-height: 1.3rem; }
+
+/* Past this the row would scroll to reach its own actions; the spinner and the
+   marker dot carry what the words said, both with a tooltip. */
+@media (max-width: 820px) {
+  .sf-compact .sf-agent-label { display: none; }
+  .sf-compact .sf-brand { font-size: 0.9rem; }
+}
+
+button.sf-chrome-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-muted-content);
+  border-radius: 999px;
+  transition: transform 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+/* Drawn, not typed: the chevron glyphs sit off-centre and hairline-thin at this
+   size in most of the theme fonts. */
+button.sf-chrome-toggle::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+button.sf-chrome-toggle:hover { color: var(--color-base-content); border-color: var(--color-primary); }
+/* One glyph, two states: sf-on marks the expanded bar, where the affordance
+   points back up at the row it collapses into. */
+button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  button.sf-chrome-toggle { transition: none; }
+}
 
 /* side panels ----------------------------------------------------------- */
 

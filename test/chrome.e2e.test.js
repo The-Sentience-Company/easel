@@ -35,6 +35,14 @@ const page = (name, html) => {
 
 const open = async (path, title) => (await api('POST', '/api/open', { file: path, title })).data.key
 
+/* The theme cluster and the gear live in the expanded bar, which only opens by
+   default past 1500px — those tests need the room. */
+const widePage = async () => {
+  const pg = await browser.newPage()
+  await pg.setViewport({ width: 1600, height: 700 })
+  return pg
+}
+
 /* The chrome half of the ended invariant: a tab must not offer controls that
    the server will refuse. */
 describe('ended board chrome', () => {
@@ -163,7 +171,8 @@ describe('many rounds collapse to one line', () => {
 
   test('the pills scroll on one line until the reader expands them', async () => {
     const pg = await browser.newPage()
-    await pg.setViewport({ width: 1200, height: 800 })
+    // Wide enough to open expanded: the expand control belongs to the full bar.
+    await pg.setViewport({ width: 1600, height: 800 })
     await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
     await pg.waitForFunction("document.querySelectorAll('.sf-round-pill').length === 40", { timeout: 15000 })
 
@@ -282,7 +291,7 @@ describe('theme toggle', () => {
   before(async () => { key = await open(PAGE, 'theme toggle') })
 
   async function openPage(osTheme) {
-    const pg = await browser.newPage()
+    const pg = await widePage()
     await pg.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: osTheme }])
     await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
     return pg
@@ -412,6 +421,90 @@ describe('topbar', () => {
   })
 })
 
+/* The collapsed chrome: every control the reader keeps lands on one line. */
+describe('compact chrome', () => {
+  const PAGE = join(DATA_DIR, 'compact.html')
+  let key
+
+  before(async () => {
+    writeFileSync(PAGE, `<h1>compact</h1>${'<p>filler paragraph</p>'.repeat(120)}`)
+    key = await open(PAGE, 'a board title long enough to need the ellipsis it gets')
+    writeFileSync(PAGE, `<h1>compact r2</h1>${'<p>filler paragraph</p>'.repeat(120)}`)
+    await api('POST', `/api/b/${key}/publish`, { note: 'round 2 — a note long enough to have taken its own line' })
+  })
+
+  // One row means every visible control straddles the bar's own midline;
+  // heights differ, so comparing tops would flag a centred row as several.
+  const rowSpan = `(() => {
+    const bar = document.getElementById('sf-chrome').getBoundingClientRect()
+    const mid = bar.top + bar.height / 2
+    const offRow = [...document.querySelectorAll('#sf-chrome .sf-topbar > *, #sf-chrome .sf-rounds > *')]
+      .map((n) => ({ n, r: n.getBoundingClientRect() }))
+      // An idle agent slot is a real element with no box — it can sit on no row.
+      .filter(({ n, r }) => n.offsetParent !== null && r.width > 0 && r.height > 0)
+      .filter(({ r }) => r.top > mid || r.bottom < mid)
+      .map(({ n }) => n.className)
+    return { offRow, height: bar.height }
+  })()`
+
+  async function openNarrow() {
+    const pg = await browser.newPage()
+    await pg.setViewport({ width: 900, height: 600 })
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.waitForSelector('.sf-round-pill')
+    return pg
+  }
+
+  test('a narrow viewport opens collapsed, on one row, and the toggle restores the full bar', async () => {
+    const pg = await openNarrow()
+    assert.equal(await pg.evaluate("document.getElementById('sf-chrome').classList.contains('sf-compact')"), true,
+      'a 900px viewport did not open collapsed')
+    const collapsed = await pg.evaluate(rowSpan)
+    assert.deepEqual(collapsed.offRow, [], `controls sit off the single row: ${collapsed.offRow}`)
+    assert.ok(collapsed.height < 56, `collapsed chrome is ${collapsed.height}px tall`)
+    // The pills and the panel launchers are the point of collapsing — they survive it.
+    for (const sel of ['.sf-round-pill', '.sf-annotate-toggle', '.sf-queue-toggle', '.sf-chat-toggle']) {
+      assert.equal(await pg.evaluate(`document.querySelector('${sel}').offsetParent !== null`), true,
+        `${sel} vanished from the collapsed bar`)
+    }
+
+    await pg.click('.sf-chrome-toggle')
+    const expanded = await pg.evaluate(rowSpan)
+    assert.ok(expanded.height > collapsed.height, 'the toggle did not expand the bar')
+    assert.equal(await pg.evaluate("document.querySelector('.sf-theme-pick').offsetParent !== null"), true,
+      'expanding did not bring back the theme picker')
+    assert.equal(await pg.evaluate("localStorage.getItem('sf-chrome-compact')"), '0')
+
+    // The choice, not the viewport, wins on the next load.
+    const pg2 = await browser.newPage()
+    await pg2.setViewport({ width: 900, height: 600 })
+    await pg2.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    assert.equal(await pg2.evaluate("document.getElementById('sf-chrome').classList.contains('sf-compact')"), false,
+      'the stored expanded choice did not survive a reload')
+    await pg2.evaluate("localStorage.removeItem('sf-chrome-compact')")
+    await pg2.close()
+    await pg.close()
+  })
+
+  test('a wide viewport opens expanded, and a long title truncates rather than wrapping the bar', async () => {
+    const pg = await browser.newPage()
+    await pg.setViewport({ width: 1600, height: 600 })
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    assert.equal(await pg.evaluate("document.getElementById('sf-chrome').classList.contains('sf-compact')"), false)
+
+    // The title's flex-basis is what keeps this one row: at auto it measures at
+    // max-content and the last buttons get a second line the title could pay for.
+    const rows = await pg.evaluate(`(() => {
+      const kids = [...document.querySelectorAll('.sf-topbar > *')]
+        .map((n) => n.getBoundingClientRect())
+        .filter((r) => r.width > 0 && r.height > 0)
+      return new Set(kids.map((r) => Math.round(r.top + r.height / 2))).size
+    })()`)
+    assert.equal(rows, 1, `the expanded topbar wrapped to ${rows} rows at 1600px`)
+    await pg.close()
+  })
+})
+
 /* The ⚙ tuner popup. The tests share profile state deliberately —
    the saved edit persisting across pages is the contract. */
 describe('tuner and family picker', () => {
@@ -421,7 +514,7 @@ describe('tuner and family picker', () => {
   before(async () => { key = await open(PAGE, 'tuner') })
 
   test('popup opens via the gear or ?tuner=1; a color edit applies and survives reload', async () => {
-    const pg = await browser.newPage()
+    const pg = await widePage()
     await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
     assert.equal(await pg.$('.sf-tuner.sf-open'), null, 'popup must start closed')
     await pg.click('.sf-tuner-toggle')
@@ -446,7 +539,7 @@ describe('tuner and family picker', () => {
   })
 
   test('save-as-default closes the popup and keeps the edit; reset clears it', async () => {
-    const pg = await browser.newPage()
+    const pg = await widePage()
     await pg.goto(`${BASE}/b/${key}?tuner=1`, { waitUntil: 'networkidle0' })
     await pg.click('.sf-tuner-send')
     assert.equal(await pg.$('.sf-tuner.sf-open'), null, 'save must close the popup')
@@ -460,7 +553,7 @@ describe('tuner and family picker', () => {
   })
 
   test('the picker swaps families before and after reload; T still cycles modes within one', async () => {
-    const pg = await browser.newPage()
+    const pg = await widePage()
     await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
     const theme = () => pg.evaluate(`document.documentElement.dataset.theme`)
 
