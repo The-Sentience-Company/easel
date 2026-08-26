@@ -1,0 +1,48 @@
+{
+  "title": "Summarizer replay — full context vs summary",
+  "summary": "Each case is one real user message replayed through the chat agent twice: once with the full thread history, once with the summarizer folding older turns. Judge each pair: did the summary arm lose anything the full arm kept?",
+  "run": {
+    "results": "thread_summary_part-all_20260826_110125_8665",
+    "judge": "claude-opus-5 · temp 0 · single pass"
+  },
+  "arms": ["full context", "summary"],
+  "cases": [
+    {
+      "id": "pratham-p1",
+      "name": "pratham · pair 1 · rn 64",
+      "badges": ["pratham"],
+      "user": "Can you pull up the final version of the Business Continuity Plan and check whether the recovery roles still name the Head of Engineering?",
+      "replies": {
+        "full context": "The final BCP still names the **Head of Engineering** as the recovery lead — both in the recovery-responsibility line and as the team leader. You flagged this once and decided to leave it as is.",
+        "summary": "Yes — the recovery section names the **Head of Engineering** as responsible. You'd earlier said to keep it simple and leave the mismatch in place."
+      },
+      "judge": {
+        "verdict": "equivalent",
+        "tone": "success",
+        "reasons": "Both replies retrieve the same document state and both retain the decision to leave the role mismatch in place. No fact present in one and missing from the other changes what the user would do next."
+      },
+      "reference": {
+        "label": "what actually happened (historical reply)",
+        "text": "The final plan still says the Head of Engineering is responsible for recovery. You told me to leave it — keeping your life easy — so it stands."
+      },
+      "ask": "Judge says equivalent — your call?",
+      "verdict": ["equivalent", "summary weaker", "full weaker", "can't tell"]
+    },
+    {
+      "id": "pratham-probe1",
+      "name": "pratham · probe · RPO/RTO numbers",
+      "badges": ["pratham", { "label": "probe", "tone": "info" }],
+      "user": "What RPO and RTO numbers did we settle on for the backup policy?",
+      "replies": {
+        "full context": "For the Backup Policy we settled on RPO 2 hours and RTO 6 hours.",
+        "summary": "RPO: 2 hours, RTO: 6 hours — per the later policy draft."
+      },
+      "judge": {
+        "verdict": "neither recovered",
+        "tone": "error",
+        "reasons": "The conversation explicitly changed RPO and RTO to 24 hours to match the Eden Data questionnaire, so the settled numbers were 24/24. Both arms invert this."
+      },
+      "verdict": ["both recovered", "summary missed it", "full missed it", "neither"]
+    }
+  ]
+}

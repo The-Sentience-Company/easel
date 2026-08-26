@@ -13,13 +13,14 @@ import * as queue from '../templates/queue.js'
 import * as rulings from '../templates/rulings.js'
 import * as compareT from '../templates/compare.js'
 import * as gallery from '../templates/gallery.js'
+import * as replay from '../templates/replay.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
 
-const TEMPLATES = [review, evalT, page, answerKey, queue, rulings, compareT, gallery]
+const TEMPLATES = [review, evalT, page, answerKey, queue, rulings, compareT, gallery, replay]
 
 describe('contract: every template', () => {
   test('renders sample data to body-inner HTML with no document tags', async () => {
@@ -996,5 +997,97 @@ describe('queue', () => {
     const section = html.slice(html.indexOf('Project boards'))
     assert.match(section, /<a href="http:\/\/127\.0\.0\.1:4400\/b\/deadbeef">design coverage<\/a>/)
     assert.match(section, /phase plan with per-PR coverage/)
+  })
+})
+
+describe('replay', () => {
+  const base = () => sample('replay')
+
+  test('each case renders the user card, one reply card per arm, judge badge and reasoning', async () => {
+    const html = replay.render(await base())
+    assert.match(html, /<div class="sd-card-title">user<\/div>/)
+    assert.match(html, /<div class="sd-card-title">full context<\/div>/)
+    assert.match(html, /<div class="sd-card-title">summary<\/div>/)
+    assert.match(html, /judge: equivalent/)
+    assert.match(html, /Both replies retrieve the same document state/)
+  })
+
+  test('default vote options are the arms plus tie and all-bad', async () => {
+    const data = await base()
+    delete data.cases[0].verdict
+    delete data.cases[0].ask
+    const html = replay.render(data)
+    const widgetAt = html.indexOf('data-widget-id="v-pratham-p1"')
+    assert.ok(widgetAt >= 0)
+    const w = html.slice(widgetAt, html.indexOf('data-widget-id', widgetAt + 1))
+    for (const o of ['full context', 'summary', 'tie', 'all-bad']) {
+      assert.ok(w.includes(`data-option="${o}"`), `default option "${o}" missing`)
+    }
+    assert.match(w, /Your call on this exchange\?/)
+  })
+
+  test('a verdict override replaces the defaults; "verdict": false renders no widget', async () => {
+    const html = replay.render(await base())
+    assert.match(html, /data-option="summary weaker"/)
+    assert.doesNotMatch(html, /data-option="all-bad"/)
+    const data = await base()
+    data.cases[1].verdict = false
+    assert.equal((replay.render(data).match(/data-widget-id=/g) ?? []).length, 1)
+  })
+
+  test('a replies object missing an arm names the arm and the case path', async () => {
+    const data = await base()
+    delete data.cases[1].replies.summary
+    assert.throws(() => replay.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /replay\.cases\[1\]\.replies/)
+      assert.match(err.message, /"summary"/)
+      return true
+    })
+  })
+
+  test('fewer than 2 arms, more than 4, and duplicate arms throw', async () => {
+    const data = await base()
+    data.arms = ['solo']
+    assert.throws(() => replay.render(data), /at least 2 arms/)
+    data.arms = ['a', 'b', 'c', 'd', 'e']
+    assert.throws(() => replay.render(data), /at most 4 arms/)
+    data.arms = ['full context', 'full context']
+    assert.throws(() => replay.render(data), /must be unique/)
+  })
+
+  test('duplicate case ids, a judge without a verdict, and a reference without text throw', async () => {
+    let data = await base()
+    data.cases[1].id = data.cases[0].id
+    assert.throws(() => replay.render(data), /duplicate case id/)
+    data = await base()
+    delete data.cases[0].judge.verdict
+    assert.throws(() => replay.render(data), /replay\.cases\[0\]\.judge\.verdict/)
+    data = await base()
+    data.cases[0].reference = { label: 'x' }
+    assert.throws(() => replay.render(data), /replay\.cases\[0\]\.reference\.text/)
+  })
+
+  test('a long user message renders a lead cut at a paragraph break, full text collapsed', async () => {
+    const data = await base()
+    data.cases = [data.cases[0]]
+    data.cases[0].user = `${'A'.repeat(400)}\n\n${'B'.repeat(900)}`
+    const html = replay.render(data)
+    const detailsAt = html.indexOf('<details')
+    assert.ok(detailsAt >= 0, 'long message must collapse')
+    assert.match(html, /full message \(1,302 chars\)/)
+    assert.doesNotMatch(html.slice(0, detailsAt), /BBB/, 'the lead must stop at the paragraph break')
+    assert.match(html.slice(detailsAt), /BBB/)
+  })
+
+  test('the lead never leaves a code fence open', async () => {
+    const data = await base()
+    data.cases = [data.cases[0]]
+    data.cases[0].user = `intro line\n\n\`\`\`js\n${'const x = 1\n'.repeat(120)}\`\`\``
+    const html = replay.render(data)
+    const lead = html.slice(0, html.indexOf('<details'))
+    assert.match(lead, /intro line/)
+    assert.doesNotMatch(lead, /const x = 1/, 'an unclosed fence must fall out of the lead')
+    assert.doesNotMatch(lead, /<pre>/)
   })
 })

@@ -6,7 +6,7 @@ Two to six named arms side by side, one verdict per case. Use it when the reader
 easel open --template compare --data arms.json --title "Extractor arms — flat vs split vs certified"
 ```
 
-**Not this template:** a *blind* two-candidate compare is `eval`'s compare mode, which hides which arm is which behind a blind key. `compare` renders the arm names as column headers, so use it when knowing the arm is part of the judgment. Adjudicating labeled cases one at a time is `rulings`. Image candidates are `gallery`.
+**Not this template:** a *blind* two-candidate compare is `eval`'s compare mode, which hides which arm is which behind a blind key. `compare` renders the arm names as column headers, so use it when knowing the arm is part of the judgment. Conversation exchanges — a user message with each arm's reply, judged exchange by exchange — are `replay`. Adjudicating labeled cases one at a time is `rulings`. Image candidates are `gallery`.
 
 ## Input schema
 

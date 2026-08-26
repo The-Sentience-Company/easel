@@ -2,7 +2,7 @@
 
 One template, three modes, switched on the case shape: `notes` renders dossiers, `candidates` renders a blind two-column compare, `items` renders an N-way item matrix. The comparison types serve different jobs, so the data decides — there is no mode flag.
 
-Know the edges before committing to this template: blind compare takes exactly two candidates, and no mode renders images. **A compare with 3+ arms, or named arms the reader is meant to see, is `compare`; image candidates are `gallery`**; adjudicating labeled cases one by one belongs on `rulings`.
+Know the edges before committing to this template: blind compare takes exactly two candidates, and no mode renders images. **A compare with 3+ arms, or named arms the reader is meant to see, is `compare`; conversation exchanges replayed through named arms — same message, one reply per arm — are `replay`; image candidates are `gallery`**; adjudicating labeled cases one by one belongs on `rulings`.
 
 ```
 easel open --template eval --data results.json --title "Preference extraction run 41"

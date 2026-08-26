@@ -70,6 +70,9 @@ Nothing is delivered until you click Send, so a half-finished thought never wake
 |---|---|
 | `review` | plans, designs, comparisons — prose sections plus decisions and votes |
 | `eval` | eval runs — dossiers, blind compare, or an item matrix, chosen on data shape |
+| `compare` | 2–6 named arms side by side — before/after, variants — one verdict per case |
+| `replay` | conversation exchanges replayed through 2–4 named arms — one reply per arm, one verdict per exchange |
+| `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states |
 | `rulings` | labeled cases adjudicated one by one — answer keys, goldens, triage lists |
 | `queue` | a worklist of items to triage |
 | `page` | anything else — hand-authored HTML through the same shell and design system |

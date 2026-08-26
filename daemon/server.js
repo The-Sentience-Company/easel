@@ -64,7 +64,7 @@ function buildInfo() {
 // A scene carries excalidraw's embedded `files`, so one pasted image dwarfs the
 // generic limit — and a 413 on the close flush would trap the drawing unsaved.
 const MAX_SCENE_BYTES = 32 * 1024 * 1024
-const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery'])
+const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery', 'replay'])
 
 const store = createStore()
 

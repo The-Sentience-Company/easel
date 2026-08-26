@@ -95,7 +95,11 @@ Full command reference and HTTP shapes: `docs/api.md`.
 |---|---|---|
 | `review` | plans, designs, comparisons — prose sections plus decisions and votes | [templates/review.md](templates/review.md) |
 | `eval` | eval runs — three modes on data shape: dossiers, blind compare, item matrix | [templates/eval.md](templates/eval.md) |
+| `compare` | 2–6 named arms side by side — before/after, variants, shipped vs certified — one verdict per case | [templates/compare.md](templates/compare.md) |
+| `replay` | conversation exchanges replayed through 2–4 named arms — same message, one reply per arm, one verdict per exchange | [templates/replay.md](templates/replay.md) |
+| `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states | [templates/gallery.md](templates/gallery.md) |
 | `rulings` | labeled cases adjudicated one by one — answer keys, goldens, triage lists, model-vs-key disagreements | [templates/rulings.md](templates/rulings.md) |
+| `queue` | a campaign's open decisions on one board, orchestrator-owned | [templates/queue.md](templates/queue.md) |
 | `page` | anything else — hand-authored HTML through the same shell | [templates/page.md](templates/page.md) |
 
 Templates are pre-audited, so a generated board cannot hit the layout and contrast problems that hand-written HTML kept reproducing. Reach for `page` only when the shape genuinely is not a review or an eval.

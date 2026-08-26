@@ -23,7 +23,7 @@ After publishing, the chat message is the link, one line on what changed, and wh
 ## Publish
 
 ```
-easel open --template <review|eval|compare|gallery|rulings|page|queue> --data <file.json> --title T   # → key + URL
+easel open --template <review|eval|compare|replay|gallery|rulings|page|queue> --data <file.json> --title T   # → key + URL
 easel open <file.html|file.md>                                                                        # plain doc
 ```
 
@@ -34,6 +34,7 @@ easel open <file.html|file.md>                                                  
 | `review` | a plan, design, or proposal to read, plus decisions to answer |
 | `eval` | eval output — dossiers, a *blind* 2-arm compare, or an item matrix; the data shape picks the mode |
 | `compare` | 2–6 *named* arms side by side — before/after, variants, shipped vs certified — one verdict per case |
+| `replay` | conversation exchanges replayed through 2–4 named arms — same message, one reply per arm, judge's call to check, one verdict per exchange |
 | `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states |
 | `rulings` | labeled cases adjudicated one by one — an answer key, goldens, triage list, or model-vs-key disagreements |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
