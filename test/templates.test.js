@@ -253,6 +253,17 @@ describe('markdown', () => {
     assert.doesNotMatch(out, /class="mermaid"/)
     assert.match(out, /1 &lt; 2/)
   })
+
+  test('a blockquote keeps its lists and paragraphs as blocks', () => {
+    const out = markdown('> **The day**\n> - one\n> - two\n>\n> tail')
+    assert.match(out, /<blockquote><p><strong>The day<\/strong><\/p>/)
+    assert.match(out, /<ul><li>one<\/li><li>two<\/li><\/ul>/)
+    assert.match(out, /<p>tail<\/p><\/blockquote>/)
+  })
+
+  test('a nested blockquote nests', () => {
+    assert.match(renderInChild('> outer\n> > inner'), /<blockquote><p>outer<\/p>\n<blockquote><p>inner<\/p><\/blockquote><\/blockquote>/)
+  })
 })
 
 describe('widgets', () => {

@@ -121,7 +121,9 @@ export function markdown(src) {
     if (/^\s*>\s?/.test(line)) {
       const body = []
       while (i < lines.length && /^\s*>\s?/.test(lines[i])) body.push(lines[i++].replace(/^\s*>\s?/, ''))
-      out.push(`<blockquote>${inline(body.join(' '))}</blockquote>`)
+      // Quoted content is markdown in its own right: lists and paragraphs
+      // inside a > block must stay block elements, as GitHub renders them.
+      out.push(`<blockquote>${markdown(body.join('\n'))}</blockquote>`)
       continue
     }
 

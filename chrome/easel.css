@@ -277,6 +277,7 @@ body.sf-shell {
   border-left: 3px solid var(--border);
   color: var(--color-muted-content);
 }
+#sf-content blockquote > :last-child { margin-bottom: 0; }
 
 /* Colour is pinned rather than inherited: the muted tier on the raised code
    ground falls to 4.27:1 in dark, and any future muted wrapper would repeat it. */
