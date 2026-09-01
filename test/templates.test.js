@@ -269,6 +269,12 @@ describe('widgets', () => {
     assert.match(html, /<button type="button" data-option="yes">/)
   })
 
+  test('help is prose — it renders as markdown, still escaped', () => {
+    const html = widget({ type: 'vote', id: 'w1', prompt: 'Ship?', help: '```diff\n-old\n+new\n```\n\n<b>a</b> **b**', options: ['yes'] })
+    assert.match(html, /<div class="sd-widget-help"><pre class="sd-diff">-old\n\+new<\/pre>/)
+    assert.match(html, /<p>&lt;b&gt;a&lt;\/b&gt; <strong>b<\/strong><\/p>/)
+  })
+
   test('rejects an unknown widget type and empty options', () => {
     assert.throws(() => widget({ type: 'slider', id: 'w', prompt: 'p', options: ['a'] }), TemplateError)
     assert.throws(() => widget({ type: 'vote', id: 'w', prompt: 'p', options: [] }), TemplateError)

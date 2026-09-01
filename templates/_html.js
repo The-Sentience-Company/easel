@@ -223,7 +223,7 @@ export function widget({ type, id, prompt, help, options, compact }) {
   return [
     `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}"${compact ? ' class="sd-widget-compact"' : ''}>`,
     prompt ? `<div class="sd-widget-prompt">${esc(prompt)}</div>` : '',
-    help ? `<div class="sd-widget-help">${esc(help)}</div>` : '',
+    help ? `<div class="sd-widget-help">${markdown(help)}</div>` : '',
     `<div class="sd-widget-options">${buttons}</div>`,
     '</div>',
   ].filter(Boolean).join('')
