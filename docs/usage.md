@@ -95,6 +95,7 @@ Full command reference and HTTP shapes: `docs/api.md`.
 |---|---|---|
 | `review` | plans, designs, comparisons — prose sections plus decisions and votes | [templates/review.md](templates/review.md) |
 | `eval` | eval runs — three modes on data shape: dossiers, blind compare, item matrix | [templates/eval.md](templates/eval.md) |
+| `lab` | experiment configurations, quality checks, request-level accounting, and latency across 2–6 arms | [templates/lab.md](templates/lab.md) |
 | `compare` | 2–6 named arms side by side — before/after, variants, shipped vs certified — one verdict per case | [templates/compare.md](templates/compare.md) |
 | `replay` | conversation exchanges replayed through 2–4 named arms — same message, one reply per arm, one verdict per exchange | [templates/replay.md](templates/replay.md) |
 | `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states | [templates/gallery.md](templates/gallery.md) |

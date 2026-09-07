@@ -4,6 +4,8 @@ One template, three modes, switched on the case shape: `notes` renders dossiers,
 
 Know the edges before committing to this template: blind compare takes exactly two candidates, and no mode renders images. **A compare with 3+ arms, or named arms the reader is meant to see, is `compare`; conversation exchanges replayed through named arms — same message, one reply per arm — are `replay`; image candidates are `gallery`**; adjudicating labeled cases one by one belongs on `rulings`.
 
+For an experiment bench with configurations, per-request token/cost records, quality checks, and completion latency, use [`lab`](lab.md). It derives metrics and keeps missing accounting distinct from zero.
+
 ```
 easel open --template eval --data results.json --title "Preference extraction run 41"
 ```
