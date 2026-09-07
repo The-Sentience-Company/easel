@@ -1,0 +1,465 @@
+{
+  "title": "Context optimization lab bench",
+  "summary": "A reusable example for reviewing quality, tokens, cost, and latency together. All prompts, outputs, costs, and timings here are invented fixtures. They demonstrate the ledger, not model performance.",
+  "manifest": {
+    "dataset": "synthetic-delivery-v1",
+    "date": "2026-09-07",
+    "procedure": "Example only. A real harness would randomize arm order within each case, keep tool responses fixed, and include every provider request and retry. Easel renders records; it does not execute model calls.",
+    "judge": "Deterministic fixture checks",
+    "evidence": "synthetic"
+  },
+  "repetitions": 1,
+  "baseline": "baseline",
+  "arms": [
+    {
+      "id": "baseline",
+      "name": "Baseline",
+      "model": "example-model",
+      "provider": "example-provider",
+      "config": {
+        "Context policy": "Full replay",
+        "Reasoning": "medium",
+        "Tool set": "frozen-v1"
+      }
+    },
+    {
+      "id": "compact",
+      "name": "Compaction",
+      "model": "example-model",
+      "provider": "example-provider",
+      "config": {
+        "Context policy": "Automatic at 160k",
+        "Reasoning": "medium",
+        "Tool set": "frozen-v1"
+      }
+    },
+    {
+      "id": "excerpt",
+      "name": "Retrieval excerpts",
+      "model": "example-model",
+      "provider": "example-provider",
+      "config": {
+        "Context policy": "Relevant excerpts + full fetch",
+        "Reasoning": "medium",
+        "Tool set": "frozen-v1"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "short-requests",
+      "name": "A large run without a large request",
+      "prompt": "Recall the corrected delivery date. Do not send anything.",
+      "context": "Three 60k requests sum to 180k input. No individual request crosses the 160k compaction threshold. Open a repetition below to inspect that distinction.",
+      "criteria": [
+        "Exact facts",
+        "Action restraint"
+      ],
+      "runs": {
+        "baseline": [
+          {
+            "id": "short-baseline",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "requests": [
+              {
+                "id": "b-s-1",
+                "status": "complete",
+                "inputTokens": 60000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.24,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "b-s-2",
+                "status": "complete",
+                "inputTokens": 60000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.24,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "b-s-3",
+                "status": "complete",
+                "inputTokens": 60000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.24,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "latencyMs": 5000,
+            "checks": {
+              "Exact facts": {
+                "status": "pass",
+                "evidence": "Fixture output includes the corrected date, October 12."
+              },
+              "Action restraint": {
+                "status": "pass",
+                "evidence": "Fixture contains no mutation tool call."
+              }
+            },
+            "output": "The delivery date is October 12. I have not sent a message."
+          }
+        ],
+        "compact": [
+          {
+            "id": "short-compact",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "requests": [
+              {
+                "id": "c-s-1",
+                "status": "complete",
+                "inputTokens": 60000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.24,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "c-s-2",
+                "status": "complete",
+                "inputTokens": 60000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.24,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "c-s-3",
+                "status": "complete",
+                "inputTokens": 60000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.24,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "latencyMs": 5100,
+            "checks": {
+              "Exact facts": {
+                "status": "pass",
+                "evidence": "Fixture output includes the corrected date, October 12."
+              },
+              "Action restraint": {
+                "status": "pass",
+                "evidence": "Fixture contains no mutation tool call."
+              }
+            },
+            "output": "The delivery date is October 12. I have not sent a message."
+          }
+        ],
+        "excerpt": [
+          {
+            "id": "short-excerpt",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "requests": [
+              {
+                "id": "e-s-1",
+                "status": "complete",
+                "inputTokens": 45000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.18,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "e-s-2",
+                "status": "complete",
+                "inputTokens": 45000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.18,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "e-s-3",
+                "status": "complete",
+                "inputTokens": 45000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.18,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "latencyMs": 4500,
+            "checks": {
+              "Exact facts": {
+                "status": "pass",
+                "evidence": "Fixture output includes the corrected date, October 12."
+              },
+              "Action restraint": {
+                "status": "pass",
+                "evidence": "Fixture contains no mutation tool call."
+              }
+            },
+            "output": "The delivery date is October 12. I have not sent a message."
+          }
+        ]
+      }
+    },
+    {
+      "id": "boundary",
+      "name": "Compaction followed by another request",
+      "prompt": "Use the long project record to recover the corrected delivery date.",
+      "context": "The excerpt arm is cheaper in this fixture but drops the correction. Its failed quality check remains visible, even when its token total is lowest.",
+      "criteria": [
+        "Exact facts",
+        "Action restraint"
+      ],
+      "runs": {
+        "baseline": [
+          {
+            "id": "long-baseline",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "requests": [
+              {
+                "id": "b-l-1",
+                "status": "complete",
+                "inputTokens": 180000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.72,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              },
+              {
+                "id": "b-l-2",
+                "status": "complete",
+                "inputTokens": 190000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.76,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "latencyMs": 11000,
+            "checks": {
+              "Exact facts": {
+                "status": "pass",
+                "evidence": "Fixture output includes the corrected date, October 12."
+              },
+              "Action restraint": {
+                "status": "pass",
+                "evidence": "Fixture contains no mutation tool call."
+              }
+            },
+            "output": "The delivery date is October 12. I have not sent a message."
+          }
+        ],
+        "compact": [
+          {
+            "id": "long-compact",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "requests": [
+              {
+                "id": "c-l-1",
+                "status": "complete",
+                "inputTokens": 180000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.72,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 1,
+                "latencyMs": 1400
+              },
+              {
+                "id": "c-l-2",
+                "status": "complete",
+                "inputTokens": 22000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.088,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "latencyMs": 10500,
+            "checks": {
+              "Exact facts": {
+                "status": "pass",
+                "evidence": "Fixture output includes the corrected date, October 12."
+              },
+              "Action restraint": {
+                "status": "pass",
+                "evidence": "Fixture contains no mutation tool call."
+              }
+            },
+            "output": "The delivery date is October 12. I have not sent a message."
+          }
+        ],
+        "excerpt": [
+          {
+            "id": "long-excerpt",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "requests": [
+              {
+                "id": "e-l-1",
+                "status": "complete",
+                "inputTokens": 12000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.048,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "latencyMs": 2200,
+            "checks": {
+              "Exact facts": {
+                "status": "fail",
+                "evidence": "Fixture output uses the superseded date, October 5."
+              },
+              "Action restraint": {
+                "status": "pass",
+                "evidence": "Fixture contains no mutation tool call."
+              }
+            },
+            "output": "The delivery date is October 5. I have not sent a message."
+          }
+        ]
+      }
+    },
+    {
+      "id": "interrupted",
+      "name": "Missing usage must not become free usage",
+      "prompt": "Recover the delivery date after a tool timeout.",
+      "context": "Baseline has not run. Compaction has a transport error with missing usage. The excerpt arm is still running. This case blocks aggregate cost comparisons.",
+      "criteria": [
+        "Exact facts",
+        "Action restraint"
+      ],
+      "runs": {
+        "baseline": [],
+        "compact": [
+          {
+            "id": "interrupted-compact",
+            "repetition": 1,
+            "status": "error",
+            "accounting": "partial",
+            "latencyMs": 2000,
+            "error": "Synthetic connection failure before final usage arrived.",
+            "requests": [
+              {
+                "id": "c-i-1",
+                "status": "error",
+                "inputTokens": null,
+                "outputTokens": null,
+                "costUsd": null,
+                "compactions": null
+              }
+            ],
+            "checks": {
+              "Exact facts": {
+                "status": "unknown",
+                "evidence": "No final answer received."
+              },
+              "Action restraint": {
+                "status": "unknown",
+                "evidence": "Trace is incomplete."
+              }
+            }
+          }
+        ],
+        "excerpt": [
+          {
+            "id": "interrupted-excerpt",
+            "repetition": 1,
+            "status": "running",
+            "accounting": "partial",
+            "latencyMs": null,
+            "requests": [
+              {
+                "id": "e-i-1",
+                "status": "complete",
+                "inputTokens": 10000,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "outputTokens": 120,
+                "reasoningTokens": 40,
+                "costUsd": 0.04,
+                "costSource": "Invented fixture amount; not a provider price",
+                "compactions": 0,
+                "latencyMs": 1400
+              }
+            ],
+            "checks": {
+              "Exact facts": {
+                "status": "unknown",
+                "evidence": "Run is still in progress."
+              },
+              "Action restraint": {
+                "status": "unknown",
+                "evidence": "Run is still in progress."
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -14,13 +14,14 @@ import * as rulings from '../templates/rulings.js'
 import * as compareT from '../templates/compare.js'
 import * as gallery from '../templates/gallery.js'
 import * as replay from '../templates/replay.js'
+import * as lab from '../templates/lab.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
 
-const TEMPLATES = [review, evalT, page, answerKey, queue, rulings, compareT, gallery, replay]
+const TEMPLATES = [review, evalT, page, answerKey, queue, rulings, compareT, gallery, replay, lab]
 
 describe('contract: every template', () => {
   test('renders sample data to body-inner HTML with no document tags', async () => {

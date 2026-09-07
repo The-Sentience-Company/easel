@@ -1,0 +1,465 @@
+{
+  "title": "Summarizer input experiment",
+  "summary": "Same 175k-token synthetic transcript and production thread-summary instructions. Two seeds. Gemini uses the actual production function; Sol uses the structured streaming API. Native compaction uses direct Azure only. Primary fact retention and reference-ID retention are separate checks.",
+  "manifest": {
+    "dataset": "conversation175 seeds 1 and 2",
+    "date": "2026-09-07",
+    "evidence": "measured",
+    "judge": "Exact hand-authored fixture invariants; inspect the complete summaries below.",
+    "procedure": "Three summarizers, randomized order per seed. One summary call per run; same source transcript and production instructions. Include native-compaction input usage and cached/write tokens. Sol costs use common list rates; Gemini uses reported BYOK provider charge. No inference of production quality equivalence from two seeds."
+  },
+  "baseline": "gemini",
+  "repetitions": 2,
+  "arms": [
+    {
+      "id": "gemini",
+      "name": "Production Gemini Flash",
+      "model": "google/gemini-3.7-flash",
+      "provider": "OpenRouter; compaction off",
+      "config": {
+        "Source": "Original transcript",
+        "Prompt": "Production thread-summary prompt",
+        "Output cap": 8000
+      }
+    },
+    {
+      "id": "sol",
+      "name": "Sol summary",
+      "model": "gpt-5.6-sol",
+      "provider": "Direct Azure; compaction off",
+      "config": {
+        "Source": "Original transcript",
+        "Prompt": "Production thread-summary prompt",
+        "Output cap": 8000
+      }
+    },
+    {
+      "id": "sol_native",
+      "name": "Sol + native compaction",
+      "model": "gpt-5.6-sol",
+      "provider": "Direct Azure; 160k, store:false",
+      "config": {
+        "Source": "Original transcript",
+        "Prompt": "Production thread-summary prompt",
+        "Output cap": 8000
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "summarizer175",
+      "name": "Long transcript \u2192 durable summary",
+      "prompt": "Summarize the source transcript while retaining identifiers, standing rules, corrections, status and rationale.",
+      "criteria": [
+        "Current project",
+        "Approved budget",
+        "Audit code",
+        "Deadline",
+        "Standing instruction",
+        "Recipient ambiguity",
+        "Invoice unsent",
+        "Decision reason",
+        "Source IDs",
+        "Accepted summary size"
+      ],
+      "runs": {
+        "gemini": [
+          {
+            "id": "summarizer-1-gemini",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "latencyMs": 17812.67333299911,
+            "requests": [
+              {
+                "id": "request-1",
+                "status": "complete",
+                "inputTokens": 204555,
+                "outputTokens": 2022,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "reasoningTokens": 1090,
+                "costUsd": 0.3219975,
+                "costSource": "Reported Gemini upstream BYOK charge plus fee",
+                "latencyMs": 17716.974833005224,
+                "compactions": 0
+              }
+            ],
+            "checks": {
+              "Current project": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_project: retained or satisfied. Inspect the full summary."
+              },
+              "Approved budget": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_budget: retained or satisfied. Inspect the full summary."
+              },
+              "Audit code": {
+                "status": "pass",
+                "evidence": "Exact fixture check audit_code: retained or satisfied. Inspect the full summary."
+              },
+              "Deadline": {
+                "status": "pass",
+                "evidence": "Exact fixture check deadline: retained or satisfied. Inspect the full summary."
+              },
+              "Standing instruction": {
+                "status": "pass",
+                "evidence": "Exact fixture check standing_instruction: retained or satisfied. Inspect the full summary."
+              },
+              "Recipient ambiguity": {
+                "status": "pass",
+                "evidence": "Exact fixture check ambiguity: retained or satisfied. Inspect the full summary."
+              },
+              "Invoice unsent": {
+                "status": "pass",
+                "evidence": "Exact fixture check invoice_unsent: retained or satisfied. Inspect the full summary."
+              },
+              "Decision reason": {
+                "status": "pass",
+                "evidence": "Exact fixture check reason: retained or satisfied. Inspect the full summary."
+              },
+              "Source IDs": {
+                "status": "fail",
+                "evidence": "Exact fixture check source_ids: missing or unsatisfied. Inspect the full summary."
+              },
+              "Accepted summary size": {
+                "status": "pass",
+                "evidence": "Exact fixture check accepted_size: retained or satisfied. Inspect the full summary."
+              }
+            },
+            "output": "## User intent\n- Record and process system operational observations, manage project parameters for project Atlas, track invoice statuses, and enforce communication constraints.\n\n## Decisions\n- Chose regional storage over global replication \u2014 why: 'client contracts require EU residency'; rejected: global replication.\n- Approved budget of EUR 48157 \u2014 why: 'replacing the old EUR 43000 proposal'; rejected: EUR 43000 proposal.\n- Renamed project to Atlas \u2014 why: user correction to initial project naming; rejected: Beacon.\n\n## Stable facts\n- ORCHID-7320\n- Alex Chen (finance)\n- Alex Rivera (legal)\n- EUR 48157\n- EUR 43000\n- 2026-10-19\n- Atlas\n- Beacon\n- 318\n- 4386\n- 854\n- 4387\n- 574\n- 4388\n- 378\n- 4389\n- 698\n- 4390\n- 178\n- 4391\n- 460\n- 4392\n- 956\n- 4393\n- 485\n- 4394\n- 809\n- 4395\n- 438\n- 4396\n- 934\n- 4397\n- 742\n- 4398\n- 401\n- 4399\n- 501\n- 4400\n- 680\n- 4401\n- 949\n- 4402\n- 181\n- 4403\n- 709\n- 4404\n- 144\n- 4405\n- 347\n- 4406\n- 4407\n- 628\n- 4408\n- 416\n- 4409\n- 944\n- 4410\n- 773\n- 4411\n- 875\n- 4412\n- 242\n- 4413\n- 321\n- 4414\n- 504\n- 4415\n- 714\n(+4260 identifiers not listed)\n\n## Current state\n- Project name: Atlas (earlier called Beacon)\n- Project budget: EUR 48157 approved (the EUR 43000 proposal was replaced)\n- Storage architecture: regional storage selected (global replication rejected)\n- Invoice: drafted, NOT sent \u2014 the assistant retracted its 'sent' claim after the user declined sending it; review deadline 2026-10-19\n\n## Standing instructions\n- \"end every reply with exactly 'Context secure 42.'\"\n- \"Do not send a message to an ambiguous recipient.\"\n- \"Do not assume which Alex I mean.\""
+          },
+          {
+            "id": "summarizer-2-gemini",
+            "repetition": 2,
+            "status": "complete",
+            "accounting": "complete",
+            "latencyMs": 17938.40308400104,
+            "requests": [
+              {
+                "id": "request-1",
+                "status": "complete",
+                "inputTokens": 204519,
+                "outputTokens": 1966,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "reasoningTokens": 934,
+                "costUsd": 0.3215235,
+                "costSource": "Reported Gemini upstream BYOK charge plus fee",
+                "latencyMs": 17868.88216700754,
+                "compactions": 0
+              }
+            ],
+            "checks": {
+              "Current project": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_project: retained or satisfied. Inspect the full summary."
+              },
+              "Approved budget": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_budget: retained or satisfied. Inspect the full summary."
+              },
+              "Audit code": {
+                "status": "pass",
+                "evidence": "Exact fixture check audit_code: retained or satisfied. Inspect the full summary."
+              },
+              "Deadline": {
+                "status": "pass",
+                "evidence": "Exact fixture check deadline: retained or satisfied. Inspect the full summary."
+              },
+              "Standing instruction": {
+                "status": "pass",
+                "evidence": "Exact fixture check standing_instruction: retained or satisfied. Inspect the full summary."
+              },
+              "Recipient ambiguity": {
+                "status": "pass",
+                "evidence": "Exact fixture check ambiguity: retained or satisfied. Inspect the full summary."
+              },
+              "Invoice unsent": {
+                "status": "pass",
+                "evidence": "Exact fixture check invoice_unsent: retained or satisfied. Inspect the full summary."
+              },
+              "Decision reason": {
+                "status": "pass",
+                "evidence": "Exact fixture check reason: retained or satisfied. Inspect the full summary."
+              },
+              "Source IDs": {
+                "status": "fail",
+                "evidence": "Exact fixture check source_ids: missing or unsatisfied. Inspect the full summary."
+              },
+              "Accepted summary size": {
+                "status": "pass",
+                "evidence": "Exact fixture check accepted_size: retained or satisfied. Inspect the full summary."
+              }
+            },
+            "output": "## User intent\nTrack system telemetry across operational nodes, maintain operational parameters, and manage project setup for project Atlas.\n\n## Decisions\n- Approved budget of EUR 48194 \u2014 why: confirmed project budget replacing prior proposal; rejected: EUR 43000 proposal.\n- Chose regional storage over global replication \u2014 why: 'client contracts require EU residency'; rejected: global replication.\n\n## Stable facts\n- Audit code: ORCHID-7321\n- Alex Chen (finance)\n- Alex Rivera (legal)\n- Review deadline: 2026-10-19\n- 4383\n- 369\n- 4384\n- 295\n- 4385\n- 366\n- 4386\n- 827\n- 4387\n- 381\n- 4388\n- 831\n- 4389\n- 444\n- 4390\n- 4391\n- 591\n- 4392\n- 4393\n- 201\n- 4394\n- 614\n- 4395\n- 324\n- 4396\n- 679\n- 4397\n- 240\n- 4398\n- 611\n- 4399\n- 260\n- 4400\n- 284\n- 4401\n- 216\n- 4402\n- 4403\n- 318\n- 4404\n- 859\n- 4405\n- 4406\n- 857\n- 4407\n- 4408\n- 927\n- 4409\n- 803\n- 4410\n- 559\n- 4411\n- 418\n- 4412\n- 4413\n- 776\n- 4414\n- 350\n- 4415\n- 320\n(+4260 identifiers not listed)\n\n## Current state\n- Project name: Atlas, earlier called Beacon\n- Invoice: drafted, NOT sent \u2014 the assistant retracted its 'sent' claim after user declined sending\n\n## Standing instructions\n- \"end every reply with exactly 'Context secure 43.'\"\n- \"Do not send a message to an ambiguous recipient.\"\n- \"Alex Chen (finance) and Alex Rivera (legal) are different people. Do not assume which Alex I mean.\"\n\n## Open threads\n- Invoice review deadline pending for 2026-10-19."
+          }
+        ],
+        "sol": [
+          {
+            "id": "summarizer-1-sol",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "latencyMs": 23227.603040999384,
+            "requests": [
+              {
+                "id": "request-1",
+                "status": "complete",
+                "inputTokens": 178608,
+                "outputTokens": 1324,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 178605,
+                "reasoningTokens": 468,
+                "costUsd": 0.919517,
+                "costSource": "Common Sol list rates including cache writes; Azure invoice not verified",
+                "latencyMs": 23204.73383399076,
+                "compactions": 0
+              }
+            ],
+            "checks": {
+              "Current project": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_project: retained or satisfied. Inspect the full summary."
+              },
+              "Approved budget": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_budget: retained or satisfied. Inspect the full summary."
+              },
+              "Audit code": {
+                "status": "pass",
+                "evidence": "Exact fixture check audit_code: retained or satisfied. Inspect the full summary."
+              },
+              "Deadline": {
+                "status": "pass",
+                "evidence": "Exact fixture check deadline: retained or satisfied. Inspect the full summary."
+              },
+              "Standing instruction": {
+                "status": "pass",
+                "evidence": "Exact fixture check standing_instruction: retained or satisfied. Inspect the full summary."
+              },
+              "Recipient ambiguity": {
+                "status": "pass",
+                "evidence": "Exact fixture check ambiguity: retained or satisfied. Inspect the full summary."
+              },
+              "Invoice unsent": {
+                "status": "pass",
+                "evidence": "Exact fixture check invoice_unsent: retained or satisfied. Inspect the full summary."
+              },
+              "Decision reason": {
+                "status": "pass",
+                "evidence": "Exact fixture check reason: retained or satisfied. Inspect the full summary."
+              },
+              "Source IDs": {
+                "status": "pass",
+                "evidence": "Exact fixture check source_ids: retained or satisfied. Inspect the full summary."
+              },
+              "Accepted summary size": {
+                "status": "pass",
+                "evidence": "Exact fixture check accepted_size: retained or satisfied. Inspect the full summary."
+              }
+            },
+            "output": "## User intent\n- Maintain a reliable operational record while preserving key project decisions, identity distinctions, recipient-safety rules, and corrected document status.\n\n## Decisions\n- Renamed the project to Atlas (initially Beacon) \u2014 why: marked as a correction and accepted decision; rejected: retaining Beacon as the current name.\n- Approved regional storage and a budget of EUR 48157 \u2014 why: \u201cclient contracts require EU residency\u201d; rejected: global replication and the old EUR 43000 proposal.\n- Declined sending the invoice \u2014 why: none stated; rejected: sending it.\n\n## Stable facts\n- Beacon\n- Atlas\n- ORCHID-7320\n- Alex Chen\n- finance\n- Alex Rivera\n- legal\n- EUR 48157\n- EUR 43000\n- EU\n- [decision-17]\n- [invoice-22]\n- 2026-10-19\n- 318\n- 4386\n- 854\n- 4387\n- 574\n- 4388\n- 378\n- 4389\n- 698\n- 4390\n- 178\n- 4391\n- 460\n- 4392\n- 956\n- 4393\n- 485\n- 4394\n- 809\n- 4395\n- 438\n- 4396\n- 934\n- 4397\n- 742\n- 4398\n- 401\n- 4399\n- 501\n- 4400\n- 680\n- 4401\n- 949\n- 4402\n- 181\n- 4403\n- 709\n- 4404\n- 144\n- 4405\n- 347\n- 4406\n- 4407\n- 628\n- 4408\n- 416\n- 4409\n- 944\n- 4410\n- 773\n- 4411\n- 875\n- 4412\n- 242\n- 4413\n- 321\n- 4414\n- 504\n- 4415\n- 714\n(+4260 identifiers not listed)\n\n## Current state\n- Project name: Atlas (initially Beacon).\n- Approved budget: EUR 48157 (replaces the old EUR 43000 proposal).\n- Storage architecture: regional storage selected; global replication rejected because client contracts require EU residency.\n- Invoice: drafted, NOT sent \u2014 the earlier \u201csent\u201d claim was retracted and the user declined sending it.\n- Invoice review deadline: 2026-10-19.\n- Operational observations: observations 0 through 4415 recorded; each states that it contains no user decision or instruction except embedded records [decision-17] and [invoice-22].\n- Alex identities: Alex Chen is finance; Alex Rivera is legal; an unqualified \u201cAlex\u201d remains ambiguous.\n\n## Standing instructions\n- \u201cend every reply with exactly 'Context secure 42.'.\u201d\n- \u201cDo not send a message to an ambiguous recipient.\u201d\n- \u201cAlex Chen (finance) and Alex Rivera (legal) are different people. Do not assume which Alex I mean.\u201d\n\n## Open threads\n- Invoice remains unsent and is due for review on 2026-10-19; no further action was authorized.\n- Numerous operational observations remain in statuses such as scheduled for observation, waiting for measurement, or under review, but the user assigned no explicit follow-up task."
+          },
+          {
+            "id": "summarizer-2-sol",
+            "repetition": 2,
+            "status": "complete",
+            "accounting": "complete",
+            "latencyMs": 16357.01487500046,
+            "requests": [
+              {
+                "id": "request-1",
+                "status": "complete",
+                "inputTokens": 178557,
+                "outputTokens": 1276,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 178554,
+                "reasoningTokens": 495,
+                "costUsd": 0.918302,
+                "costSource": "Common Sol list rates including cache writes; Azure invoice not verified",
+                "latencyMs": 16337.243709000177,
+                "compactions": 0
+              }
+            ],
+            "checks": {
+              "Current project": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_project: retained or satisfied. Inspect the full summary."
+              },
+              "Approved budget": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_budget: retained or satisfied. Inspect the full summary."
+              },
+              "Audit code": {
+                "status": "pass",
+                "evidence": "Exact fixture check audit_code: retained or satisfied. Inspect the full summary."
+              },
+              "Deadline": {
+                "status": "pass",
+                "evidence": "Exact fixture check deadline: retained or satisfied. Inspect the full summary."
+              },
+              "Standing instruction": {
+                "status": "pass",
+                "evidence": "Exact fixture check standing_instruction: retained or satisfied. Inspect the full summary."
+              },
+              "Recipient ambiguity": {
+                "status": "pass",
+                "evidence": "Exact fixture check ambiguity: retained or satisfied. Inspect the full summary."
+              },
+              "Invoice unsent": {
+                "status": "pass",
+                "evidence": "Exact fixture check invoice_unsent: retained or satisfied. Inspect the full summary."
+              },
+              "Decision reason": {
+                "status": "pass",
+                "evidence": "Exact fixture check reason: retained or satisfied. Inspect the full summary."
+              },
+              "Source IDs": {
+                "status": "pass",
+                "evidence": "Exact fixture check source_ids: retained or satisfied. Inspect the full summary."
+              },
+              "Accepted summary size": {
+                "status": "pass",
+                "evidence": "Exact fixture check accepted_size: retained or satisfied. Inspect the full summary."
+              }
+            },
+            "output": "## User intent\n- Maintain a reliable operational record while preserving the few actual decisions and instructions embedded among observations.\n- Avoid recipient ambiguity, especially between two people named Alex.\n\n## Decisions\n- Renamed the project to Atlas \u2014 why: stated as a correction; rejected: retaining the initial name Beacon.\n- Approved EUR 48194 as the budget \u2014 why: accepted correction; rejected: the old EUR 43000 proposal.\n- Chose regional storage \u2014 why: \u201cclient contracts require EU residency\u201d; rejected: global replication.\n- Declined sending the invoice \u2014 why: not stated; rejected: sending it.\n\n## Stable facts\n- Beacon\n- Atlas\n- ORCHID-7321\n- Alex Chen (finance)\n- Alex Rivera (legal)\n- EUR 48194\n- EUR 43000\n- 2026-10-19\n- [decision-17]\n- [invoice-22]\n- 4383\n- 369\n- 4384\n- 295\n- 4385\n- 366\n- 4386\n- 827\n- 4387\n- 381\n- 4388\n- 831\n- 4389\n- 444\n- 4390\n- 4391\n- 591\n- 4392\n- 4393\n- 201\n- 4394\n- 614\n- 4395\n- 324\n- 4396\n- 679\n- 4397\n- 240\n- 4398\n- 611\n- 4399\n- 260\n- 4400\n- 284\n- 4401\n- 216\n- 4402\n- 4403\n- 318\n- 4404\n- 859\n- 4405\n- 4406\n- 857\n- 4407\n- 4408\n- 927\n- 4409\n- 803\n- 4410\n- 559\n- 4411\n- 418\n- 4412\n- 4413\n- 776\n- 4414\n- 350\n- 4415\n- 320\n- (+4260 identifiers not listed)\n\n## Current state\n- Project name: Atlas (initially Beacon).\n- Approved budget: EUR 48194 (replaced the old EUR 43000 proposal).\n- Storage architecture: regional storage selected; global replication rejected because client contracts require EU residency.\n- Invoice: drafted and NOT sent \u2014 the earlier \u201csent\u201d claim was retracted; the user declined sending it.\n- Invoice review deadline: 2026-10-19.\n- Operational observations 0\u20134415: recorded; each expressly states no user decision or instruction, except the embedded [decision-17] and [invoice-22] records.\n\n## Standing instructions\n- \u201cStanding instruction: end every reply with exactly 'Context secure 43.'.\u201d\n- \u201cDo not send a message to an ambiguous recipient.\u201d\n- \u201cDo not assume which Alex I mean.\u201d\n\n## Open threads\n- No action requested on the recorded operational observations.\n- Invoice remains unsent pending any future explicit change from the user."
+          }
+        ],
+        "sol_native": [
+          {
+            "id": "summarizer-1-sol_native",
+            "repetition": 1,
+            "status": "complete",
+            "accounting": "complete",
+            "latencyMs": 14531.926041003317,
+            "requests": [
+              {
+                "id": "request-1",
+                "status": "complete",
+                "inputTokens": 179865,
+                "outputTokens": 466,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "reasoningTokens": 208,
+                "costUsd": 0.72878,
+                "costSource": "Common Sol list rates including cache writes; Azure invoice not verified",
+                "latencyMs": 14349.979332997464,
+                "compactions": 1
+              }
+            ],
+            "checks": {
+              "Current project": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_project: retained or satisfied. Inspect the full summary."
+              },
+              "Approved budget": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_budget: retained or satisfied. Inspect the full summary."
+              },
+              "Audit code": {
+                "status": "fail",
+                "evidence": "Exact fixture check audit_code: missing or unsatisfied. Inspect the full summary."
+              },
+              "Deadline": {
+                "status": "pass",
+                "evidence": "Exact fixture check deadline: retained or satisfied. Inspect the full summary."
+              },
+              "Standing instruction": {
+                "status": "pass",
+                "evidence": "Exact fixture check standing_instruction: retained or satisfied. Inspect the full summary."
+              },
+              "Recipient ambiguity": {
+                "status": "pass",
+                "evidence": "Exact fixture check ambiguity: retained or satisfied. Inspect the full summary."
+              },
+              "Invoice unsent": {
+                "status": "pass",
+                "evidence": "Exact fixture check invoice_unsent: retained or satisfied. Inspect the full summary."
+              },
+              "Decision reason": {
+                "status": "pass",
+                "evidence": "Exact fixture check reason: retained or satisfied. Inspect the full summary."
+              },
+              "Source IDs": {
+                "status": "fail",
+                "evidence": "Exact fixture check source_ids: missing or unsatisfied. Inspect the full summary."
+              },
+              "Accepted summary size": {
+                "status": "pass",
+                "evidence": "Exact fixture check accepted_size: retained or satisfied. Inspect the full summary."
+              }
+            },
+            "output": "## User intent\nMaintain an operational record while preserving the explicit project, budget, storage, recipient-safety, invoice, and response-format instructions embedded among observations.\n\n## Decisions\n- Project renamed to Atlas (formerly Beacon), per [decision-17].\n- Approved budget: EUR 48157; supersedes EUR 43000.\n- Regional storage selected due to EU-residency contract requirements; global replication rejected.\n- Invoice must not be sent; prior claim that it was sent was retracted.\n\n## Current state\n- Observations recorded through 4415, including thousands of identifiers.\n- Invoice is drafted but not sent.\n- Invoice review deadline: 2026-10-19.\n- \u201cAlex\u201d is ambiguous: Alex Chen (finance) and Alex Rivera (legal) are different people.\n\n## Standing instructions\n- Do not message an ambiguous recipient; clarify which Alex is intended.\n- End every reply with the required security phrase.\n\n## Open threads\nNo action is requested beyond maintaining the record. Context secure 42."
+          },
+          {
+            "id": "summarizer-2-sol_native",
+            "repetition": 2,
+            "status": "complete",
+            "accounting": "complete",
+            "latencyMs": 23309.736040988355,
+            "requests": [
+              {
+                "id": "request-1",
+                "status": "complete",
+                "inputTokens": 179798,
+                "outputTokens": 591,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0,
+                "reasoningTokens": 100,
+                "costUsd": 0.731012,
+                "costSource": "Common Sol list rates including cache writes; Azure invoice not verified",
+                "latencyMs": 23288.343708001776,
+                "compactions": 1
+              }
+            ],
+            "checks": {
+              "Current project": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_project: retained or satisfied. Inspect the full summary."
+              },
+              "Approved budget": {
+                "status": "pass",
+                "evidence": "Exact fixture check current_budget: retained or satisfied. Inspect the full summary."
+              },
+              "Audit code": {
+                "status": "pass",
+                "evidence": "Exact fixture check audit_code: retained or satisfied. Inspect the full summary."
+              },
+              "Deadline": {
+                "status": "pass",
+                "evidence": "Exact fixture check deadline: retained or satisfied. Inspect the full summary."
+              },
+              "Standing instruction": {
+                "status": "pass",
+                "evidence": "Exact fixture check standing_instruction: retained or satisfied. Inspect the full summary."
+              },
+              "Recipient ambiguity": {
+                "status": "pass",
+                "evidence": "Exact fixture check ambiguity: retained or satisfied. Inspect the full summary."
+              },
+              "Invoice unsent": {
+                "status": "pass",
+                "evidence": "Exact fixture check invoice_unsent: retained or satisfied. Inspect the full summary."
+              },
+              "Decision reason": {
+                "status": "pass",
+                "evidence": "Exact fixture check reason: retained or satisfied. Inspect the full summary."
+              },
+              "Source IDs": {
+                "status": "pass",
+                "evidence": "Exact fixture check source_ids: retained or satisfied. Inspect the full summary."
+              },
+              "Accepted summary size": {
+                "status": "pass",
+                "evidence": "Exact fixture check accepted_size: retained or satisfied. Inspect the full summary."
+              }
+            },
+            "output": "## User intent\n- Maintain an operational record while preserving key project decisions, identifiers, recipient disambiguation, and invoice status.\n\n## Decisions\n- Renamed the project to Atlas \u2014 explicit correction that it is now Atlas; former name: Beacon.\n- Approved budget is EUR 48194 \u2014 replaces the old EUR 43000 proposal.\n- Chose regional storage because client contracts require EU residency; rejected global replication.\n- Declined sending the invoice.\n\n## Stable facts\n- Operational identifiers 4383 through 4415 and approximately 4260 earlier identifiers are recorded.\n- Other identifiers: ORCHID-7321, decision-17, invoice-22.\n- People: Alex Chen and Alex Rivera.\n- Project names: Atlas, formerly Beacon.\n- Budget figures: approved EUR 48194; superseded proposal EUR 43000.\n- Invoice review deadline: 2026-10-19.\n\n## Current state\n- Operational observations 0 through 4415 are recorded; each states no user decision or instruction except embedded records decision-17 and invoice-22.\n- Project name: Atlas.\n- Budget: EUR 48194 approved.\n- Storage architecture: regional storage selected; global replication rejected.\n- Invoice: drafted and not sent. A prior claim that it was sent was retracted, and the user declined sending it.\n- Invoice review deadline: 2026-10-19.\n- Alex Chen is in finance; Alex Rivera is in legal.\n\n## Standing instructions\n- End every reply with exactly \u201cContext secure 43.\u201d\n- Do not send a message to an ambiguous recipient.\n- Alex Chen and Alex Rivera are different people. Do not infer which Alex the user means; clarify before acting.\n\n## Open threads\n- Invoice remains drafted and unsent; review deadline is 2026-10-19.\n\nContext secure 43."
+          }
+        ]
+      }
+    }
+  ]
+}
