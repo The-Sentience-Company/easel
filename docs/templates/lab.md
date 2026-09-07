@@ -2,6 +2,8 @@
 
 A lab bench for comparing the quality, cost, tokens, and latency of 2–6 experiment arms. Use it for context-management experiments, prompt changes, retrieval strategies, or model comparisons. It renders records from your evaluation harness; it does not call models, run tools, or infer a winner.
 
+For a completed example with live model calls and synthetic source data, see the [context policy experiment](../experiments/context-policy/README.md). Its evidence includes a provider failure, cache-accounting caveats, and summarizer fidelity failures.
+
 ## TL;DR
 
 - One board contains the configurations, aggregate ledger, case checks, outputs, and individual provider requests.
