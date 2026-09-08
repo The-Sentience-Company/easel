@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { preRender, decodeEntities, scopeSvgId } from '../render/mermaid.js'
+import { preRender, decodeEntities, scopeSvgId, sizeFromViewBox } from '../render/mermaid.js'
 
 const VALID = 'flowchart LR\n  A[start] --> B[end]'
 const BR_LABEL = 'flowchart LR\n  A[vegetarian&lt;br/&gt;tagged] --> B[ok]'
@@ -127,5 +127,36 @@ describe('scopeSvgId', () => {
   test('an svg without an id passes through untouched', () => {
     const bare = '<svg><line/></svg>'
     assert.equal(scopeSvgId(bare, '1'), bare)
+  })
+})
+
+describe('sizeFromViewBox', () => {
+  const MMDC =
+    '<svg id="my-svg" width="100%" class="flowchart" ' +
+    'style="max-width: 1196.12px; background-color: transparent;" viewBox="0 0 1196.125 374">' +
+    '<g/></svg>'
+
+  test('replaces the percentage width and the pinned max-width with the viewBox size', () => {
+    const out = sizeFromViewBox(MMDC)
+    assert.match(out, /<svg width="1196.125" height="374"/)
+    assert.doesNotMatch(out, /width="100%"/)
+    assert.doesNotMatch(out, /max-width/)
+    assert.match(out, /style="background-color: transparent;"/)
+    assert.match(out, /id="my-svg"/)
+    assert.match(out, /viewBox="0 0 1196.125 374"/)
+    assert.match(out, /<g\/><\/svg>$/)
+  })
+
+  test('a baked diagram carries a pixel width, so both looks fill the same box', async () => {
+    const out = await preRender(block('flowchart LR\n  A[one] --> B[two]'), { excalidraw: false })
+    const open = out.match(/<svg[^>]*>/)[0]
+    assert.doesNotMatch(open, /width="100%"/)
+    assert.match(open, /width="[\d.]+" height="[\d.]+"/)
+    assert.doesNotMatch(open, /max-width/)
+  })
+
+  test('an svg without a viewBox passes through untouched', () => {
+    const bare = '<svg width="100%"><line/></svg>'
+    assert.equal(sizeFromViewBox(bare), bare)
   })
 })

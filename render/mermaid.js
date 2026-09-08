@@ -61,6 +61,26 @@ function inlineable(svg) {
   return at === -1 ? null : svg.slice(at).trim()
 }
 
+/** mermaid ships width="100%" with the real size pinned in an inline
+    max-width. In the fit-content diagram box that percentage has nothing to
+    resolve against, so the SVG collapses to the 300px default while the sketch
+    export — which carries plain width/height — fills the column. Give the
+    mermaid pair the same self-describing size so both looks render alike. */
+export function sizeFromViewBox(svg) {
+  const box = svg.match(/<svg[^>]*\sviewBox="\s*[-\d.]+[ ,]+[-\d.]+[ ,]+([\d.]+)[ ,]+([\d.]+)\s*"/)
+  if (!box) return svg
+  const open = svg.slice(0, svg.indexOf('>') + 1)
+  const sized = open
+    .replace(/\swidth="[^"]*"/, '')
+    .replace(/\sheight="[^"]*"/, '')
+    // The inline max-width is what pinned the old size; the stylesheet's
+    // max-width: 100% has to win for a wide diagram to scale down instead of
+    // scrolling.
+    .replace(/(\sstyle=")([^"]*)"/, (_, head, css) => head + css.replace(/max-width\s*:[^;"]*;?\s*/g, '') + '"')
+    .replace(/^<svg/, `<svg width="${box[1]}" height="${box[2]}"`)
+  return sized + svg.slice(open.length)
+}
+
 /** mermaid emits every SVG with id="my-svg" and scopes its <style> to that id,
     so two inlined diagrams fight: the last block repaints the earlier ones.
     Marker/gradient ids share the prefix (my-svg-arrowhead), so rename by
@@ -107,7 +127,7 @@ async function renderOne(source, { timeoutMs, theme }) {
 
     const svg = inlineable(await readFile(output, 'utf8'))
     if (!svg) return { ok: false, message: 'renderer produced no SVG' }
-    return { ok: true, svg }
+    return { ok: true, svg: sizeFromViewBox(svg) }
   } catch (e) {
     return { ok: false, message: e && e.message ? e.message : 'unknown render failure' }
   } finally {
