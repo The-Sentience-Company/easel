@@ -15,7 +15,7 @@ A round that asks about an option and does not render that option burns the roun
 
 ## Gloss every internal name, the first time it appears
 
-Table, column, service, job, model id, flag, code path, acronym, campaign shorthand — and the board's own numbering. The gloss is the words themselves, not a link out. This is the single most common reason a reader stops to ask a question instead of answering the one you asked.
+Table, column, service, job, model id, flag, code path, acronym, campaign shorthand — and the board's own numbering. The gloss is the words themselves, not a link out, in the sentence that first uses the name; when the board leans on three or more such names, gloss them in a term | meaning table before the first section. This is the single most common reason a reader stops to ask a question instead of answering the one you asked.
 
 ## Restate, never point
 
@@ -49,9 +49,21 @@ Above the first case: date window of the input, dataset or account, model id, nu
 
 p50 / p90 / p95, per user, per day. A bare total or a single mean fails when the ask is a sizing or pricing call.
 
-## Prose has a budget
+## Every paragraph takes the shape of what it is made of
 
-A section body past ~200 words with no table, list, diff, callout, diagram, metrics row, or collapse is a transcription — restructure it through `page.md`'s compose table. Wrap major sections in `sd-section` and give cards an `sd-card-title`: that is what earns the chrome's collapse control, and a bare `<h2>` silently forfeits it.
+Choose the shape per paragraph, not per section. The template shapes the board; inside a prose field — `summary`, a section `body`, a decision's `detail`, a queue entry's `body` — markdown is the whole vocabulary, and a section that already has a table still owes each paragraph around it its own shape. A reader scans shape, not sentences; a run of parts typed as one paragraph is what comes back annotated "wall of text". Before writing a paragraph, name what it is made of and write that:
+
+| The paragraph is made of | Write it as |
+|---|---|
+| terms and their meanings — a glossary, `*X* = …, *Y* = …` | a two-column table, term \| meaning |
+| options and what each costs or buys — `"Leave": …; "Add": …`, `(a) … (b) …` | one bullet per option, label in bold; three or more with the same attributes → a table |
+| labeled facts — `Cost: … User-visible: … Persisted: …` | one bullet per label, label in bold |
+| what happens, then what, then what | a numbered list, one step per item |
+| several questions | a numbered list, one per item, each with its own answer or widget |
+| a verbatim sample — a model reply, a digest, a payload | a fence, a blockquote, or an `sd-collapse` |
+| a claim and where it came from | the claim in prose; the source on its own `Source:` line or in the table row it supports |
+
+The tells of a list typed without line breaks: `(a)` or `(1)` inside a sentence, a second `Label:` run, a second `"term" =`, a third inline `code` span. **Any of these in a paragraph means restructure it before publishing.** One idea per paragraph, about four sentences; a section that is only paragraphs is a transcription. On a `page` the same rule runs through the compose table with `sd-` classes, inside an `sd-section` with an `sd-card-title` — that is what earns the chrome's collapse control, and a bare `<h2>` silently forfeits it.
 
 ## Never fan a cohort across sibling boards
 

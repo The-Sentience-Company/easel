@@ -50,7 +50,7 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
 ## Rendering rules
 
 - Open entries render before answered ones, each an accented card with a vote widget (`data-widget-id` = entry id). Answered entries render muted, badge only, no widget, inside a collapsed `sd-collapse` details block.
-- `title` renders as the card title; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters so a long brief never buries the widget.
+- `title` renders as the card title; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters so a long brief never buries the widget. Options with their consequences are one bullet per option (`authoring.md`'s paragraph rule), never `(1) … (2) …` inside one paragraph.
 - Each open entry carries `<time data-live-age datetime="...">` — the chrome recomputes "waiting 2h" from `filed_at` every 30s, so a long-open tab never shows a stale age.
 - A `review_stamps` row whose versions differ gets a warning badge; matching versions get "current".
 - Empty sections vanish; an empty `entries` list renders "Nothing waiting." — so a freshly seeded board (`{"campaign": "...", "entries": [], "review_stamps": [], "open_prs": []}`) publishes cleanly at wiring time.
