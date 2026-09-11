@@ -215,17 +215,32 @@ export function widget({ type, id, prompt, help, options, compact }) {
   const opts = requireArray(options, `widget[${id}].options`)
   if (opts.length === 0) fail(`widget[${id}].options must not be empty`)
 
-  const buttons = opts.map((o) => {
+  const normalized = opts.map((o) => {
     const value = typeof o === 'string' ? o : o.value
     const label = typeof o === 'string' ? o : (o.label ?? o.value)
     requireString(value, `widget[${id}] option value`)
-    return `<button type="button" data-option="${attr(value)}">${esc(label)}</button>`
-  }).join('')
+    const basis = typeof o === 'string' ? null : o.basis
+    if (basis !== undefined && basis !== null) requireString(basis, `widget[${id}] option "${value}" basis`)
+    return { value, label, basis: basis ?? null, recommended: typeof o !== 'string' && o.recommended === true }
+  })
+  if (normalized.filter((o) => o.recommended).length > 1) fail(`widget[${id}]: only one option can be recommended`)
+
+  const buttons = normalized
+    .map((o) => `<button type="button" data-option="${attr(o.value)}">${esc(o.label)}</button>`)
+    .join('')
+  // The argument for each option lives here, above the buttons, so the label
+  // never has to carry it.
+  const basis = normalized.some((o) => o.basis || o.recommended)
+    ? `<ul class="sd-widget-basis">${normalized.map((o) =>
+        `<li><strong>${esc(o.label)}</strong>${o.recommended ? ' <span class="sd-widget-pick">recommended</span>' : ''}${o.basis ? `: ${esc(o.basis)}` : ''}</li>`,
+      ).join('')}</ul>`
+    : ''
 
   return [
     `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}"${compact ? ' class="sd-widget-compact"' : ''}>`,
     prompt ? `<div class="sd-widget-prompt">${esc(prompt)}</div>` : '',
     help ? `<div class="sd-widget-help">${markdown(help)}</div>` : '',
+    basis,
     `<div class="sd-widget-options">${buttons}</div>`,
     '</div>',
   ].filter(Boolean).join('')

@@ -25,6 +25,7 @@ const CHROME_CLASSES = [
   'sf-chrome-toggle', 'sf-compact', 'sf-queue-toggle', 'sf-chat-toggle', 'sf-empty',
   'sf-tuner', 'sf-tuner-title', 'sf-tuner-row', 'sf-tuner-color',
   'sf-tuner-select', 'sf-tuner-range', 'sf-tuner-actions', 'sf-tuner-send', 'sf-tuner-reset',
+  'sf-prior-answered',
 ]
 
 describe('easel.css covers the chrome vocabulary', () => {

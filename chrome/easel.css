@@ -1011,6 +1011,21 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 }
 .sd-widget-help { font-size: 0.85rem; color: var(--color-muted-content); margin-bottom: 10px; }
 .sd-widget-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+/* One line per option, above the buttons: what picking it causes, and which
+   one is recommended — so the label itself can stay two or three words. */
+.sd-widget-basis { margin: 0 0 10px; padding-left: 1.2em; font-size: 0.88rem; color: var(--color-body-content); }
+.sd-widget-basis li { margin: 2px 0; }
+.sd-widget-basis strong { color: var(--color-base-content); }
+.sd-widget-pick {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  vertical-align: 1px;
+}
+.sd-read-first { font-size: 0.88rem; margin: 6px 0 8px; }
 /* Inside a table the row separator already rules the line — a second rule
    from the widget reads as a double border. */
 .sd-tablewrap [data-widget] { border-top: 0; padding-top: 0; margin: 4px 0; }
@@ -2110,7 +2125,13 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 .sd-case-image-round { border-radius: 999px; }
 .sd-case-footnote { font-size: 12px; color: var(--color-muted-content); margin-top: 6px; }
 
-/* Prior-round verdict, carried onto the current round's widget. */
+/* Prior-round verdict, carried onto the current round's widget: the tag names
+   the round, and the button you chose then renders pressed. */
+[data-widget].sf-prior-answered [data-option][aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  border-color: transparent;
+}
 .sf-prior {
   align-self: center;
   font-family: var(--font-mono);

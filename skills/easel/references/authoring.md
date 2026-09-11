@@ -23,7 +23,7 @@ Anything quoted or decided on another board, an earlier round, or a prior ruling
 
 ## A decision carries the basis for answering it
 
-Adjacent to the widget: one line per option saying what it costs or buys, the recommendation and why, and the evidence it rests on. A question plus a list of option labels is not a decision — it is a board that comes back unanswered.
+Adjacent to the widget: one line per option saying what it costs or buys, the recommendation and why, and the evidence it rests on. In the data that is each option's `basis` and `recommended`; the templates render them as a list above the buttons. The button label itself is two or three words — "Size floor", "Leave them", "Ticket it" — never the consequence, the caveat, or "(recommended)". A question plus a list of option labels is not a decision — it is a board that comes back unanswered.
 
 ## Every proposed step earns its place in one line
 
