@@ -25,7 +25,7 @@ export function readerChecks(html) {
   }
 
   // Shorthand: campaign codes, callsigns, ticket ids and snake_case outside code,
-  // not defined in any table's first column.
+  // not defined in any table cell.
   const prose = html.replace(/<(pre|code)[\s\S]*?<\/\1>/g, ' ')
   const defined = new Set([...html.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].flatMap((m) => strip(m[1]).split(/[,/·]/).map((t) => t.trim())))
   const tokens = new Map()
