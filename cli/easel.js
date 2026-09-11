@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { formatFindings } from '../daemon/reader-checks.js'
 
 const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
 
@@ -129,7 +130,8 @@ const commands = {
       ? `nothing to publish — the source renders identical to round ${d.round}; write your changes to the registered path first (\`easel status ${key}\`)`
       : `published round ${d.round}`) +
       (d.listenerDropped ? `\nyour parked listener was dropped — relaunch \`easel await\`` : '') +
-      (d.audit?.findings?.length ? `\naudit (advisory): ${JSON.stringify(d.audit.findings)}` : ''))
+      (d.audit?.findings?.length ? `\naudit (advisory): ${JSON.stringify(d.audit.findings)}` : '') +
+      (d.reader?.length ? '\n' + formatFindings(d.reader) : ''))
   },
 
   async await() {
