@@ -15,7 +15,7 @@ A round that asks about an option and does not render that option burns the roun
 
 ## Gloss every internal name, the first time it appears
 
-Table, column, service, job, model id, flag, code path, acronym, campaign shorthand — and the board's own numbering. The gloss is the words themselves, not a link out, in the sentence that first uses the name; when the board leans on three or more such names, gloss them in a term | meaning table before the first section. This is the single most common reason a reader stops to ask a question instead of answering the one you asked.
+Table, column, service, job, model id, flag, code path, acronym, campaign shorthand — and the board's own numbering. An internal name is any name that did not exist before this project, or that this session coined: a card id, a pane callsign, a label like "Fix 4(a)" or "arm B", a phrase from a design note. The test is not whether *you* know it; it is whether the reader could have met it anywhere but here. The gloss is the words themselves, not a link out, in the sentence that first uses the name; when the board leans on three or more such names, gloss them in a term | meaning table before the first section. This is the single most common reason a reader stops to ask a question instead of answering the one you asked.
 
 ## Restate, never point
 

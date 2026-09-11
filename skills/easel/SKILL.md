@@ -20,6 +20,17 @@ After publishing, the chat message is the link, one line on what changed, and wh
 
 **A subagent has the Artifact tool and does not have this skill.** When you delegate work that ends in something the user reviews, say in the prompt that the deliverable is an easel board and hand over the key — otherwise it publishes an Artifact the user cannot annotate.
 
+## Six things every board carries
+
+The reader stops and spends a comment when one of these is missing — `references/authoring.md` has the why and the rest.
+
+1. **A term table** before the first section when the board leans on three or more internal names (card ids, callsigns, names this session coined); every other internal name glossed in the sentence that first uses it.
+2. **One bullet per option, the pick marked**, above the buttons; the button is two or three words.
+3. **Restate, never point**: whatever the reader acts on is on this round, not "see round 9" or a path.
+4. **The artifact, not a description of it**: the diff, the payload, the rendered option, the image.
+5. **Every paragraph takes the shape of what it is made of**: options, terms, labeled facts and steps are lists or tables, never one paragraph.
+6. **The first line states the ask**: how many decisions, the first one by name, what blocks.
+
 ## Publish
 
 ```
@@ -54,21 +65,12 @@ A ```` ```chart ```` fence renders a small themed bar/hbar/line chart at publish
 
 **Publish reads the REGISTERED path, nothing else.** The source path is fixed at `easel open`; `easel status <key>` shows it. Before every publish, write your new content to THAT path — writing any other file makes `publish` silently re-ship the stale registered file as a new round. This shipped two stale rounds once.
 
-## Listen — always `easel await`, never hand-rolled waiters
+## Listen
 
 ```
 easel await <key> [--agent ID] [--ack N]
 ```
-
-Blocks until real feedback, cancel, or board end — it re-attaches across long-poll timeouts and daemon restarts, so run it once and stop polling (`--timeout-s` sizes one poll window, never the overall wait). Annotations, widget clicks, and chat ride the same stream; answer chat with `easel reply <key> "msg" --agent ID`.
-
-- **Background it as a harness-tracked command** (`run_in_background: true`) — its exit wakes you to read the batch. A shell `&`/`nohup` launch exits into a file no one reads.
-- **Relaunch once after each publish** — publishing with your own agent ID drops your parked listener (`dropped: true`, exit 0, expected).
-- **A killed listener is a non-event**: relaunch the identical bare await in one call and say nothing — the cursor is server-side, nothing was lost. If it's killed instantly twice running, or for why this is safe: `references/listening.md`.
-- **Ack what you've handled**: relaunch with `--ack <upto>` from the batch you just applied, or the backlog re-delivers and you answer the same annotations twice.
-- **`--agent` IDs are workspace-scoped and durable** — worktree basename + callsign (`my-project-a3:a3`); a bare callsign collides with other workspaces. A NEW ID replays the board's whole history. A handoff that names live boards must name the agent ID they were listened on.
-- **Refer to feedback by chip ID (A1, A2 …), never internal item ids** — the chips are what the user sees. Derivation, and placing feedback via anchor `context`: `references/listening.md`.
-- **An answer given in prose is still an answer.** When the reader states a decision plainly — in board chat, in an annotation, or in the session itself — record it and act on it. Never hold a decision open waiting for the matching widget click, and never re-ask what they already answered; the widget is one way to answer, not the only one.
+Background it (`run_in_background: true`); relaunch once after each publish; ack with `--ack <upto>` what you've handled. Answer chat with `easel reply <key> "msg" --agent ID`. Full mechanics, chip IDs, and failure modes: `references/listening.md`.
 
 ## Iterate
 
@@ -76,7 +78,7 @@ Applying 3+ annotations: one script that makes every edit, each replacement asse
 
 **The `--note` is one line, ~200 characters hard cap** — it renders on a single line in the round picker and anything longer is truncated. At the limit: `round 4: your three widget answers are recorded as decisions taken (history merge yes, backend-first rollout, account-linking as a hard billing gate). Dropped the post-deletion payment-traceability requirement`. Detail belongs on the board, not in the note.
 
-**Earlier rounds are never buried.** The chrome has a round picker (r1/r2 pills, Q/W); an agent reads one with `GET /api/b/<key>/state?round=N`. Point at the round ("the map is r5"), never republish old content to resurface it. For a clean visual round with no diff markers: `easel end <key>` and re-open from the same data file.
+**Earlier rounds are never buried.** The chrome has a round picker (r1/r2 pills, Q/W); an agent reads one with `GET /api/b/<key>/state?round=N`. Anything the current round *uses* from an earlier one — a ruling, a number, a decision — is restated on the current round where it is used (`references/authoring.md`, "Restate, never point"); the round link accompanies the restatement. Pointing alone ("the map is r5") is for content the reader is not being asked to act on. For a clean visual round with no diff markers: `easel end <key>` and re-open from the same data file.
 
 ## Cleanup
 
