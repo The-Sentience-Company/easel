@@ -1043,6 +1043,74 @@ describe('queue', () => {
     assert.match(section, /<a href="http:\/\/127\.0\.0\.1:4400\/b\/deadbeef">design coverage<\/a>/)
     assert.match(section, /phase plan with per-PR coverage/)
   })
+
+  test('read_first validation errors name the full field path', async () => {
+    const data = await base()
+    data.entries[0].read_first = { url: '', title: 'Design board', by: 'agent-a' }
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /entries\[0\]\.read_first\.url/)
+      return true
+    })
+    data.entries[0].read_first = { url: 'http://localhost/b/abc', title: '' }
+    assert.throws(() => queue.render(data), (err) => {
+      assert.match(err.message, /entries\[0\]\.read_first\.title/)
+      return true
+    })
+    data.entries[0].read_first = { url: 'http://localhost/b/abc', title: 'Board', by: 42 }
+    assert.throws(() => queue.render(data), (err) => {
+      assert.match(err.message, /entries\[0\]\.read_first\.by/)
+      return true
+    })
+  })
+
+  test('read_first renders above the question, with and without by', async () => {
+    const data = await base()
+    data.entries[0].read_first = { url: 'http://localhost/b/xyz', title: 'Design notes', by: 'agent-a' }
+    const htmlWith = queue.render(data)
+    const cardWith = htmlWith.slice(htmlWith.indexOf('design-note-extraction-table') - 500, htmlWith.indexOf('design-note-extraction-table') + 3000)
+    assert.match(cardWith, /class="sd-read-first"/)
+    assert.match(cardWith, /<a href="http:\/\/localhost\/b\/xyz">Design notes<\/a>/)
+    assert.match(cardWith, /by agent-a/)
+    const readFirstPos = cardWith.indexOf('sd-read-first')
+    const questionPos = cardWith.indexOf('<strong>')
+    assert.ok(readFirstPos < questionPos, 'read_first must appear before the question')
+
+    data.entries[0].read_first = { url: 'http://localhost/b/xyz', title: 'Design notes' }
+    const htmlWithout = queue.render(data)
+    assert.match(htmlWithout, /class="sd-read-first"/)
+    assert.doesNotMatch(htmlWithout.slice(htmlWithout.indexOf('sd-read-first'), htmlWithout.indexOf('sd-read-first') + 200), /by /)
+  })
+
+  test('string options still produce the approve/reject/discuss default when omitted', async () => {
+    const data = await base()
+    delete data.entries[0].options
+    const html = queue.render(data)
+    for (const opt of ['approve', 'reject', 'discuss']) {
+      assert.ok(html.includes(`data-option="${opt}"`), `default option ${opt} missing`)
+    }
+    data.entries[1].options = ['yes', 'no']
+    const html2 = queue.render(data)
+    assert.ok(html2.includes('data-option="yes"'))
+    assert.ok(html2.includes('data-option="no"'))
+  })
+
+  test('option objects with basis and recommended render the basis list above the buttons', async () => {
+    const data = await base()
+    data.entries[0].options = [
+      { value: 'approve', label: 'Approve', basis: 'Ships the design as-is.', recommended: true },
+      { value: 'reject', label: 'Reject', basis: 'Blocks the PR until revised.' },
+    ]
+    const html = queue.render(data)
+    const card = html.slice(html.indexOf('design-note-extraction-table') - 500, html.indexOf('design-note-extraction-table') + 3000)
+    assert.match(card, /class="sd-widget-basis"/)
+    assert.match(card, /Ships the design as-is\./)
+    assert.match(card, /Blocks the PR until revised\./)
+    assert.match(card, /class="sd-widget-pick">recommended</)
+    const basisPos = card.indexOf('sd-widget-basis')
+    const buttonsPos = card.indexOf('sd-widget-options')
+    assert.ok(basisPos < buttonsPos, 'basis list must appear above the buttons')
+  })
 })
 
 describe('replay', () => {

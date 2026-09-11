@@ -1,6 +1,8 @@
 # queue template
 
-One board per campaign: the single surface where decisions wait for the user. Open asks render first as cards with vote widgets, then a table of what the user has reviewed vs. what changed since, then the campaign's open PRs in merge order.
+One board per campaign: a thin list of the decisions waiting for the user, nothing else. A card is one question, the options with what each one causes, the recommended one marked, and a link to the board that orients the reader — written by the agent that did the work, not relayed by the one filing the card. Open asks render first, then a table of what the user has reviewed vs. what changed since, then the campaign's open PRs in merge order.
+
+**The card is not the place for the context.** When the ask comes from another agent, that agent publishes its own board (a `review` board with the design, the evidence, the diff) and the card carries it as `read_first`. A `context_link` to a ticket or a PR can ride along; it does not orient anyone. A card whose `body` runs past a few sentences is a relay that should have been a board.
 
 ```
 easel open --template queue --data queue-<campaign>.json --title "Decision queue — <campaign>"
@@ -17,11 +19,18 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
     "id": "string",                  // required, unique among open entries — becomes the widget id
     "pane": "string",                // required — which agent pane asked
     "kind": "decision|review|merge", // required
-    "question": "string",            // required, plain English — the one-line ask
-    "title": "string",               // optional — short card title above the badges
-    "body": "string",                // optional, markdown — the brief behind the ask; collapses past ~400 chars
-    "options": ["string"],           // optional; default ["approve", "reject", "discuss"]
-    "context_link": "string",        // optional — board/PR/doc URL
+    "question": "string",            // required, plain English — the one-line ask; the sentence the reader answers
+    "title": "string",               // optional — short card title above the badges; not a second question
+    "read_first": {                  // optional — the board that orients the reader, by the agent that did the work
+      "url": "string", "title": "string", "by": "string"
+    },
+    "body": "string",                // optional, markdown — a few sentences at most; collapses past ~400 chars
+    "options": [                     // optional; default ["approve", "reject", "discuss"]
+      { "value": "string", "label": "string",   // label: two or three words, the words on the button
+        "basis": "string",                      // one line: what picking it causes
+        "recommended": true }                   // at most one
+    ],
+    "context_link": "string",        // optional — ticket/PR URL; rides beside read_first, never replaces it
     "filed_at": "ISO-8601 string",   // required
     "status": "open|answered"        // required
   }],
@@ -50,7 +59,8 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
 ## Rendering rules
 
 - Open entries render before answered ones, each an accented card with a vote widget (`data-widget-id` = entry id). Answered entries render muted, badge only, no widget, inside a collapsed `sd-collapse` details block.
-- `title` renders as the card title; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters so a long brief never buries the widget. Options with their consequences are one bullet per option (`authoring.md`'s paragraph rule), never `(1) … (2) …` inside one paragraph.
+- `read_first` renders as "Read first: <title> by <agent>" above the question. `title` renders as the card title; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters.
+- Each option's `basis` renders as one bullet above the buttons, with the recommended one marked; the button shows only the `label`. **The consequence goes in `basis`, never in the label** — a label is also the value routed back to the pane, so a sentence-long label makes the recorded answer a paragraph. Options listed in the `question` or `body` as `(a) … (b) …` with the default approve/reject/discuss buttons underneath cannot be answered with a click; make them the options.
 - Each open entry carries `<time data-live-age datetime="...">` — the chrome recomputes "waiting 2h" from `filed_at` every 30s, so a long-open tab never shows a stale age.
 - A `review_stamps` row whose versions differ gets a warning badge; matching versions get "current".
 - Empty sections vanish; an empty `entries` list renders "Nothing waiting." — so a freshly seeded board (`{"campaign": "...", "entries": [], "review_stamps": [], "open_prs": []}`) publishes cleanly at wiring time.
