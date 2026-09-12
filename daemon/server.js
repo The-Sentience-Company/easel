@@ -14,6 +14,7 @@ import { now, DATA_DIR } from './db.js'
 import { annotateAndDiff, contextForSid, excerptForSid, extractIslands } from './differ.js'
 import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
+import { readerChecks } from './reader-checks.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -812,17 +813,19 @@ async function handlePublish(req, res, match) {
       listenerDropped,
       diff: { added: [], removed: [], modified: [], moved: [] },
       audit: null,
+      reader: null,
     })
   }
   const seq = (last?.seq ?? 0) + 1
   const audit = auditHtml(sidHtml)
+  const reader = readerChecks(sidHtml)
   store.addRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)
   store.setAudit(board.key, audit)
   store.setWip(board.key, null)
   broadcast(board.key, 'round', { seq })
   maybeAutoOpen(board.key)
   const listenerDropped = dropAgentWaiter(board.key, body.agent)
-  json(res, 200, { round: seq, listenerDropped, diff: diff ?? { added: [], removed: [], modified: [], moved: [] }, audit })
+  json(res, 200, { round: seq, listenerDropped, diff: diff ?? { added: [], removed: [], modified: [], moved: [] }, audit, reader })
 }
 
 async function handleAwait(req, res, match) {
