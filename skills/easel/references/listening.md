@@ -1,6 +1,18 @@
-# Listening — failure modes and feedback mechanics
+# Listening — `easel await` mechanics and failure modes
 
-The SKILL.md rules are the behavior; this file is the why and the edge cases. Read it when a listener misbehaves or when placing/attributing feedback needs more than the batch JSON gives you.
+```
+easel await <key> [--agent ID] [--ack N]
+```
+
+Blocks until real feedback, cancel, or board end — it re-attaches across long-poll timeouts and daemon restarts, so run it once and stop polling (`--timeout-s` sizes one poll window, never the overall wait). Annotations, widget clicks, and chat ride the same stream; answer chat with `easel reply <key> "msg" --agent ID`.
+
+- **Background it as a harness-tracked command** (`run_in_background: true`) — its exit wakes you to read the batch. A shell `&`/`nohup` launch exits into a file no one reads.
+- **Relaunch once after each publish** — publishing with your own agent ID drops your parked listener (`dropped: true`, exit 0, expected).
+- **A killed listener is a non-event**: relaunch the identical bare await in one call and say nothing — the cursor is server-side, nothing was lost. If it's killed instantly twice running, see "Fallback when relaunches die instantly" below.
+- **Ack what you've handled**: relaunch with `--ack <upto>` from the batch you just applied, or the backlog re-delivers and you answer the same annotations twice.
+- **`--agent` IDs are workspace-scoped and durable** — worktree basename + callsign (`my-project-a3:a3`); a bare callsign collides with other workspaces. A NEW ID replays the board's whole history. A handoff that names live boards must name the agent ID they were listened on.
+- **Refer to feedback by chip ID (A1, A2 …), never internal item ids** — the chips are what the user sees. Derivation: "Chip IDs" below.
+- **An answer given in prose is still an answer.** When the reader states a decision plainly — in board chat, in an annotation, or in the session itself — record it and act on it. Never hold a decision open waiting for the matching widget click, and never re-ask what they already answered; the widget is one way to answer, not the only one.
 
 ## Why a killed listener costs nothing
 

@@ -6,9 +6,44 @@ import { parseArgs } from 'node:util'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { formatFindings } from '../daemon/reader-checks.js'
 
 const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
+
+const TEMPLATE_RULES = {
+  queue:
+    'a queue card is: one question on one line · options as buttons, each with a one-line basis, one recommended\n' +
+    '· read_first = the board by the agent that did the work · a body of a few sentences · no card id or callsign without a gloss',
+  review:
+    'a review decision is: a question with options as buttons, each with a one-line basis, one recommended\n' +
+    '· evidence goes in the detail field above the options, not on the button · no term without a gloss',
+  compare:
+    'a compare verdict is: pick the winning arm, or tie, or all-bad · the comparison sits above the verdict, not a pointer elsewhere\n' +
+    '· no arm name or case id without a gloss at first use',
+  eval:
+    'a dossier verdict is: pass or needs-work after the notes · a blind compare pick: the better candidate, unlabeled\n' +
+    '· a matrix best: strongest answer per row; overall verdict per case · no dataset or model id without a gloss',
+  gallery:
+    'a gallery vote is: pick the candidate that ships, or none of these · the image is the argument, not a description of it\n' +
+    '· pin width to the size the design actually ships at · no variant name without a label',
+  replay:
+    'a replay verdict is: pick which arm held up on this exchange, or tie, or all-bad\n' +
+    '· the user message and each arm\'s reply are above the verdict · no arm name without a gloss at first use',
+  rulings:
+    'a ruling is: a label and rationale, then a vote widget — accept or override\n' +
+    '· skim sections (options: []) have no buttons · no label without a plain-language meaning in the teach block',
+  // page has no decision UI — no rule block
+}
+
+function hasDecisions(content) {
+  if (content.includes('What I need from you') || content.includes('Recommendation:')) return true
+  const lines = content.split('\n')
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (/^#{1,6}\s/.test(lines[i]) && lines[i + 1].trimEnd().endsWith('?')) return true
+  }
+  return false
+}
 
 const USAGE = `usage:
   easel open <file.html|file.md> [--title T] [--json]
@@ -113,6 +148,17 @@ const commands = {
     }
     const data = await call('POST', '/api/open', body)
     output(data, values.json, (d) => `${d.created ? 'opened' : 'already open'}: ${d.url}`)
+    if (!values.json) {
+      if (values.template && TEMPLATE_RULES[values.template]) {
+        console.log(TEMPLATE_RULES[values.template])
+      } else if (!values.template && body.file?.endsWith('.md')) {
+        try {
+          if (hasDecisions(readFileSync(body.file, 'utf8'))) {
+            console.log('this file has decisions in it — the review template gives them buttons; `easel open --template review` with the questions as decisions')
+          }
+        } catch {}
+      }
+    }
   },
 
   async publish() {
@@ -182,6 +228,7 @@ const commands = {
       backoff = 1000
       if (data.timedOut) continue // window expired — re-attach with the same cursor
       output(data, values.json)
+      if (!values.json) console.log('answer each item on the board, at its anchor, in the next round')
       // Both are normal lifecycle events, not failures — exit 0.
       if (data.superseded) console.error('superseded by a newer await from this agent')
       if (data.dropped) console.error('dropped by a publish from this agent — relaunch after the round')
