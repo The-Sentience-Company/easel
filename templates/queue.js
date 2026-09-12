@@ -30,6 +30,12 @@ function validateEntry(e, i) {
   const filedMs = Date.parse(requireString(e.filed_at, `${path}.filed_at`))
   if (Number.isNaN(filedMs)) fail(`${path}.filed_at must be an ISO-8601 timestamp, got "${e.filed_at}"`)
   if (e.context_link !== undefined) requireString(e.context_link, `${path}.context_link`)
+  if (e.read_first !== undefined) {
+    requireObject(e.read_first, `${path}.read_first`)
+    requireString(e.read_first.url, `${path}.read_first.url`)
+    requireString(e.read_first.title, `${path}.read_first.title`)
+    if (e.read_first.by !== undefined) requireString(e.read_first.by, `${path}.read_first.by`)
+  }
   if (e.title !== undefined) requireString(e.title, `${path}.title`)
   if (e.body !== undefined) requireString(e.body, `${path}.body`)
   if (status === 'open' && kind !== 'merge' && !e.body && !e.context_link) {
@@ -61,6 +67,12 @@ function entryBody(body) {
   return `<details class="sd-collapse"><summary>the brief</summary><div class="sd-collapse-body">${markdown(body)}</div></details>`
 }
 
+// The orientation is a board by the agent that did the work; the card links
+// it instead of carrying a relay of it.
+function readFirst(r) {
+  return `<p class="sd-read-first">Read first: <a href="${attr(r.url)}">${esc(r.title)}</a>${r.by ? `<span class="sd-muted"> by ${esc(r.by)}</span>` : ''}</p>`
+}
+
 function entryCard(e, i, uniqueId) {
   const open = e.status === 'open'
   const meta = [
@@ -73,6 +85,7 @@ function entryCard(e, i, uniqueId) {
     `<div class="sd-card${open ? ' sd-accent' : ''}">`,
     e.title ? `<div class="sd-card-title">${esc(e.title)}</div>` : '',
     `<div class="sd-row sd-badge-row">${meta}</div>`,
+    e.read_first ? readFirst(e.read_first) : '',
     open ? `<p><strong>${esc(e.question)}</strong></p>` : `<p class="sd-muted">${esc(e.question)}</p>`,
     entryBody(e.body),
     open
