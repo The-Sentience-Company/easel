@@ -52,7 +52,7 @@ test('open --template queue prints the spec rule block after the URL', async () 
   )
   assert.ok(ruleText.includes('one question on one line'), 'rule mentions one question on one line')
   assert.ok(ruleText.includes('one-line basis, one recommended'), 'rule mentions basis and recommended')
-  assert.ok(ruleText.includes('no card id or callsign without a gloss'), 'rule mentions gloss requirement')
+  assert.ok(ruleText.includes('every card id or callsign glossed'), 'rule mentions gloss requirement')
 })
 
 test('open --template queue rule block matches spec text exactly', async () => {
@@ -63,7 +63,7 @@ test('open --template queue rule block matches spec text exactly', async () => {
   const ruleBlock = lines.slice(1).join('\n')
   const expected =
     'a queue card is: one question on one line · options as buttons, each with a one-line basis, one recommended\n' +
-    '· read_first = the board by the agent that did the work · a body of a few sentences · no card id or callsign without a gloss'
+    '· read_first = the board by the agent that did the work · a body of a few sentences · every card id or callsign glossed where it first appears'
   assert.equal(ruleBlock, expected)
 })
 

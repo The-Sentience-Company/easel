@@ -60,6 +60,14 @@ export function readerChecks(html) {
   return findings
 }
 
+/** Findings not present in the previous round's set, plus a count of the ones that were. */
+export function sinceLast(current, previous) {
+  const key = (f) => `${f.type}|${f.detail}|${f.sample}`
+  const seen = new Set(previous.map(key))
+  const fresh = current.filter((f) => !seen.has(key(f)))
+  return { fresh, carried: current.length - fresh.length }
+}
+
 /** The publish-output shape: one line per finding, rule first. Returns '' when clean. */
 export function formatFindings(findings) {
   if (!findings.length) return ''
