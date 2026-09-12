@@ -777,7 +777,7 @@ async function handleOpen(req, res) {
   store.addRound(key, 1, sidHtml, null, null, audit, rendered.diagrams, islands)
   store.setAudit(key, audit)
   watchBoard(board)
-  json(res, 200, { key, url: `http://127.0.0.1:${PORT}/b/${key}`, created: true })
+  json(res, 200, { key, url: `http://127.0.0.1:${PORT}/b/${key}`, created: true, reader: readerChecks(sidHtml) })
 }
 
 async function handlePublish(req, res, match) {

@@ -158,6 +158,7 @@ const commands = {
           }
         } catch {}
       }
+      if (data.reader?.length) console.log(formatFindings(data.reader))
     }
   },
 
