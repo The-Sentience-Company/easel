@@ -14,25 +14,25 @@ const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
 const TEMPLATE_RULES = {
   queue:
     'a queue card is: one question on one line · options as buttons, each with a one-line basis, one recommended\n' +
-    '· read_first = the board by the agent that did the work · a body of a few sentences · no card id or callsign without a gloss',
+    '· read_first = the board by the agent that did the work · a body of a few sentences · every card id or callsign glossed where it first appears',
   review:
     'a review decision is: a question with options as buttons, each with a one-line basis, one recommended\n' +
-    '· evidence goes in the detail field above the options, not on the button · no term without a gloss',
+    '· evidence goes in the detail field above the options, not on the button · every term glossed where it first appears',
   compare:
     'a compare verdict is: pick the winning arm, or tie, or all-bad · the comparison sits above the verdict, not a pointer elsewhere\n' +
-    '· no arm name or case id without a gloss at first use',
+    '· every arm name and case id glossed at first use',
   eval:
     'a dossier verdict is: pass or needs-work after the notes · a blind compare pick: the better candidate, unlabeled\n' +
-    '· a matrix best: strongest answer per row; overall verdict per case · no dataset or model id without a gloss',
+    '· a matrix best: strongest answer per row; overall verdict per case · every dataset and model id glossed',
   gallery:
     'a gallery vote is: pick the candidate that ships, or none of these · the image is the argument, not a description of it\n' +
-    '· pin width to the size the design actually ships at · no variant name without a label',
+    '· pin width to the size the design actually ships at · every variant labeled',
   replay:
     'a replay verdict is: pick which arm held up on this exchange, or tie, or all-bad\n' +
-    '· the user message and each arm\'s reply are above the verdict · no arm name without a gloss at first use',
+    '· the user message and each arm\'s reply are above the verdict · every arm name glossed at first use',
   rulings:
     'a ruling is: a label and rationale, then a vote widget — accept or override\n' +
-    '· skim sections (options: []) have no buttons · no label without a plain-language meaning in the teach block',
+    '· skim sections (options: []) have no buttons · every label given a plain-language meaning in the teach block',
   // page has no decision UI — no rule block
 }
 
@@ -178,7 +178,8 @@ const commands = {
       : `published round ${d.round}`) +
       (d.listenerDropped ? `\nyour parked listener was dropped — relaunch \`easel await\`` : '') +
       (d.audit?.findings?.length ? `\naudit (advisory): ${JSON.stringify(d.audit.findings)}` : '') +
-      (d.reader?.length ? '\n' + formatFindings(d.reader) : ''))
+      (d.reader?.length ? '\n' + formatFindings(d.reader) : '') +
+      (d.readerCarried ? `\n${d.readerCarried} reader finding${d.readerCarried > 1 ? 's' : ''} carried from earlier rounds, unchanged` : ''))
   },
 
   async await() {

@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { readerChecks, formatFindings } from '../daemon/reader-checks.js'
+import { readerChecks, formatFindings, sinceLast } from '../daemon/reader-checks.js'
 
 // Helper: a paragraph whose text is exactly n copies of "word".
 const wallP = (n) => `<p>${'word '.repeat(n).trim()}</p>`
@@ -153,6 +153,21 @@ describe('clean board', () => {
       <button data-option="yes">Approve</button>
       <button data-option="no">Defer</button>`
     assert.equal(readerChecks(html).length, 0)
+  })
+})
+
+describe('sinceLast', () => {
+  test('a finding present last round is carried, a new one is fresh', () => {
+    const prev = readerChecks(wallP(112))
+    const cur = readerChecks(`${wallP(112)}<p>merged as #4123 today.</p>`)
+    const { fresh, carried } = sinceLast(cur, prev)
+    assert.equal(carried, 1)
+    assert.deepEqual(fresh.map((f) => f.type), ['formatting'])
+  })
+
+  test('the first round carries nothing', () => {
+    const cur = readerChecks(wallP(112))
+    assert.deepEqual(sinceLast(cur, []), { fresh: cur, carried: 0 })
   })
 })
 
