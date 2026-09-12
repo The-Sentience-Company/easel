@@ -129,6 +129,16 @@ describe('blockquote false positive fix', () => {
     const walls = readerChecks(html).filter((f) => f.type === 'wall')
     assert.equal(walls.length, 1)
   })
+
+  test('hex colours inside a baked diagram or a style block are not bare PR numbers', () => {
+    const html = '<svg><g style="fill:#333;stroke:#000"><text>node</text></g></svg><style>.x{color:#a5d8ff}</style><p>one short line.</p>'
+    assert.equal(readerChecks(html).filter((f) => f.type === 'formatting').length, 0)
+  })
+
+  test('a bare PR number in prose is still flagged', () => {
+    const html = '<svg><g style="fill:#333"></g></svg><p>merged as #4123 this morning.</p>'
+    assert.equal(readerChecks(html).filter((f) => f.type === 'formatting').length, 1)
+  })
 })
 
 describe('clean board', () => {

@@ -14,7 +14,8 @@ const RULES = {
 }
 
 export function readerChecks(html) {
-  html = html.replace(/<blockquote[\s\S]*?<\/blockquote>/gi, ' ')
+  // Quoted specimens are not the author's prose; baked diagrams and styles are not prose at all.
+  html = html.replace(/<(blockquote|svg|style)\b[\s\S]*?<\/\1>/gi, ' ')
   const findings = []
   const add = (type, detail, sample) => findings.push({ type, rule: RULES[type], detail, sample })
 
