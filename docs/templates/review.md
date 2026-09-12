@@ -37,9 +37,12 @@ easel open --template review --data plan.json --title "Retry budget"
       "context": "string",           // optional, one-line help
       "options": [                   // required, non-empty
         "value",
-        { "value": "string", "label": "string" }
+        { "value": "string",
+          "label": "string",         // two or three words — the words on the button
+          "basis": "string",         // one line: what picking it costs or buys; renders as a bullet above the buttons
+          "recommended": true }      // at most one; renders a mark on that bullet
       ],
-      "detail": "string"             // optional, markdown shown under the widget
+      "detail": "string"             // optional, markdown shown above the widget — evidence, not the per-option argument
     }
   ],
 
@@ -78,6 +81,8 @@ Row width is the header's: **a short row is padded with empty cells, and a long 
 Alignment is carried on a class, not a `style` attribute. The publish sanitizer strips `style`, so any hand-authored HTML that aligns via inline style will lose it — use the same `sd-align-left` / `sd-align-center` / `sd-align-right` classes.
 
 ## Behavior
+
+Each decision renders its options' `basis` lines as a list directly above the buttons, the recommended one marked, so the argument for an option never has to live on the button. `detail` renders above that, for the evidence the options rest on. A widget the reader answered on an earlier round opens with that choice shown pressed and the buttons live — a new click records a new answer.
 
 Decisions and votes render as widgets. A click queues the choice as a draft on the same queue as annotations — reselecting replaces it — and **Send** delivers everything together; nothing reaches the agent before that.
 

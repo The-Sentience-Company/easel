@@ -528,6 +528,12 @@ function markPriorVerdicts(d) {
     tag.textContent = `r${item.round}: ${item.value}`
     tag.title = `your verdict on round ${item.round}`
     widget.querySelector('.sd-widget-options')?.appendChild(tag)
+    // The earlier choice also shows as the pressed button; the buttons stay
+    // live, so a click on this round records a new answer.
+    widget.classList.add('sf-prior-answered')
+    for (const opt of widget.querySelectorAll('[data-option]')) {
+      if (opt.dataset.option === item.value) opt.setAttribute('aria-pressed', 'true')
+    }
   }
 }
 

@@ -26,6 +26,7 @@ export function render(data) {
     requireObject(d, path)
     return [
       '<div class="sd-card">',
+      d.detail ? `<div class="sd-muted">${markdown(d.detail)}</div>` : '',
       widget({
         type: 'decision',
         id: uniqueId(d.id, `${path}.id`),
@@ -33,7 +34,6 @@ export function render(data) {
         help: d.context,
         options: requireArray(d.options, `${path}.options`),
       }),
-      d.detail ? `<div class="sd-muted">${markdown(d.detail)}</div>` : '',
       '</div>',
     ].filter(Boolean).join('\n')
   }

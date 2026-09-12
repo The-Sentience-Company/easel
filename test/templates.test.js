@@ -290,6 +290,34 @@ describe('widgets', () => {
     assert.throws(() => widget({ type: 'slider', id: 'w', prompt: 'p', options: ['a'] }), TemplateError)
     assert.throws(() => widget({ type: 'vote', id: 'w', prompt: 'p', options: [] }), TemplateError)
   })
+
+  test('option objects render the basis list above the buttons', () => {
+    const html = widget({ type: 'decision', id: 'w1', prompt: 'Retry?', options: [
+      { value: 'yes', label: 'Do it', basis: 'Adds 50ms per call', recommended: true },
+      { value: 'no', label: 'Skip it', basis: 'Saves the latency' },
+    ] })
+    const basisIdx = html.indexOf('sd-widget-basis')
+    const optionsIdx = html.indexOf('sd-widget-options')
+    assert.ok(basisIdx !== -1, 'no sd-widget-basis list')
+    assert.ok(optionsIdx !== -1, 'no sd-widget-options')
+    assert.ok(basisIdx < optionsIdx, 'basis list must appear before the buttons')
+    assert.match(html, /sd-widget-pick/)
+    assert.match(html, /recommended/)
+  })
+
+  test('two recommended options throw', () => {
+    assert.throws(() => widget({ type: 'decision', id: 'w1', prompt: 'p', options: [
+      { value: 'a', recommended: true },
+      { value: 'b', recommended: true },
+    ] }), TemplateError)
+  })
+
+  test('plain string options render without a basis list, same shape as before', () => {
+    const html = widget({ type: 'vote', id: 'w1', prompt: 'Ship?', options: ['yes', 'no'] })
+    assert.doesNotMatch(html, /sd-widget-basis/)
+    assert.match(html, /<button type="button" data-option="yes">yes<\/button>/)
+    assert.match(html, /<button type="button" data-option="no">no<\/button>/)
+  })
 })
 
 describe('review', () => {
