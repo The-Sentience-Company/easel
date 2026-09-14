@@ -140,7 +140,7 @@ Two things worth knowing before styling around it:
 | `sd-tag`, `sd-taglist` | outlined mono label carrying no status colour, and its row |
 | `sd-flag` | the one filled label, reserved for a hard stop |
 | `sd-badge-row` | spacing for a row of `sd-badge`es |
-| `sd-section`, `sd-count` | a numbered content section and its item count |
+| `sd-section`, `sd-count` | a numbered content section and its item count. Head it with a real `<h2>`, the number in an `sd-secnum` span inside it — that is what the chrome sizes as a heading and gives a collapse control. An `sd-card-title` here renders at card size with no control. |
 | `sd-entries`, `sd-entry`, `sd-entry-name`, `sd-entry-meta` | a grid of per-subject cards |
 | `sd-steps`, `sd-step`, `sd-step-index`, `sd-step-body`, `sd-step-title` | a hairline-separated ordered list |
 | `sd-rules`, `sd-rule` | side-by-side rule columns |

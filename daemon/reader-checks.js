@@ -12,6 +12,7 @@ const RULES = {
   label: 'A decision carries the basis for answering it — the label is two or three words (authoring.md)',
   formatting: 'Look at the page before announcing it',
   prose: 'A long section carries a list, table, or block (review.md)',
+  table: 'One row per thing, not one per pair — a repeating first column is a cross product (authoring.md)',
 }
 
 const STRUCTURE = /<table|<ul|<ol|<pre|<details|sd-grid|sd-card|sd-callout|data-island/
@@ -35,6 +36,21 @@ export function readerChecks(html) {
     if (w.length > 250 && !STRUCTURE.test(m[1])) {
       add('prose', `${w.length}-word section with no list, table, or block`, heading)
     }
+  }
+
+  // A first column that repeats is a cross product flattened to one row per pair.
+  // Both conditions hold together: a short table and a table of distinct labels stay clean.
+  for (const m of html.matchAll(/<table\b[\s\S]*?<\/table>/g)) {
+    const body = [...m[0].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
+      .map((r) => [...r[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) => strip(c[1])))
+      .filter((cells) => cells.length)
+    if (body.length < 6) continue
+    const first = body.map((r) => r[0] ?? '')
+    const counts = new Map()
+    for (const v of first) counts.set(v, (counts.get(v) ?? 0) + 1)
+    if (counts.size * 2 > body.length) continue
+    const [worst, n] = [...counts].sort((a, b) => b[1] - a[1])[0]
+    add('table', `${body.length}-row table, ${counts.size} distinct values in the first column`, `"${worst}" ${n} times`)
   }
 
   // Shorthand: campaign codes, callsigns, ticket ids and snake_case outside code,

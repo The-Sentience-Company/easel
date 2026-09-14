@@ -63,7 +63,7 @@ Choose the shape per paragraph, not per section. The template shapes the board; 
 | a verbatim sample — a model reply, a digest, a payload | a fence, a blockquote, or an `sd-collapse` |
 | a claim and where it came from | the claim in prose; the source on its own `Source:` line or in the table row it supports |
 
-The tells of a list typed without line breaks: `(a)` or `(1)` inside a sentence, a second `Label:` run, a second `"term" =`, a third inline `code` span. **Any of these in a paragraph means restructure it before publishing.** One idea per paragraph, about four sentences; a section that is only paragraphs is a transcription. On a `page` the same rule runs through the compose table with `sd-` classes, inside an `sd-section` with an `sd-card-title` — that is what earns the chrome's collapse control, and a bare `<h2>` silently forfeits it.
+The tells of a list typed without line breaks: `(a)` or `(1)` inside a sentence, a second `Label:` run, a second `"term" =`, a third inline `code` span. **Any of these in a paragraph means restructure it before publishing.** One idea per paragraph, about four sentences; a section that is only paragraphs is a transcription. On a `page` the same rule runs through the compose table with `sd-` classes, inside an `sd-section` whose heading is a real `<h2>` — that is what the chrome sizes as a heading (27px against 16px) and what earns its collapse toggle and the "collapse section" control. An `sd-card-title` is a card's label: directly under an `sd-section` it renders at card size and earns no control at all. Use it inside an `sd-card`, never as a section heading.
 
 ## Never fan a cohort across sibling boards
 
