@@ -141,6 +141,50 @@ describe('blockquote false positive fix', () => {
   })
 })
 
+describe('table', () => {
+  const row = (...cells) => `<tr>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`
+  const table = (rows) => `<table><thead><tr><th>Run</th><th>Case</th></tr></thead><tbody>${rows}</tbody></table>`
+  // The real shape: one row per (run, miss) pair, so each run label repeats.
+  const crossProduct = table(
+    ['before', 'before', 'before', 'cut 1', 'cut 1', 'cut 1', 'cut 2', 'cut 2', 'final', 'final']
+      .map((r, i) => row(r, `case ${i}`)).join(''),
+  )
+
+  test('a first column repeating under half is flagged, with the worst value', () => {
+    const findings = readerChecks(crossProduct)
+    assert.deepEqual(findings.map((f) => f.type), ['table'])
+    assert.match(findings[0].detail, /10-row table, 4 distinct values in the first column/)
+    assert.match(findings[0].sample, /"before" 3 times/)
+  })
+
+  test('one row per thing is clean, however long', () => {
+    const rows = Array.from({ length: 12 }, (_, i) => row(`case ${i}`, 'what it did')).join('')
+    assert.equal(readerChecks(table(rows)).length, 0)
+  })
+
+  test('a table under six body rows never fires, even repeating every value', () => {
+    const rows = Array.from({ length: 5 }, () => row('same', 'x')).join('')
+    assert.equal(readerChecks(table(rows)).length, 0)
+  })
+
+  test('exactly half distinct fires; just over half does not', () => {
+    const half = ['a', 'a', 'b', 'b', 'c', 'c'].map((v) => row(v, 'x')).join('')
+    assert.equal(readerChecks(table(half)).length, 1, 'three of six is the boundary and counts')
+    const over = ['a', 'a', 'b', 'c', 'd', 'e'].map((v) => row(v, 'x')).join('')
+    assert.equal(readerChecks(table(over)).length, 0, 'five of six is not a cross product')
+  })
+
+  test('header rows are not counted as body rows', () => {
+    // Five body rows plus a header must stay under the six-row floor.
+    const rows = Array.from({ length: 5 }, () => row('same', 'x')).join('')
+    assert.equal(readerChecks(table(rows)).length, 0)
+  })
+
+  test('a quoted specimen is not the author\'s own table', () => {
+    assert.equal(readerChecks(`<blockquote>${crossProduct}</blockquote>`).length, 0)
+  })
+})
+
 describe('prose', () => {
   // Three paragraphs of 100 words each: no single one is a wall, the section is.
   const paras = Array.from({ length: 3 }, () => wallP(100)).join('')
