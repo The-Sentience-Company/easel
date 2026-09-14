@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { annotateAndDiff, contextForSid, excerptForSid } from '../daemon/differ.js'
+import { annotateAndDiff, blankBakedDiagrams, contextForSid, excerptForSid } from '../daemon/differ.js'
 
 const sidOf = (html, marker) => html.match(new RegExp(`data-sid="(s-[0-9a-f]+)"[^>]*>${marker}`))?.[1]
 
@@ -400,6 +400,32 @@ describe('diagrams diff as one unit', () => {
     const r1 = annotateAndDiff(`<p>anchor</p>${hashed('abc123', 'M0 0 L1.56 -83')}`)
     const r2 = annotateAndDiff(`<p>anchor</p>${hashed('abc123', 'M0 0.66 L233.07 8')}`, r1.html)
     assert.deepEqual(r2.diff, { added: [], removed: [], removedDetail: [], modified: [], moved: [] })
+  })
+
+  // A hand-authored graphic is content: an svg-only edit outside a baked wrapper
+  // has to reach the reader, or such a board can never be revised.
+  const chart = (fill) => `<svg viewBox="0 0 10 10"><rect width="4" height="4" fill="${fill}"></rect></svg>`
+
+  test('an edit confined to hand-authored svg is modified, not silently equal', () => {
+    const r1 = annotateAndDiff(`<p>anchor</p><figure>${chart('red')}</figure>`)
+    const r2 = annotateAndDiff(`<p>anchor</p><figure>${chart('green')}</figure>`, r1.html)
+    assert.equal(r2.diff.modified.length, 1, 'the changed graphic is reported')
+    assert.deepEqual(r2.diff.added, [])
+    assert.deepEqual(r2.diff.removed, [])
+  })
+
+  test('identical hand-authored svg still diffs clean', () => {
+    const page = `<p>anchor</p><figure>${chart('red')}</figure>`
+    const r1 = annotateAndDiff(page)
+    const r2 = annotateAndDiff(page, r1.html)
+    assert.deepEqual(r2.diff, { added: [], removed: [], removedDetail: [], modified: [], moved: [] })
+  })
+
+  test('blankBakedDiagrams empties baked bodies and leaves hand-authored svg alone', () => {
+    const baked = blankBakedDiagrams(hashed('abc123', 'M0 0 L1 2'))
+    assert.ok(!baked.includes('M0 0 L1 2'), 'the jittering path is dropped')
+    assert.ok(baked.includes('data-diagram-hash="abc123"'), 'the hash that carries equality survives')
+    assert.equal(blankBakedDiagrams(chart('red')), chart('red'), 'hand-authored svg is untouched')
   })
 
   test('a changed diagram hash with identical labels is modified', () => {
