@@ -11,7 +11,10 @@ const RULES = {
   pointer: 'Restate, never point (authoring.md)',
   label: 'A decision carries the basis for answering it — the label is two or three words (authoring.md)',
   formatting: 'Look at the page before announcing it',
+  prose: 'A long section carries a list, table, or block (review.md)',
 }
+
+const STRUCTURE = /<table|<ul|<ol|<pre|<details|sd-grid|sd-card|sd-callout|data-island/
 
 export function readerChecks(html) {
   // Quoted specimens are not the author's prose; baked diagrams and styles are not prose at all.
@@ -23,6 +26,15 @@ export function readerChecks(html) {
   for (const m of html.matchAll(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/g)) {
     const w = words(m[1])
     if (w.length > 110) add('wall', `${w.length}-word paragraph`, w.slice(0, 8).join(' ') + ' …')
+  }
+
+  // Prose-only sections: over 250 words with nothing but paragraphs.
+  for (const m of html.matchAll(/<section\b[^>]*\bsd-section\b[^>]*>([\s\S]*?)<\/section>/g)) {
+    const heading = strip((m[1].match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || ['', ''])[1])
+    const w = words(m[1].replace(/<h2[^>]*>[\s\S]*?<\/h2>/, ' '))
+    if (w.length > 250 && !STRUCTURE.test(m[1])) {
+      add('prose', `${w.length}-word section with no list, table, or block`, heading)
+    }
   }
 
   // Shorthand: campaign codes, callsigns, ticket ids and snake_case outside code,

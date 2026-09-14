@@ -230,7 +230,7 @@ const commands = {
       backoff = 1000
       if (data.timedOut) continue // window expired — re-attach with the same cursor
       output(data, values.json)
-      if (!values.json) console.log('answer each item on the board, at its anchor, in the next round')
+      if (!values.json && data.items?.length) console.log('answer each item on the board, at its anchor, in the next round')
       // Both are normal lifecycle events, not failures — exit 0.
       if (data.superseded) console.error('superseded by a newer await from this agent')
       if (data.dropped) console.error('dropped by a publish from this agent — relaunch after the round')

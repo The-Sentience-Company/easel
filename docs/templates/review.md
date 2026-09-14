@@ -25,6 +25,11 @@ easel open --template review --data plan.json --title "Retry budget"
         "plain label",
         { "label": "string", "tone": "success|warning|error|info" }
       ],
+      "blocks": [                    // optional — layout under the prose; see the block rule below
+        { "kind": "cards",    "items": [ { "title": "string", "body": "markdown", "badges": [ ...as above ] } ] },
+        { "kind": "callouts", "items": [ { "tone": "info|success|warning|error", "title": "string", "body": "markdown" } ] },
+        { "kind": "island",   "title": "string", "height": 360, "html": "string" }
+      ],
       "decisions": [ ... ],          // optional, same shape as top-level; renders inside the section
       "votes": [ ... ]               // optional, same shape as top-level; renders inside the section
     }
@@ -61,6 +66,16 @@ easel open --template review --data plan.json --title "Retry budget"
 At least one of `sections`, `decisions`, or `votes` must be present. `id` values must be unique across decisions *and* votes on the board — inline and top-level alike — a collision throws, because two widgets sharing an id would record to the same key.
 
 **Placement rule: put each decision inside the section that motivates it** (`sections[].decisions`), so the reader answers with the relevant context directly above — never make them scroll back up from a pile at the bottom. Top-level `decisions`/`votes` render in a trailing "Decisions"/"Votes" section; reserve those for calls that genuinely span the whole board (final approve, overall verdict). A board whose every decision sits at the bottom is almost always mis-authored.
+
+**Block rule: parallel or boxed content leaves the prose and takes a block.** Blocks render after the section's body, before its decisions. Which block:
+
+- two or three parallel things of a few lines each (goal beside non-goals, options) → `cards`, side by side; six paragraph-length parts squeeze into unreadable columns and stay prose with bold leads
+- the thing that changed against its background, or the answer to an annotation → `callouts`; two or more sit side by side, one stands alone
+- a mockup, image comparison, or custom composition → `island` (hand-authored HTML in a sandboxed frame; `height` is the frame's pre-load height in px)
+- numbers → `metrics` or a table in the body
+- a status → the first line of `summary`, replaced each round, never stacked
+
+A section over 250 words with no list, table, or block trips the publish check.
 
 **Metrics frame the sections below them** — the 3–5 numbers that decide how the reader reads everything else (what it costs, how many, how often, what breaks). They render as a tile row above the first section. A board of only metrics throws: there is nothing to frame.
 
