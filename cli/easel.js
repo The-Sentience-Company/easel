@@ -9,6 +9,12 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { formatFindings } from '../daemon/reader-checks.js'
 
+// Findings arrive after the round is already written, so say how to correct it
+// without costing the reader a second round. This is the whole point of --amend.
+const findingsToFix = (d) => Boolean(d.reader?.length || d.audit?.findings?.length)
+const amendHint = (key) =>
+  `these are advisory and the round is already published — fix the source and \`easel publish ${key} --amend\` to correct it in place rather than adding a round`
+
 const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
 
 const TEMPLATE_RULES = {
@@ -48,7 +54,7 @@ function hasDecisions(content) {
 const USAGE = `usage:
   easel open <file.html|file.md> [--title T] [--json]
   easel open --template <review|eval|compare|replay|gallery|rulings|page|queue> --data <file.json> [--title T] [--json]
-  easel publish <key> [--note "..."] [--json]
+  easel publish <key> [--note "..."] [--amend] [--json]
   easel await <key> [--agent ID] [--cursor N] [--ack M] [--timeout-s T] [--json]
   easel feedback <key> [--since N] [--json]
   easel reply <key> <message> [--agent ID] [--json]
@@ -158,28 +164,32 @@ const commands = {
           }
         } catch {}
       }
-      if (data.reader?.length) console.log(formatFindings(data.reader))
+      if (data.reader?.length) {
+        console.log(formatFindings(data.reader))
+        console.log(amendHint(data.key))
+      }
     }
   },
 
   async publish() {
     const { values, positionals } = parseArgs({
       args: rest,
-      options: { note: { type: 'string' }, agent: { type: 'string' }, json: { type: 'boolean' } },
+      options: { note: { type: 'string' }, agent: { type: 'string' }, json: { type: 'boolean' }, amend: { type: 'boolean' } },
       allowPositionals: true,
     })
     const key = positionals[0] || fail(USAGE)
     await warnServingTree(values.json)
     // Identify the publisher so the daemon drops their own parked listener in-turn.
     const agent = values.agent || process.env.CLAUDE_SESSION_ID || null
-    const data = await call('POST', `/api/b/${key}/publish`, { note: values.note, agent })
+    const data = await call('POST', `/api/b/${key}/publish`, { note: values.note, agent, amend: values.amend })
     output(data, values.json, (d) => (d.unchanged
       ? `nothing to publish — the source renders identical to round ${d.round}; write your changes to the registered path first (\`easel status ${key}\`)`
-      : `published round ${d.round}`) +
+      : `${d.amended ? 'amended' : 'published'} round ${d.round}`) +
       (d.listenerDropped ? `\nyour parked listener was dropped — relaunch \`easel await\`` : '') +
       (d.audit?.findings?.length ? `\naudit (advisory): ${JSON.stringify(d.audit.findings)}` : '') +
       (d.reader?.length ? '\n' + formatFindings(d.reader) : '') +
-      (d.readerCarried ? `\n${d.readerCarried} reader finding${d.readerCarried > 1 ? 's' : ''} carried from earlier rounds, unchanged` : ''))
+      (d.readerCarried ? `\n${d.readerCarried} reader finding${d.readerCarried > 1 ? 's' : ''} carried from earlier rounds, unchanged` : '') +
+      (findingsToFix(d) ? `\n${amendHint(key)}` : ''))
   },
 
   async await() {

@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdtempSync, writeFileSync, readFileSync, existsSync, appendFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -257,6 +257,65 @@ test('publish with no source change is a no-op, not a phantom round', async () =
   assert.equal(data.unchanged, true, 'the publisher is told nothing shipped')
   assert.equal(data.round, before, 'the round it points at is the one already published')
   assert.equal((await api('GET', `/api/b/${key}/status`)).data.rounds, before, 'no round was added')
+})
+
+test('amend rewrites the current round in place instead of adding one', async () => {
+  const src = join(DATA_DIR, 'amend.html')
+  writeFileSync(src, '<h1>Amend</h1><p>merged in #4123 today.</p>')
+  const { key: k } = (await api('POST', '/api/open', { file: src })).data
+  const roundsBefore = (await api('GET', `/api/b/${k}/status`)).data.rounds
+
+  writeFileSync(src, '<h1>Amend</h1><p>merged in <a href="https://example.com/4123">#4123</a> today.</p>')
+  const { data } = await api('POST', `/api/b/${k}/publish`, { note: 'linked the PR', amend: true })
+  assert.equal(data.amended, true)
+  assert.equal(data.round, roundsBefore, 'the round number does not move')
+  assert.equal((await api('GET', `/api/b/${k}/status`)).data.rounds, roundsBefore, 'no round was added')
+
+  const state = (await api('GET', `/api/b/${k}/state`)).data
+  assert.match(state.currentRound.html, /href="https:\/\/example\.com\/4123"/, 'the reader sees the correction')
+  assert.equal(state.currentRound.note, 'linked the PR')
+})
+
+test('amend refuses once the round carries feedback, and leaves it untouched', async () => {
+  const src = join(DATA_DIR, 'amend-fb.html')
+  writeFileSync(src, '<h1>Guarded</h1><p>first</p>')
+  const { key: k } = (await api('POST', '/api/open', { file: src })).data
+  const sid = (await api('GET', `/api/b/${k}/state`)).data.currentRound.html.match(/<p data-sid="([^"]+)">first/)[1]
+  await api('POST', `/api/b/${k}/feedback`, {
+    clientId: 'reader-1', round: 1, anchor: { sid }, comment: 'what is this?',
+  })
+
+  writeFileSync(src, '<h1>Guarded</h1><p>second</p>')
+  const { status, data } = await api('POST', `/api/b/${k}/publish`, { amend: true })
+  assert.equal(status, 409)
+  assert.match(data.error, /already carries feedback/)
+  const state = (await api('GET', `/api/b/${k}/state`)).data
+  assert.match(state.currentRound.html, />first</, 'what the reader commented on is untouched')
+})
+
+test('amend refuses a round older than the window', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sf-amend-'))
+  const port = portFor(import.meta.url, 2)
+  const base = `http://127.0.0.1:${port}`
+  const a = makeApi(base)
+  // A zero-length window makes every round instantly too old to rewrite.
+  const d = spawn('node', [join(ROOT, 'daemon', 'server.js')], {
+    env: { ...process.env, EASEL_PORT: String(port), EASEL_DATA_DIR: dir, EASEL_AMEND_WINDOW_MS: '1' },
+    stdio: 'ignore',
+  })
+  try {
+    await waitHealthy(base)
+    const src = join(dir, 'old.html')
+    writeFileSync(src, '<h1>Old</h1><p>first</p>')
+    const { key: k } = (await a('POST', '/api/open', { file: src })).data
+    await new Promise((r) => setTimeout(r, 30))
+    writeFileSync(src, '<h1>Old</h1><p>second</p>')
+    const { status, data } = await a('POST', `/api/b/${k}/publish`, { amend: true })
+    assert.equal(status, 409)
+    assert.match(data.error, /older than/)
+  } finally {
+    d.kill()
+  }
 })
 
 test('a change confined to hand-authored svg publishes a real round', async () => {

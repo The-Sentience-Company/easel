@@ -798,13 +798,21 @@ async function handlePublish(req, res, match) {
     if (fromData) store.fillTitle(board.key, fromData)
   }
   const last = store.lastRound(board.key)
+  // Amend rewrites the current round rather than adding one, so correcting what
+  // the publish checks just reported costs the reader no pill and no split marks.
+  const amend = body.amend === true
+  if (amend) {
+    const refusal = amendRefusal(board, last)
+    if (refusal) return json(res, 409, { error: refusal })
+  }
+  const base = amend ? store.round(board.key, last.seq - 1) : last
   const { html: hostHtml, islands } = extractIslands(rendered.html)
-  const { html: sidHtml, diff } = annotateAndDiff(hostHtml, last?.html ?? null)
+  const { html: sidHtml, diff } = annotateAndDiff(hostHtml, base?.html ?? null)
   // A round identical to the one before it is a phantom: the picker gains a pill
   // the reader clicks into and finds no diff. Same test the wip path uses.
   const sameIslands =
     JSON.stringify(islands ?? []) === JSON.stringify(store.roundIslands(board.key, last?.seq) ?? [])
-  if (last && stableHtml(sidHtml) === stableHtml(last.html) && sameIslands) {
+  if (!amend && last && stableHtml(sidHtml) === stableHtml(last.html) && sameIslands) {
     store.setWip(board.key, null)
     const listenerDropped = dropAgentWaiter(board.key, body.agent)
     return json(res, 200, {
@@ -816,17 +824,34 @@ async function handlePublish(req, res, match) {
       reader: null,
     })
   }
-  const seq = (last?.seq ?? 0) + 1
+  const seq = amend ? last.seq : (last?.seq ?? 0) + 1
   const audit = auditHtml(sidHtml)
   // The author already saw last round's findings; a republish reports only what is new.
-  const reader = sinceLast(readerChecks(sidHtml), last ? readerChecks(last.html) : [])
-  store.addRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)
+  // An amend replaces its round, so the findings it answers are the ones to re-report.
+  const reader = sinceLast(readerChecks(sidHtml), base ? readerChecks(base.html) : [])
+  if (amend) store.replaceRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)
+  else store.addRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)
   store.setAudit(board.key, audit)
   store.setWip(board.key, null)
   broadcast(board.key, 'round', { seq })
-  maybeAutoOpen(board.key)
+  if (!amend) maybeAutoOpen(board.key)
   const listenerDropped = dropAgentWaiter(board.key, body.agent)
-  json(res, 200, { round: seq, listenerDropped, diff: diff ?? { added: [], removed: [], modified: [], moved: [] }, audit, reader: reader.fresh, readerCarried: reader.carried })
+  json(res, 200, { round: seq, amended: amend || undefined, listenerDropped, diff: diff ?? { added: [], removed: [], modified: [], moved: [] }, audit, reader: reader.fresh, readerCarried: reader.carried })
+}
+
+// An amend is safe only while the round is still the agent's to correct: nothing
+// the reader has said on it, and published recently enough that they have not read it.
+const AMEND_WINDOW_MS = Number(process.env.EASEL_AMEND_WINDOW_MS) || 10 * 60 * 1000
+function amendRefusal(board, last) {
+  if (!last) return 'nothing to amend — this board has no round yet'
+  if (store.feedbackCountForRound(board.key, last.seq) > 0) {
+    return `round ${last.seq} already carries feedback — publish a round that answers it instead of rewriting it`
+  }
+  const age = Date.now() - Date.parse(last.published_at)
+  if (!(age < AMEND_WINDOW_MS)) {
+    return `round ${last.seq} is older than ${AMEND_WINDOW_MS / 60000} minutes — publish a new round rather than rewriting one the reader may have read`
+  }
+  return null
 }
 
 async function handleAwait(req, res, match) {

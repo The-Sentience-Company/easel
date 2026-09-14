@@ -29,6 +29,14 @@ export function createStore(db = openDb()) {
       `INSERT INTO rounds (surface_key, seq, html, note, diff_json, audit_json, diagrams_json, islands_json, published_at)
        VALUES (@surface_key, @seq, @html, @note, @diff_json, @audit_json, @diagrams_json, @islands_json, @at)`
     ),
+    replaceRound: db.prepare(
+      `UPDATE rounds SET html = @html, note = @note, diff_json = @diff_json, audit_json = @audit_json,
+              diagrams_json = @diagrams_json, islands_json = @islands_json, published_at = @at
+       WHERE surface_key = @surface_key AND seq = @seq`
+    ),
+    feedbackForRound: db.prepare(
+      `SELECT count(*) AS n FROM feedback WHERE surface_key = ? AND round_seq = ?`
+    ),
     rounds: db.prepare(`SELECT seq, note, published_at FROM rounds WHERE surface_key = ? ORDER BY seq`),
     // One grouped count, because the index asks every board for its round count.
     roundCounts: db.prepare(`SELECT surface_key, count(*) AS n FROM rounds GROUP BY surface_key`),
@@ -196,6 +204,19 @@ export function createStore(db = openDb()) {
       })
       q.touchBoard.run(now(), key)
     },
+    // Rewrites a round in place — same seq, so the reader gains no pill.
+    replaceRound(key, seq, html, note, diff, audit, diagrams, islands) {
+      q.replaceRound.run({
+        surface_key: key, seq, html, note: note ?? null,
+        diff_json: diff ? JSON.stringify(diff) : null,
+        audit_json: audit ? JSON.stringify(audit) : null,
+        diagrams_json: diagrams?.length ? JSON.stringify(diagrams) : null,
+        islands_json: islands?.length ? JSON.stringify(islands) : null,
+        at: now(),
+      })
+      q.touchBoard.run(now(), key)
+    },
+    feedbackCountForRound: (key, seq) => q.feedbackForRound.get(key, seq)?.n ?? 0,
     roundDiagrams(key, seq) {
       const row = seq != null ? q.round.get(key, seq) : q.lastRound.get(key)
       return parseJson(row?.diagrams_json)
