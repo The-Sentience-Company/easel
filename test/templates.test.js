@@ -372,6 +372,57 @@ describe('review', () => {
   test('requires at least one of sections, decisions, or votes', () => {
     assert.throws(() => review.render({ title: 'empty' }), TemplateError)
   })
+
+  describe('blocks', () => {
+    const board = (blocks) => ({ title: 't', sections: [{ heading: 'H', body: 'prose', blocks }] })
+
+    test('cards render side by side in one grid, each with a title and badges', () => {
+      const html = review.render(board([{ kind: 'cards', items: [
+        { title: 'Goal', body: 'x', badges: [{ label: 'approved', tone: 'success' }] },
+        { title: 'Non-goals', body: 'y' },
+      ] }]))
+      assert.equal((html.match(/class="sd-grid"/g) || []).length, 1)
+      assert.equal((html.match(/class="sd-card"/g) || []).length, 2)
+      assert.match(html, /<div class="sd-card-title">Goal<\/div><div class="sd-row"><span class="sd-badge sd-badge-success">approved<\/span><\/div><p>x<\/p>/)
+    })
+
+    test('callouts carry their tone; two share a grid, one stands alone', () => {
+      const two = review.render(board([{ kind: 'callouts', items: [
+        { tone: 'success', title: 'A2', body: 'a' },
+        { tone: 'warning', title: 'A3', body: 'b' },
+      ] }]))
+      assert.match(two, /<div class="sd-grid"><div class="sd-callout sd-callout-success"><div class="sd-callout-title">A2<\/div><p>a<\/p><\/div><div class="sd-callout sd-callout-warning">/)
+      const one = review.render(board([{ kind: 'callouts', items: [{ tone: 'info', title: 'A2', body: 'a' }] }]))
+      assert.doesNotMatch(one, /sd-grid/)
+      assert.match(one, /<div class="sd-callout sd-callout-info">/)
+    })
+
+    test('island passes its html through verbatim with title and height', () => {
+      const html = review.render(board([{ kind: 'island', title: 'Mockup', height: 360, html: '<div class="sd-grid"><b>raw</b></div>' }]))
+      assert.match(html, /<div data-island data-island-title="Mockup" data-island-height="360"><div class="sd-grid"><b>raw<\/b><\/div><\/div>/)
+    })
+
+    test('blocks render after the prose and before the inline decisions', () => {
+      const html = review.render({
+        title: 't',
+        sections: [{
+          heading: 'H',
+          body: 'prose',
+          blocks: [{ kind: 'callouts', items: [{ title: 'boxed', body: 'b' }] }],
+          decisions: [{ id: 'd', question: 'q', options: ['a'] }],
+        }],
+      })
+      assert.ok(html.indexOf('<p>prose</p>') < html.indexOf('sd-callout'))
+      assert.ok(html.indexOf('sd-callout') < html.indexOf('data-widget-id="d"'))
+    })
+
+    test('an unknown kind, a bad tone, and an empty items list each throw naming the path', () => {
+      assert.throws(() => review.render(board([{ kind: 'table' }])), /review\.sections\[0\]\.blocks\[0\]\.kind must be cards, callouts, or island/)
+      assert.throws(() => review.render(board([{ kind: 'callouts', items: [{ tone: 'loud', body: 'x' }] }])), /review\.sections\[0\]\.blocks\[0\]\.items\[0\]\.tone must be one of/)
+      assert.throws(() => review.render(board([{ kind: 'cards', items: [] }])), /review\.sections\[0\]\.blocks\[0\]\.items must not be empty/)
+      assert.throws(() => review.render(board([{ kind: 'cards', items: [{ body: 'no title' }] }])), TemplateError)
+    })
+  })
 })
 
 describe('eval', () => {

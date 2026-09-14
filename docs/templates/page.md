@@ -1,6 +1,6 @@
 # page template
 
-The escape hatch: hand-authored HTML through the same shell, chrome, annotation layer, and design system. Use it when the content genuinely is not a review or an eval.
+Hand-authored HTML through the same shell, chrome, annotation layer, and design system. Choose it when the composed layout is the point — side-by-side comparisons, mockups, custom composition — not as the fallback when nothing else fits; a plan or design with parallel parts is a `review` with `blocks`.
 
 ```
 easel open --template page --data page.json --title "..."

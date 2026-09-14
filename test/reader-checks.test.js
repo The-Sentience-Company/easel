@@ -141,6 +141,29 @@ describe('blockquote false positive fix', () => {
   })
 })
 
+describe('prose', () => {
+  // Three paragraphs of 100 words each: no single one is a wall, the section is.
+  const paras = Array.from({ length: 3 }, () => wallP(100)).join('')
+  const section = (inner) => `<section class="sd-section"><h2>Data flow</h2>${inner}</section>`
+
+  test('a 300-word section of only paragraphs is flagged with its heading', () => {
+    const findings = readerChecks(section(paras))
+    assert.deepEqual(findings.map((f) => f.type), ['prose'])
+    assert.match(findings[0].detail, /300-word section/)
+    assert.equal(findings[0].sample, 'Data flow')
+  })
+
+  test('the same section with a table, a list, or a block is clean', () => {
+    for (const block of ['<table><tr><td>x</td></tr></table>', '<ul><li>x</li></ul>', '<div class="sd-grid"></div>', '<div class="sd-callout">x</div>']) {
+      assert.equal(readerChecks(section(paras + block)).length, 0, block)
+    }
+  })
+
+  test('a section at or under 250 words is clean', () => {
+    assert.equal(readerChecks(section(wallP(100) + wallP(100) + wallP(50))).length, 0)
+  })
+})
+
 describe('clean board', () => {
   test('a well-formed board yields zero findings', () => {
     const html = `

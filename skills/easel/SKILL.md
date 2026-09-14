@@ -42,14 +42,14 @@ easel open <file.html|file.md>                                                  
 
 | Template | The work is |
 |---|---|
-| `review` | a plan, design, or proposal to read, plus decisions to answer |
+| `review` | a plan, design, or proposal plus decisions; sections carry prose and, where content is parallel or boxed, `blocks` (cards, callouts, an island) |
 | `eval` | eval output — dossiers, a *blind* 2-arm compare, or an item matrix; the data shape picks the mode |
 | `compare` | 2–6 *named* arms side by side — before/after, variants, shipped vs certified — one verdict per case |
 | `replay` | conversation exchanges replayed through 2–4 named arms — same message, one reply per arm, judge's call to check, one verdict per exchange |
 | `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states |
 | `rulings` | labeled cases adjudicated one by one — an answer key, goldens, triage list, or model-vs-key disagreements |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
-| `page` | none of the above — hand-authored HTML through the same chrome and annotation layer |
+| `page` | a layout the other templates cannot give: side-by-side comparisons, mockups, custom composition — hand-authored HTML through the same chrome and annotation layer |
 
 **Then Read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file; never write the JSON from memory of the schema.** Memory silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its schema and the rules that only matter inside that flow, so this file doesn't repeat them and they can't drift.
 
