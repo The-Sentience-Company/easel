@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { HttpError, readBody } from './body.js'
 import { createStore } from './store.js'
 import { now, DATA_DIR } from './db.js'
-import { annotateAndDiff, contextForSid, excerptForSid, extractIslands } from './differ.js'
+import { annotateAndDiff, blankBakedDiagrams, contextForSid, excerptForSid, extractIslands } from './differ.js'
 import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 import { readerChecks, sinceLast } from './reader-checks.js'
@@ -410,9 +410,9 @@ function unwatchBoard(key) {
   wipTimers.delete(key)
 }
 
-// Equality vs the last round ignores svg bodies: baked diagram SVG is not
-// byte-stable (sketch-path jitter); data-diagram-hash still pins each source.
-const stableHtml = (html) => html.replace(/<svg[\s\S]*?<\/svg>/g, '<svg/>')
+// Equality vs the last round ignores baked diagram bodies only; hand-authored
+// svg is content, so a graphic-only edit still publishes.
+const stableHtml = (html) => blankBakedDiagrams(html)
 
 async function rebuildWip(key) {
   const board = store.board(key)

@@ -259,6 +259,22 @@ test('publish with no source change is a no-op, not a phantom round', async () =
   assert.equal((await api('GET', `/api/b/${key}/status`)).data.rounds, before, 'no round was added')
 })
 
+test('a change confined to hand-authored svg publishes a real round', async () => {
+  const src = join(DATA_DIR, 'chart.html')
+  const chart = (fill) => `<h1>Chart</h1><figure><svg viewBox="0 0 10 10"><rect width="4" height="4" fill="${fill}"></rect></svg></figure>`
+  writeFileSync(src, chart('red'))
+  const opened = (await api('POST', '/api/open', { file: src })).data
+  const before = (await api('GET', `/api/b/${opened.key}/status`)).data.rounds
+
+  writeFileSync(src, chart('green'))
+  const { data } = await api('POST', `/api/b/${opened.key}/publish`, { note: 'recolour' })
+  assert.notEqual(data.unchanged, true, 'a graphic-only edit is a change')
+  assert.equal(data.round, before + 1, 'it gets its own round')
+
+  const state = (await api('GET', `/api/b/${opened.key}/state`)).data
+  assert.match(state.currentRound.html, /fill="green"/, 'the reader sees the new graphic')
+})
+
 test('await without ack re-delivers the same batch verbatim; ack stops re-delivery', async () => {
   await api('POST', `/api/b/${key}/widget`, { clientId: 'c1', widgetId: 'w1', value: 'yes' })
   await api('POST', `/api/b/${key}/send`, { clientId: 'c1' })

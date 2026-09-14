@@ -131,12 +131,31 @@ function freshSid(block, taken) {
   }
 }
 
+/** Empties svg bodies inside baked-diagram wrappers only — their coordinates jitter
+    per render, so data-diagram-hash carries equality. Hand-authored svg is content. */
+export function blankBakedDiagrams(html) {
+  if (!html.includes('data-diagram-hash')) return html
+  const tree = parseFragment(html)
+  const walk = (node, baked) => {
+    for (const child of node.childNodes ?? []) {
+      if (!isElement(child)) continue
+      const inBaked = baked || getAttr(child, 'data-diagram-hash') != null
+      if (inBaked && child.tagName === 'svg') {
+        child.childNodes = []
+        child.attrs = []
+        continue
+      }
+      walk(child, inBaked)
+    }
+  }
+  walk(tree, false)
+  return serialize(tree)
+}
+
 // Serialized shape of a node minus data-sid, for attribute-change detection.
-// SVG bodies are dropped — baked diagram output is not byte-stable (sketch-path
-// jitter); the wrapper's data-diagram-hash still pins the diagram's source.
 function shapeOf(block) {
   const clone = serialize({ nodeName: '#document-fragment', childNodes: [block.node] })
-  return clone.replace(/\s*data-sid="[^"]*"/g, '').replace(/<svg[\s\S]*?<\/svg>/g, '<svg/>')
+  return blankBakedDiagrams(clone.replace(/\s*data-sid="[^"]*"/g, ''))
 }
 
 function longestIncreasingSubsequence(indices) {
