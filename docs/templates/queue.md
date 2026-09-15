@@ -20,13 +20,13 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
     "pane": "string",                // required — which agent pane asked
     "kind": "decision|review|merge", // required
     "question": "string",            // required, plain English — the one-line ask; the sentence the reader answers
-    "title": "string",               // optional — short card title above the badges; not a second question
+    "title": "string",               // optional — a label above the badges, 80 chars max, no "?"; the question is not repeated here
     "read_first": {                  // optional — the board that orients the reader, by the agent that did the work
       "url": "string", "title": "string", "by": "string"
     },
-    "body": "string",                // optional, markdown — a few sentences at most; collapses past ~400 chars
+    "body": "string",                // optional, markdown — a few sentences at most; past 400 chars it must ride with read_first
     "options": [                     // optional; default ["approve", "reject", "discuss"]
-      { "value": "string", "label": "string",   // label: two or three words, the words on the button
+      { "value": "string", "label": "string",   // label: the words on the button, five max
         "basis": "string",                      // one line: what picking it causes
         "recommended": true }                   // at most one
     ],
@@ -55,6 +55,8 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
 ```
 
 **An open `decision` or `review` entry must carry a `body` or a `context_link` — rendering throws otherwise.** A vote stripped of its brief leaves the reader choosing from a single sentence and three buttons, and that has produced a rejected sign-off; `merge` entries are exempt because the PR link is the context.
+
+Three more shapes throw on an open entry, because a printed warning was not enough to stop them: a `title` over 80 characters or containing a `?` (it was restating the question that renders in bold right under it), a `body` over 400 characters with no `read_first` (a relay of another agent's work that should have been that agent's board), and an option `label` over five words (the consequence belongs in `basis`, which renders above the buttons; a sentence on the button also becomes the sentence-long value routed back to the pane).
 
 ## Rendering rules
 

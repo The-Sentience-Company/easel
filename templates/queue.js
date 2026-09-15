@@ -8,6 +8,9 @@ export const name = 'queue'
 const KIND_TONES = { decision: 'info', review: 'warning', merge: 'success' }
 const STATUSES = new Set(['open', 'answered'])
 const DEFAULT_OPTIONS = ['approve', 'reject', 'discuss']
+const TITLE_MAX_CHARS = 80
+const LABEL_MAX_WORDS = 5
+const BODY_COLLAPSE_CHARS = 400
 
 export function formatAge(ms) {
   const m = Math.floor(ms / 60000)
@@ -41,6 +44,21 @@ function validateEntry(e, i) {
   if (status === 'open' && kind !== 'merge' && !e.body && !e.context_link) {
     fail(`${path} is an open ${kind} with no body and no context_link — the reader would be voting on one sentence; attach the brief or link the board that holds it`)
   }
+  if (status === 'open' && e.title && (e.title.length > TITLE_MAX_CHARS || e.title.includes('?'))) {
+    fail(`${path}.title is ${e.title.length} chars${e.title.includes('?') ? ' and asks a question' : ''} — the title is a few words above the badges; the question already renders in bold under it, so drop the title or cut it to a label`)
+  }
+  if (status === 'open' && kind !== 'merge' && e.body && e.body.length > BODY_COLLAPSE_CHARS && !e.read_first) {
+    fail(`${path}.body is ${e.body.length} chars with no read_first — that is a relay of another agent's work; that agent publishes its own board and the card links it as read_first, with a body of a few sentences`)
+  }
+  if (status === 'open' && e.options !== undefined) {
+    for (const [j, o] of requireArray(e.options, `${path}.options`).entries()) {
+      const label = typeof o === 'string' ? o : (o?.label ?? o?.value)
+      const n = typeof label === 'string' ? label.trim().split(/\s+/).length : 0
+      if (n > LABEL_MAX_WORDS) {
+        fail(`${path}.options[${j}].label is ${n} words — the button is the two or three words the reader picks; the consequence goes in "basis", which renders above the buttons`)
+      }
+    }
+  }
   if (e.resolution !== undefined) requireString(e.resolution, `${path}.resolution`)
   if (e.resolved_at !== undefined) requireString(e.resolved_at, `${path}.resolved_at`)
   if (status === 'open' && (e.resolution !== undefined || e.resolved_at !== undefined)) {
@@ -58,8 +76,6 @@ function ageMarkup(filedMs) {
   const iso = new Date(filedMs).toISOString()
   return `<time class="sd-muted" datetime="${attr(iso)}" data-live-age>waiting ${formatAge(Date.now() - filedMs)}</time>`
 }
-
-const BODY_COLLAPSE_CHARS = 400
 
 function entryBody(body) {
   if (!body) return ''

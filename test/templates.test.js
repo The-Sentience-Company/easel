@@ -1045,6 +1045,52 @@ describe('queue', () => {
     assert.doesNotThrow(() => queue.render(data))
   })
 
+  test('a title that restates the question throws; a short label passes', async () => {
+    const data = await base()
+    data.entries[0].title = 'Should the extraction intermediates table ship before the schema PR, or wait?'
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /asks a question/)
+      return true
+    })
+    data.entries[0].title = 'x'.repeat(81)
+    assert.throws(() => queue.render(data), /title is 81 chars/)
+    data.entries[0].title = 'Extraction intermediates table'
+    assert.doesNotThrow(() => queue.render(data))
+  })
+
+  test('a long body on an open decision needs a read_first; a merge entry is exempt', async () => {
+    const data = await base()
+    data.entries[0].body = 'x'.repeat(401)
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /no read_first/)
+      return true
+    })
+    data.entries[0].read_first = { url: 'http://127.0.0.1:4400/b/abc', title: 'The design note' }
+    assert.doesNotThrow(() => queue.render(data))
+    data.entries[1].body = 'x'.repeat(401)
+    assert.doesNotThrow(() => queue.render(data), 'merge entries carry the PR as context')
+  })
+
+  test('an option label over five words throws and names basis', async () => {
+    const data = await base()
+    data.entries[0].options = [
+      { value: 'close', label: 'Recommended: close it first, the agent adds the change with a test', recommended: true },
+      { value: 'accept', label: 'Accept it' },
+    ]
+    assert.throws(() => queue.render(data), (err) => {
+      assert.ok(err instanceof TemplateError)
+      assert.match(err.message, /options\[0\]\.label is 12 words/)
+      assert.match(err.message, /"basis"/)
+      return true
+    })
+    data.entries[0].options[0] = { value: 'close', label: 'Close it first', basis: 'The agent adds the change with a test.', recommended: true }
+    assert.doesNotThrow(() => queue.render(data))
+    data.entries[0].options = ['a plain string label of seven words here']
+    assert.throws(() => queue.render(data), /label is 8 words/)
+  })
+
   test('a resolution on a still-open entry throws — that is how a board goes stale', async () => {
     const data = await base()
     data.entries[0].resolution = 'Approved — shipped in the follow-up PR.'

@@ -13,7 +13,7 @@ import { formatFindings } from '../daemon/reader-checks.js'
 // without costing the reader a second round. This is the whole point of --amend.
 const findingsToFix = (d) => Boolean(d.reader?.length || d.audit?.findings?.length)
 const amendHint = (key) =>
-  `these are advisory and the round is already published — fix the source and \`easel publish ${key} --amend\` to correct it in place rather than adding a round`
+  `the round is already published with these on it — fix the source and \`easel publish ${key} --amend\` to correct it in place rather than adding a round`
 
 const BASE = process.env.EASEL_URL || 'http://127.0.0.1:4400'
 
