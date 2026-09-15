@@ -12,12 +12,14 @@ const RULES = {
   label: 'A decision carries the basis for answering it — the label is two or three words (authoring.md)',
   formatting: 'Look at the page before announcing it',
   prose: 'A long section carries a list, table, or block (review.md)',
+  block: 'Parallel or boxed content leaves the prose and takes a block: cards, callouts, or an island (review.md)',
   table: 'One row per thing, not one per pair — a repeating first column is a cross product (authoring.md)',
 }
 
 const STRUCTURE = /<table|<ul|<ol|<pre|<details|sd-grid|sd-card|sd-callout|data-island/
+const BLOCK = /sd-grid|sd-callout|data-island/
 
-export function readerChecks(html) {
+export function readerChecks(html, { template } = {}) {
   // Quoted specimens are not the author's prose; baked diagrams and styles are not prose at all.
   html = html.replace(/<(blockquote|svg|style)\b[\s\S]*?<\/\1>/gi, ' ')
   const findings = []
@@ -35,6 +37,10 @@ export function readerChecks(html) {
     const w = words(m[1].replace(/<h2[^>]*>[\s\S]*?<\/h2>/, ' '))
     if (w.length > 250 && !STRUCTURE.test(m[1])) {
       add('prose', `${w.length}-word section with no list, table, or block`, heading)
+    } else if (template === 'review' && w.length > 500 && !BLOCK.test(m[1])) {
+      // A table clears the 250-word bar; past 500 words a review section holds
+      // parallel or boxed content somewhere, and that takes a block.
+      add('block', `${w.length}-word section with no cards, callouts, or island`, heading)
     }
   }
 

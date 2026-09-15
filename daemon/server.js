@@ -777,7 +777,7 @@ async function handleOpen(req, res) {
   store.addRound(key, 1, sidHtml, null, null, audit, rendered.diagrams, islands)
   store.setAudit(key, audit)
   watchBoard(board)
-  json(res, 200, { key, url: `http://127.0.0.1:${PORT}/b/${key}`, created: true, reader: readerChecks(sidHtml) })
+  json(res, 200, { key, url: `http://127.0.0.1:${PORT}/b/${key}`, created: true, reader: readerChecks(sidHtml, { template: board.template }) })
 }
 
 async function handlePublish(req, res, match) {
@@ -828,7 +828,8 @@ async function handlePublish(req, res, match) {
   const audit = auditHtml(sidHtml)
   // The author already saw last round's findings; a republish reports only what is new.
   // An amend replaces its round, so the findings it answers are the ones to re-report.
-  const reader = sinceLast(readerChecks(sidHtml), base ? readerChecks(base.html) : [])
+  const opts = { template: board.template }
+  const reader = sinceLast(readerChecks(sidHtml, opts), base ? readerChecks(base.html, opts) : [])
   if (amend) store.replaceRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)
   else store.addRound(board.key, seq, sidHtml, body.note ?? null, diff, audit, rendered.diagrams, islands)
   store.setAudit(board.key, audit)
