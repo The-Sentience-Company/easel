@@ -251,3 +251,14 @@ describe('formatFindings', () => {
     assert.match(out, /rule:/)
   })
 })
+
+test('a review section past 500 words needs a block; a table alone no longer clears it', () => {
+  const para = ('<p>' + 'word '.repeat(100) + '</p>').repeat(3)
+  const section = (inner) => `<section class="sd-section"><h2>B. Triage</h2>${inner}</section>`
+  const tableOnly = section(para + '<table><tr><td>a</td></tr></table>' + para)
+  const types = (html, opts) => readerChecks(html, opts).map((f) => f.type)
+  assert.deepEqual(types(tableOnly, { template: 'review' }), ['block'])
+  assert.deepEqual(types(tableOnly, { template: 'queue' }), [], 'the block rule is review.md\'s')
+  assert.deepEqual(types(section(para + '<div class="sd-callout"></div>' + para), { template: 'review' }), [])
+  assert.deepEqual(types(section(('<p>' + 'word '.repeat(100) + '</p>').repeat(3) + '<table></table>'), { template: 'review' }), [], '300 words with a table is under the bar')
+})
