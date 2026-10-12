@@ -149,6 +149,8 @@ Island pins: a click inside an island frame anchors to the island's sid plus `an
 
 **Agent-facing reads (`/await`, `/feedback`) drop `key`, `state`, `createdAt` and `submittedAt`** — the agent named the board in the request, everything it collects is submitted, and it reads no timestamps. `id` (its cursor) and `round` (which change a comment predates) stay. The browser's `/state` keeps the full shape, since the queue panel draws drafts from `state`. The saving is per item, so it scales with the batch, not with the board.
 
+Pasted images: an annotation may carry `"images": ["/Users/me/.easel/attachments/a1b2c3d4/9f3e21.png", …]` — absolute paths to the screenshots the reader pasted into the comment box, written under `<data-dir>/attachments/<key>/` at queue time. The comment itself may then be empty (`null`). Paths, not base64, so `await` stays small; `purge` deletes them with the board.
+
 Widget items: `"kind": "widget"`, plus `"widgetId": "verdict-case-3"`, `"value": "approve"`, `anchor.sid` of the widget node, no `comment`/`quote`. Widget clicks are born `draft` and ride the same queue as annotations (by design: everything waits for Send). At most one live draft exists per (widget, client) — a reclick replaces its value in place; only Send freezes it.
 
 ### Browser-facing routes
@@ -157,7 +159,7 @@ Once a board is no longer open, `POST /feedback`, `POST /send` and `POST /widget
 
 | Route | Body | Response |
 |---|---|---|
-| `POST /api/b/:key/feedback` | `{"clientId", "round", "anchor": {"sid", "quote?", "prefix?", "suffix?", "x?", "y?"}, "comment"}` | The created item, `state: "draft"`. Called when a comment is **queued** (not per keystroke). `x`/`y` (island pins) are clamped to 0–1 and rounded to 4 dp; one without the other is dropped. |
+| `POST /api/b/:key/feedback` | `{"clientId", "round", "anchor": {"sid", "quote?", "prefix?", "suffix?", "x?", "y?"}, "comment", "images?": ["data:image/png;base64,…"]}` | The created item, `state: "draft"`. Called when a comment is **queued** (not per keystroke). `x`/`y` (island pins) are clamped to 0–1 and rounded to 4 dp; one without the other is dropped. `images` takes up to 8 png/jpeg/gif/webp data urls (anything else is 400) and stores each as a file; with at least one, `comment` may be empty. The body cap is 32 MB here rather than 1 MB, to fit screenshots. |
 | `DELETE /api/b/:key/feedback/:id` | — | `{"deleted": true}`. Removes a draft from the queue. Drafts only; submitted items are immutable. |
 | `POST /api/b/:key/send` | `{"clientId"}` | `{"submitted": [42, 43]}`. Flips that client's drafts to `submitted`, stamps `submittedAt`, wakes `await`. |
 | `POST /api/b/:key/widget` | `{"clientId" (required), "round", "widgetId", "value", "sid"}` | The live draft for (widget, client) — created on first click, value-replaced in place on a reclick (same `id`). `state: "draft"`; `await` receives nothing until `/send` submits it. Removing it is the ordinary draft `DELETE` above. |

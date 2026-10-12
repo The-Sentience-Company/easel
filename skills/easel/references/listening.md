@@ -30,6 +30,10 @@ The server keeps one cursor per agent ID. The same ID always resumes with exactl
 
 Anchors carry `context` — `{heading, card, nth, of}`, computed from the annotated round — so when the same text repeats across sections (four tables with an identical header), read `context.heading` and `nth/of` to place the feedback instead of guessing from `excerpt`.
 
+## Pasted images
+
+An annotation with `images` carries screenshots the reader pasted into the comment — absolute file paths. Open each one (the Read tool shows images) before answering; the comment often only makes sense against the picture, and may be empty.
+
 ## Chip IDs — how to refer to feedback
 
 The board UI labels each annotated anchor with a two-character chip (A1, A2, … A9, B1, …) — that is what the user sees, so "your A2" is meaningful and "item 816" is not. The await/feedback JSON carries no chip field; derive it: take the round's annotation items in id order and number each anchored item's unique anchor by first appearance (first → A1, second → A2), skipping widget clicks. The anchor is `sid` alone, or `sid@x,y` for island pins (`anchor.x`/`anchor.y` present: a pinned click point inside an island; its `quote` names the clicked element, and each distinct point is its own chip). Chat carries no anchor and so no chip.
