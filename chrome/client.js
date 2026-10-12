@@ -761,6 +761,9 @@ function renderQueue(items) {
     } else if (item.comment) {
       row.appendChild(el('div', 'sf-item-comment', item.comment))
     }
+    if (item.images?.length) {
+      row.appendChild(el('div', 'sf-item-images', item.images.length === 1 ? '1 image' : `${item.images.length} images`))
+    }
     row.appendChild(el('span', 'sf-item-round', `r${item.round}`))
     if (item.state === 'draft') {
       const remove = el('button', 'sf-item-remove', '×')
@@ -1129,7 +1132,7 @@ function openDraftManager(node, event, drafts, pin) {
   popover.appendChild(el('div', 'sf-popover-label', drafts.length === 1 ? 'Queued note' : `${drafts.length} queued notes`))
   for (const item of drafts) {
     const row = el('div', 'sf-draft-row')
-    row.appendChild(el('div', 'sf-draft-comment', item.comment || '(no comment)'))
+    row.appendChild(el('div', 'sf-draft-comment', item.comment || (item.images?.length ? '(image)' : '(no comment)')))
     const remove = el('button', 'sf-draft-remove', 'Remove')
     remove.type = 'button'
     remove.onclick = () => {
@@ -1171,18 +1174,49 @@ function openPopover(node, event, pin) {
   popover.appendChild(el('div', 'sf-popover-label', pin ? 'Pin' : extra.quote ? 'Selection' : 'Element'))
   popover.appendChild(el('div', 'sf-popover-excerpt', excerptText))
   const textarea = el('textarea', 'sf-popover-text')
-  textarea.placeholder = 'Comment…'
+  textarea.placeholder = 'Comment… (paste an image to attach it)'
   textarea.rows = 3
+  const images = []
+  const strip = el('div', 'sf-popover-images')
+  const drawImages = () => {
+    strip.replaceChildren()
+    images.forEach((url, i) => {
+      const thumb = el('div', 'sf-popover-image')
+      const img = el('img')
+      img.src = url
+      const remove = el('button', 'sf-popover-image-remove', '×')
+      remove.type = 'button'
+      remove.title = 'Remove image'
+      remove.onclick = () => {
+        images.splice(i, 1)
+        drawImages()
+      }
+      thumb.append(img, remove)
+      strip.appendChild(thumb)
+    })
+  }
+  textarea.addEventListener('paste', (e) => {
+    for (const file of e.clipboardData?.files || []) {
+      if (!file.type.startsWith('image/')) continue
+      const reader = new FileReader()
+      reader.onload = () => {
+        images.push(reader.result)
+        drawImages()
+      }
+      reader.readAsDataURL(file)
+    }
+  })
   const actions = el('div', 'sf-popover-actions')
   const queue = async () => {
     const comment = textarea.value.trim()
-    if (!comment) return
+    if (!comment && !images.length) return
     try {
       await api.send('POST', `/api/b/${KEY}/feedback`, {
         clientId,
         round: state.data.currentRound.seq,
         anchor: { sid, ...extra },
         comment,
+        ...(images.length ? { images } : {}),
       })
       closePopover()
       toast('Queued')
@@ -1199,7 +1233,7 @@ function openPopover(node, event, pin) {
   cancelBtn.type = 'button'
   cancelBtn.onclick = closePopover
   actions.append(queueBtn, cancelBtn)
-  popover.append(textarea, actions)
+  popover.append(textarea, strip, actions)
   CHROME.appendChild(popover)
   placePopover(popover, event)
   textarea.focus()

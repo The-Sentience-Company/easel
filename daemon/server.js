@@ -65,6 +65,11 @@ function buildInfo() {
 // A scene carries excalidraw's embedded `files`, so one pasted image dwarfs the
 // generic limit — and a 413 on the close flush would trap the drawing unsaved.
 const MAX_SCENE_BYTES = 32 * 1024 * 1024
+// Pasted screenshots ride a comment as base64; a retina capture is several MB.
+const MAX_COMMENT_BYTES = 32 * 1024 * 1024
+const MAX_IMAGES = 8
+const IMAGE_EXT = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp' }
+const ATTACHMENTS_DIR = join(DATA_DIR, 'attachments')
 const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery', 'replay'])
 
 const store = createStore()
@@ -1031,9 +1036,15 @@ const handlers = {
   async feedbackCreate(req, res, match) {
     const board = requireOpenBoard(match[1], res)
     if (!board) return
-    const body = await readBody(req)
+    const body = await readBody(req, MAX_COMMENT_BYTES)
     const { clientId, round, anchor, comment } = body
-    if (!clientId || !anchor?.sid || !comment) return json(res, 400, { error: 'clientId, anchor.sid, comment required' })
+    const pasted = Array.isArray(body.images) ? body.images : []
+    if (!clientId || !anchor?.sid || !(comment || pasted.length)) {
+      return json(res, 400, { error: 'clientId, anchor.sid, and a comment or image required' })
+    }
+    if (pasted.length > MAX_IMAGES) return json(res, 400, { error: `at most ${MAX_IMAGES} images per comment` })
+    const images = pasted.map((url) => /^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(url))
+    if (images.some((m) => !m)) return json(res, 400, { error: 'images must be png, jpeg, gif or webp data urls' })
     const roundRow = round != null ? store.round(board.key, round) : store.lastRound(board.key)
     if (!roundRow) return json(res, 404, { error: `no such round: ${round}` })
     // WIP html only stands in for the LATEST round (that's what the tab shows);
@@ -1050,6 +1061,17 @@ const handlers = {
       typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 1e4) / 1e4 : null
     )
     if (pin[0] == null || pin[1] == null) pin[0] = pin[1] = null
+    // Files, not base64 in the row: the agent opens a path, and await stays small.
+    const imagePaths = []
+    if (images.length) {
+      const dir = join(ATTACHMENTS_DIR, board.key)
+      await mkdir(dir, { recursive: true })
+      for (const [, type, b64] of images) {
+        const path = join(dir, `${randomBytes(6).toString('hex')}.${IMAGE_EXT[type]}`)
+        await writeFile(path, Buffer.from(b64, 'base64'))
+        imagePaths.push(path)
+      }
+    }
     const item = store.addFeedback({
       surface_key: board.key,
       round_seq: roundRow?.seq ?? null,
@@ -1062,7 +1084,8 @@ const handlers = {
       suffix: anchor.suffix ?? null,
       excerpt: excerpt ?? null,
       context_json: context ? JSON.stringify(context) : null,
-      comment,
+      comment: comment || null,
+      payload_json: imagePaths.length ? JSON.stringify({ images: imagePaths }) : null,
       pin_x: pin[0],
       pin_y: pin[1],
     })
@@ -1218,7 +1241,7 @@ const handlers = {
   },
 
   /* gc archives (status flip, reclaims nothing); purge deletes: every row of
-     every board untouched past the cutoff, plus its scene files on disk. */
+     every board untouched past the cutoff, plus its scene and image files on disk. */
   async purge(req, res) {
     const body = await readBody(req)
     const days = Number(body.olderThanDays ?? 30)
@@ -1228,16 +1251,18 @@ const handlers = {
       cancelWaiters(key)
       unwatchBoard(key)
     }
-    // Scenes sweep by surviving keys: an rm that failed on a past purge left an
+    // Files sweep by surviving keys: an rm that failed on a past purge left an
     // orphan with no DB row, so the sweep — not the purge list — must find it.
     const alive = new Set(store.boardKeys())
     const sceneCleanupFailed = []
-    for (const entry of await readdir(SCENES_DIR).catch(() => [])) {
-      if (alive.has(entry)) continue
-      try {
-        await rm(join(SCENES_DIR, entry), { recursive: true, force: true })
-      } catch {
-        sceneCleanupFailed.push(entry)
+    for (const root of [SCENES_DIR, ATTACHMENTS_DIR]) {
+      for (const entry of await readdir(root).catch(() => [])) {
+        if (alive.has(entry)) continue
+        try {
+          await rm(join(root, entry), { recursive: true, force: true })
+        } catch {
+          sceneCleanupFailed.push(entry)
+        }
       }
     }
     json(res, 200, { purged: keys.length, keys, ...(sceneCleanupFailed.length ? { sceneCleanupFailed } : {}) })

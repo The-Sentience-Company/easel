@@ -93,6 +93,9 @@ test('purge deletes a stale board everywhere and leaves fresh ones alone', async
   const orphan = join(dir, 'whiteboards', 'deadbeef')
   mkdirSync(orphan, { recursive: true })
   writeFileSync(join(orphan, 'scene.json'), '{}')
+  const orphanImages = join(dir, 'attachments', 'deadbeef')
+  mkdirSync(orphanImages, { recursive: true })
+  writeFileSync(join(orphanImages, 'shot.png'), 'png')
 
   d = startDaemon(port, dir)
   try {
@@ -100,6 +103,7 @@ test('purge deletes a stale board everywhere and leaves fresh ones alone', async
     const res = await papi('POST', '/api/purge', { olderThanDays: 30 })
     assert.deepEqual(res.data.keys, [stale], 'exactly the stale board must purge')
     assert.equal(existsSync(orphan), false, 'the orphaned scene dir must be swept')
+    assert.equal(existsSync(orphanImages), false, 'the orphaned pasted-image dir must be swept')
 
     assert.equal((await papi('GET', `/api/b/${stale}/state`)).status, 404, 'a purged board must be gone')
     assert.equal((await papi('GET', `/api/b/${fresh}/state`)).status, 200, 'a fresh board must survive')

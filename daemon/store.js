@@ -157,7 +157,9 @@ export function createStore(db = openDb()) {
           context: parseJson(row.context_json) ?? undefined,
         }),
     ...(row.kind === 'widget' ? { widgetId: row.widget_id, value: row.widget_value } : {}),
-    ...(row.kind === 'annotation' ? { comment: row.comment } : {}),
+    ...(row.kind === 'annotation'
+      ? { comment: row.comment, ...(row.payload_json ? { images: parseJson(row.payload_json)?.images } : {}) }
+      : {}),
     ...(row.kind === 'whiteboard' ? { comment: row.comment, whiteboard: parseJson(row.payload_json) } : {}),
     createdAt: row.created_at,
     submittedAt: row.submitted_at || undefined,

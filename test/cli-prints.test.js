@@ -162,6 +162,25 @@ test('easel await batch output ends with the trailer line', async () => {
   )
 })
 
+test('easel await tells the agent to open each pasted image, by path', async () => {
+  const pageFile = join(DATA_DIR, 'await-images.html')
+  writeFileSync(pageFile, '<h1>Images</h1><p>text</p>')
+  const { data: openData } = await api('POST', '/api/open', { file: pageFile, title: 'await-images' })
+  const key = openData.key
+  const { data: state } = await api('GET', `/api/b/${key}/state?round=1`)
+  const sid = state.currentRound.html.match(/data-sid="([^"]+)"/)[1]
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+  const { data: item } = await api('POST', `/api/b/${key}/feedback`, {
+    clientId: 'test-client-i', round: 1, anchor: { sid }, comment: 'see this', images: [png, png],
+  })
+  await api('POST', `/api/b/${key}/send`, { clientId: 'test-client-i' })
+
+  const { stdout } = await cli('await', key, '--agent', 'cli-prints-test:t3')
+  const trailer = stdout.slice(stdout.indexOf('answer each item'))
+  assert.match(trailer, /open each with your Read tool/)
+  for (const path of item.images) assert.ok(trailer.includes(path), `trailer must name ${path}, got: ${trailer}`)
+})
+
 test('easel await --json batch output does NOT include trailer line', async () => {
   const pageFile = join(DATA_DIR, 'await-trailer-json.html')
   writeFileSync(pageFile, '<h1>Trailer JSON</h1><p>content</p>')
