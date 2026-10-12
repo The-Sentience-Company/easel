@@ -241,6 +241,12 @@ const commands = {
       if (data.timedOut) continue // window expired — re-attach with the same cursor
       output(data, values.json)
       if (!values.json && data.items?.length) console.log('answer each item on the board, at its anchor, in the next round')
+      // Listed after the JSON, not only in the skill: a path buried in the batch went unopened.
+      const images = values.json ? [] : (data.items ?? []).flatMap((i) => i.images ?? [])
+      if (images.length) {
+        console.log(`the reader pasted ${images.length === 1 ? 'an image' : `${images.length} images`} — open each with your Read tool before answering:`)
+        for (const path of images) console.log(`  ${path}`)
+      }
       // Both are normal lifecycle events, not failures — exit 0.
       if (data.superseded) console.error('superseded by a newer await from this agent')
       if (data.dropped) console.error('dropped by a publish from this agent — relaunch after the round')
