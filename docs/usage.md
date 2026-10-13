@@ -141,3 +141,17 @@ These are the whole list. Everything else the old workflow required is now handl
 ## What the daemon handles for you
 
 Round tagging (the server diffs rounds and renders the pills), change tracking between rounds, the layout audit (advisory — it never blocks the reveal), and the design system, which ships with the daemon rather than being chosen per board. None of it needs a helper process or a snippet pasted into the page.
+
+## Opening boards from your phone
+
+The daemon only listens on `127.0.0.1`, so another device can't reach it directly. With [Tailscale](https://tailscale.com) on the Mac and the phone (same tailnet), one command publishes it to your own devices:
+
+```
+tailscale serve --bg 4400
+```
+
+Boards are then at `https://<your-mac>.<tailnet>.ts.net/b/<key>`: the `127.0.0.1:4400` link with the start swapped. `tailscale serve status` prints the exact address, and `tailscale serve --https=443 off` stops it.
+
+- **Links follow you.** On a board opened through that address, tapping a link to the daemon (`http://127.0.0.1:4400/…` or `localhost:4400`) goes through the same address, so moving between boards keeps working. On the Mac itself nothing changes. Links to other local ports are left alone, because those servers are only reachable if you serve them too.
+- **Only on a tailnet that is yours.** The daemon has no login, so every device on the tailnet can read and change boards. Never use `tailscale funnel`, which would put it on the public internet.
+- **Whiteboards don't open this way yet.** Their frame only accepts `127.0.0.1` as its parent page.

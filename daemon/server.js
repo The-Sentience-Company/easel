@@ -539,7 +539,7 @@ ${THEME_SCRIPT}
 <link rel="stylesheet" href="/assets/easel.css">
 ${GATE_NOSCRIPT}
 </head>
-<body class="sf-shell sf-gated" data-key="${esc(board.key)}">
+<body class="sf-shell sf-gated" data-key="${esc(board.key)}" data-daemon-port="${PORT}">
 <div class="sf-gate">
   <div class="sf-gate-card">
     <div class="sf-gate-title">Checking layout.<br>One moment.</div>

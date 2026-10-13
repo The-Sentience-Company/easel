@@ -1072,6 +1072,18 @@ CONTENT.addEventListener('mouseover', (e) => {
   if (target && !target.closest('[data-option]')) target.classList.add('sf-hover')
 })
 
+// Boards link to the daemon as 127.0.0.1. Opened through a tunnel such as Tailscale Serve,
+// send those links through the address this page came from instead.
+const LOOPBACK = new Set(['127.0.0.1', 'localhost', '0.0.0.0', '[::1]'])
+document.addEventListener('click', (e) => {
+  const link = e.target.closest?.('a[href]')
+  if (!link || LOOPBACK.has(location.hostname)) return
+  const url = new URL(link.href, location.href)
+  if (LOOPBACK.has(url.hostname) && url.port === document.body.dataset.daemonPort) {
+    link.href = location.origin + url.pathname + url.search + url.hash
+  }
+}, true)
+
 CONTENT.addEventListener('click', (e) => {
   const option = e.target.closest('[data-option]')
   if (option && option.closest('[data-widget]')) {
