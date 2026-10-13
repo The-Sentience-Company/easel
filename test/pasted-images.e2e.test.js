@@ -88,3 +88,30 @@ test('pasting into the comment box attaches the image and Queue sends it', async
     await browser.close()
   }
 })
+
+test('the attach button picks an image from disk when pasting is not possible', async () => {
+  const shot = join(DATA_DIR, 'picked.png')
+  writeFileSync(shot, Buffer.from(PNG_B64, 'base64'))
+  const browser = await (await import('puppeteer')).default.launch({ headless: 'new' })
+  try {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    if (!(await pg.evaluate("document.querySelector('.sf-annotate-toggle').classList.contains('sf-on')"))) {
+      await pg.click('.sf-annotate-toggle')
+    }
+    await pg.click('#sf-content p')
+    const [chooser] = await Promise.all([pg.waitForFileChooser(), pg.click('.sf-popover-attach')])
+    await chooser.accept([shot])
+    await pg.waitForSelector('.sf-popover-images img', { timeout: 3000 })
+    await pg.click('.sf-popover-queue')
+    await pg.waitForSelector('.sf-queue-item .sf-item-images', { timeout: 3000 })
+
+    const clientId = await pg.evaluate("localStorage.getItem('sf-client-id')")
+    const drafts = (await api('GET', `/api/b/${key}/state?clientId=${clientId}`)).data.feedback
+      .filter((i) => i.state === 'draft' && i.images?.length)
+    assert.equal(drafts.length, 1, 'the picked image never became a draft')
+    assert.deepEqual(readFileSync(drafts[0].images[0]), Buffer.from(PNG_B64, 'base64'))
+  } finally {
+    await browser.close()
+  }
+})

@@ -1195,8 +1195,8 @@ function openPopover(node, event, pin) {
       strip.appendChild(thumb)
     })
   }
-  textarea.addEventListener('paste', (e) => {
-    for (const file of e.clipboardData?.files || []) {
+  const addImages = (files) => {
+    for (const file of files || []) {
       if (!file.type.startsWith('image/')) continue
       const reader = new FileReader()
       reader.onload = () => {
@@ -1205,7 +1205,23 @@ function openPopover(node, event, pin) {
       }
       reader.readAsDataURL(file)
     }
-  })
+  }
+  textarea.addEventListener('paste', (e) => addImages(e.clipboardData?.files))
+  const picker = el('input', 'sf-popover-file')
+  picker.type = 'file'
+  picker.accept = 'image/*'
+  picker.multiple = true
+  picker.onchange = () => {
+    addImages(picker.files)
+    picker.value = ''
+  }
+  const attachBtn = el('button', 'sf-popover-attach')
+  attachBtn.type = 'button'
+  attachBtn.title = 'Attach image'
+  attachBtn.setAttribute('aria-label', 'Attach image')
+  attachBtn.innerHTML =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>'
+  attachBtn.onclick = () => picker.click()
   const actions = el('div', 'sf-popover-actions')
   const queue = async () => {
     const comment = textarea.value.trim()
@@ -1232,7 +1248,7 @@ function openPopover(node, event, pin) {
   const cancelBtn = el('button', 'sf-popover-cancel', 'Cancel')
   cancelBtn.type = 'button'
   cancelBtn.onclick = closePopover
-  actions.append(queueBtn, cancelBtn)
+  actions.append(attachBtn, picker, queueBtn, cancelBtn)
   popover.append(textarea, strip, actions)
   CHROME.appendChild(popover)
   placePopover(popover, event)

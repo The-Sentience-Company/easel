@@ -1909,6 +1909,21 @@ button.sf-popover-queue {
   min-height: 2.2rem;
   font-weight: 640;
 }
+button.sf-popover-attach {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted-content);
+}
+button.sf-popover-attach:hover { border-color: var(--border); color: var(--color-base-content); }
+.sf-popover-file { display: none; }
 button.sf-popover-cancel {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
