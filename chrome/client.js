@@ -1163,6 +1163,8 @@ function placePopover(node, event) {
   node.style.top = `${Math.max(pad, Math.min(event.clientY + pad, window.innerHeight - node.offsetHeight - pad))}px`
 }
 
+const POPOVER_FOCUSABLE = 'textarea, input, select, a[href], [contenteditable]:not([contenteditable="false"])'
+
 // `pin` ({x,y,quote}) skips text-selection anchoring: the anchor is a point
 // inside an island frame, not a range in this document.
 function openPopover(node, event, pin) {
@@ -1172,7 +1174,8 @@ function openPopover(node, event, pin) {
   popover = el('div', 'sf-popover')
   const excerptText = extra.quote || anchorText(node).trim().slice(0, 200)
   popover.appendChild(el('div', 'sf-popover-label', pin ? 'Pin' : extra.quote ? 'Selection' : 'Element'))
-  popover.appendChild(el('div', 'sf-popover-excerpt', excerptText))
+  const excerpt = el('div', 'sf-popover-excerpt', excerptText)
+  popover.appendChild(excerpt)
   const textarea = el('textarea', 'sf-popover-text')
   textarea.placeholder = 'Comment… (paste an image to attach it)'
   textarea.rows = 3
@@ -1250,6 +1253,15 @@ function openPopover(node, event, pin) {
   cancelBtn.onclick = closePopover
   actions.append(attachBtn, picker, queueBtn, cancelBtn)
   popover.append(textarea, strip, actions)
+  // Dictation pastes into whatever holds focus; a click on the pop-up's body or
+  // buttons must not blur the comment box. Buttons still get their click.
+  popover.addEventListener('mousedown', (e) => {
+    if (!e.target.closest(`${POPOVER_FOCUSABLE}, .sf-popover-excerpt`)) e.preventDefault()
+  })
+  // The excerpt stays selectable and scrollable, so it refocuses on a plain click instead.
+  excerpt.addEventListener('click', () => {
+    if (window.getSelection()?.isCollapsed !== false) textarea.focus()
+  })
   CHROME.appendChild(popover)
   placePopover(popover, event)
   textarea.focus()
