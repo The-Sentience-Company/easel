@@ -1163,6 +1163,8 @@ function placePopover(node, event) {
   node.style.top = `${Math.max(pad, Math.min(event.clientY + pad, window.innerHeight - node.offsetHeight - pad))}px`
 }
 
+const POPOVER_FOCUSABLE = 'textarea, input, select, a[href], [contenteditable]:not([contenteditable="false"])'
+
 // `pin` ({x,y,quote}) skips text-selection anchoring: the anchor is a point
 // inside an island frame, not a range in this document.
 function openPopover(node, event, pin) {
@@ -1250,6 +1252,11 @@ function openPopover(node, event, pin) {
   cancelBtn.onclick = closePopover
   actions.append(attachBtn, picker, queueBtn, cancelBtn)
   popover.append(textarea, strip, actions)
+  // Dictation pastes into whatever holds focus; a click on the pop-up's body or
+  // buttons must not blur the comment box. Buttons still get their click.
+  popover.addEventListener('mousedown', (e) => {
+    if (!e.target.closest(POPOVER_FOCUSABLE)) e.preventDefault()
+  })
   CHROME.appendChild(popover)
   placePopover(popover, event)
   textarea.focus()
