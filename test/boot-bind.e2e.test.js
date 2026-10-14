@@ -31,7 +31,7 @@ let bootKey
 /** Spawns the daemon directly: this test needs env the shared harness does not pass. */
 function spawnDaemon(env) {
   return spawn('node', [join(ROOT, 'daemon', 'server.js')], {
-    env: { ...process.env, EASEL_PORT: String(PORT), EASEL_DATA_DIR: DATA_DIR, ...env },
+    env: { ...process.env, EASEL_PORT: String(PORT), EASEL_DATA_DIR: DATA_DIR, EASEL_TELEMETRY: 'off', ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 }

@@ -109,7 +109,7 @@ export function startDaemon(port, dataDir) {
   // the reason rather than as a handful of unrelated-looking assertion failures.
   assertBundleFresh()
   return spawn('node', [join(ROOT, 'daemon', 'server.js')], {
-    env: { ...process.env, EASEL_PORT: String(port), EASEL_DATA_DIR: dataDir },
+    env: { ...process.env, EASEL_PORT: String(port), EASEL_DATA_DIR: dataDir, EASEL_TELEMETRY: 'off' },
     stdio: 'ignore',
   })
 }

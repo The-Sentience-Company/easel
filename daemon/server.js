@@ -15,6 +15,7 @@ import { annotateAndDiff, blankBakedDiagrams, contextForSid, excerptForSid, extr
 import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 import { readerChecks, sinceLast } from './reader-checks.js'
+import { sendHeartbeat } from './telemetry.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -1692,6 +1693,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`easeld ${VERSION} listening on http://127.0.0.1:${PORT}`)
   truncateOversizedLog(join(DATA_DIR, 'daemon.log'))
   setImmediate(attachBootWatchers)
+  sendHeartbeat({ dataDir: DATA_DIR, version: VERSION })
 })
 
 server.on('error', (err) => {

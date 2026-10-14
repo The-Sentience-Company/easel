@@ -80,6 +80,29 @@ What each run does, and refuses to do:
 
 What it does **not** do: verify anything beyond your clone's `origin` remote over its existing transport. If your trust model wants review-before-run, signature checks, or a canary period, that is precisely the write-your-own exercise above.
 
+## Telemetry
+
+Once a day, when the daemon starts, easel sends one anonymous heartbeat to `https://api.sentience.com/telemetry/easel-heartbeat`:
+
+```json
+{ "installId": "3f2b8c1e-…", "version": "0.1.0", "os": "darwin" }
+```
+
+- `installId` is a random UUID generated on first start and kept in `~/.easel/install-id`. It is not derived from anything about you or your machine.
+- Nothing else is sent: no board contents, no file names, no usernames, no hostnames. The collector keeps no IP address beyond ordinary server request logs.
+- Why: easel has no accounts and no server, so this is the only way to know how many installs are in use. The collector forwards each heartbeat to PostHog and counts distinct install ids.
+- At most one heartbeat a day, sent after the daemon is already serving. A failure is ignored and never retried until the next start.
+
+Turning it off:
+
+```
+easel telemetry off        # writes ~/.easel/telemetry.off; the daemon checks it on every start
+easel telemetry on         # removes it
+easel telemetry status     # on / off
+```
+
+`EASEL_TELEMETRY=off` works too. Set at install time (`EASEL_TELEMETRY=off install/install.sh`) it writes the same marker, because the launchd agent never sees your shell's environment; set on a daemon you run by hand, it applies to that process.
+
 ## The loop
 
 1. `easel open --template review --data plan.json --title "..."` — publishes and returns a URL. Re-opening an existing board returns the same session.

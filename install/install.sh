@@ -217,6 +217,14 @@ say "launcher: $LAUNCHER resolves node at each launch"
 mkdir -p "$STATE_DIR" "$PLIST_DIR"
 say "state dir: $STATE_DIR"
 
+# launchd never sees the shell's env, so an install-time opt-out becomes the marker the daemon reads.
+if [ "${EASEL_TELEMETRY:-}" = "off" ]; then
+  date -u +%Y-%m-%dT%H:%M:%SZ > "$STATE_DIR/telemetry.off"
+fi
+if [ ! -f "$STATE_DIR/install-id" ] && [ ! -f "$STATE_DIR/telemetry.off" ]; then
+  say "telemetry: once a day easel sends an anonymous install id, its version and OS — 'easel telemetry off' stops it (docs/usage.md#telemetry)"
+fi
+
 if [ ! -f "$CLI" ]; then
   echo "error: CLI entrypoint not found at $CLI" >&2
   exit 1
