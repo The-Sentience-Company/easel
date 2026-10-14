@@ -82,7 +82,7 @@ What it does **not** do: verify anything beyond your clone's `origin` remote ove
 
 ## Telemetry
 
-Once a day, when the daemon starts, easel sends one anonymous heartbeat to `https://api.sentience.com/telemetry/easel-heartbeat`:
+Once a day, and on the first start after an update changes its version, easel sends one anonymous heartbeat to `https://api.sentience.com/telemetry/easel-heartbeat`:
 
 ```json
 { "installId": "3f2b8c1e-…", "version": "0.2.0", "os": "darwin" }
@@ -91,7 +91,7 @@ Once a day, when the daemon starts, easel sends one anonymous heartbeat to `http
 - `installId` is a random UUID generated on first start and kept in `~/.easel/install-id`. It is not derived from anything about you or your machine.
 - Nothing else is sent: no board contents, no file names, no usernames, no hostnames. The collector keeps no IP address beyond ordinary server request logs.
 - Why: easel has no accounts and no server, so this is the only way to know how many installs are in use. The collector forwards each heartbeat to PostHog and counts distinct install ids.
-- At most one heartbeat a day, sent after the daemon is already serving. A failure is ignored and never retried until the next start.
+- At most one heartbeat a day per version, sent after the daemon is already serving. A failure is ignored and never retried until the next start.
 
 Turning it off:
 
