@@ -3,11 +3,13 @@
 // Contract: exit 0 on success period, --json everywhere, no resident processes.
 
 import { parseArgs } from 'node:util'
-import { resolve, dirname } from 'node:path'
+import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { formatFindings } from '../daemon/reader-checks.js'
+import { optOutPath, telemetryOff } from '../daemon/telemetry.js'
 
 // Findings arrive after the round is already written, so say how to correct it
 // without costing the reader a second round. This is the whole point of --amend.
@@ -63,7 +65,8 @@ const USAGE = `usage:
   easel gc [--older-than 7d] [--json]
   easel purge [--older-than 30d] [--json]
   easel update
-  easel autoupdate on [--at HH:MM] | off | status`
+  easel autoupdate on [--at HH:MM] | off | status
+  easel telemetry on | off | status`
 
 // Throws {connection: true} on transport failure, {http: true} on a non-2xx.
 async function request(method, path, body, { timeoutMs } = {}) {
@@ -349,6 +352,26 @@ const commands = {
     const { status, error } = spawnSync('bash', args, { stdio: 'inherit' })
     if (error) fail(error.message)
     process.exit(status ?? 1)
+  },
+
+  // Local: the daemon checks this marker on each start, since launchd never sees the shell's env.
+  async telemetry() {
+    const dataDir = process.env.EASEL_DATA_DIR || join(homedir(), '.easel')
+    const marker = optOutPath(dataDir)
+    switch (rest[0]) {
+      case 'off':
+        mkdirSync(dataDir, { recursive: true })
+        writeFileSync(marker, new Date().toISOString() + '\n')
+        break
+      case 'on':
+        rmSync(marker, { force: true })
+        break
+      case 'status':
+        break
+      default:
+        fail(USAGE)
+    }
+    console.log((await telemetryOff(dataDir)) ? 'off' : 'on')
   },
 }
 

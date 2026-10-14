@@ -36,6 +36,8 @@ Open the URL, annotate, hit Send — the blocked `easel await` returns your feed
 
 Updates never install themselves. `easel update` is the manual upgrade; `easel autoupdate on` opts into a daily one — off by default because an auto-updater is standing permission to run whatever the remote ships next, and [docs/usage.md § Auto-update](docs/usage.md#auto-update) explains the shipped one and why writing your own is worth the exercise.
 
+The daemon sends an anonymous daily usage heartbeat; [docs/usage.md § Telemetry](docs/usage.md#telemetry) says what it sends and how to turn it off.
+
 To back out, `install/install.sh --uninstall` removes the agent, the plist, and the `easel` entry point. It leaves `~/.easel/` — your boards and database — deliberately intact; `rm -rf ~/.easel` is the separate, deliberate step that erases them.
 
 ## The commands
@@ -53,6 +55,7 @@ To back out, `install/install.sh --uninstall` removes the agent, the plist, and 
 | `easel purge [--older-than 30d]` | delete untouched boards and shrink the DB |
 | `easel update` | pull, rebuild, restart, health-check the installed checkout |
 | `easel autoupdate on\|off\|status` | opt-in daily unattended update — off by default, deliberately |
+| `easel telemetry on\|off\|status` | the anonymous daily heartbeat — on by default, [what it sends](docs/usage.md#telemetry) |
 
 ## What you get on the page
 

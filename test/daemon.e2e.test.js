@@ -304,7 +304,7 @@ test('amend refuses a round older than the window', async () => {
   const a = makeApi(base)
   // A zero-length window makes every round instantly too old to rewrite.
   const d = spawn('node', [join(ROOT, 'daemon', 'server.js')], {
-    env: { ...process.env, EASEL_PORT: String(port), EASEL_DATA_DIR: dir, EASEL_AMEND_WINDOW_MS: '1' },
+    env: { ...process.env, EASEL_PORT: String(port), EASEL_DATA_DIR: dir, EASEL_AMEND_WINDOW_MS: '1', EASEL_TELEMETRY: 'off' },
     stdio: 'ignore',
   })
   try {
