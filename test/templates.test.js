@@ -15,6 +15,7 @@ import * as compareT from '../templates/compare.js'
 import * as gallery from '../templates/gallery.js'
 import * as replay from '../templates/replay.js'
 import { esc, markdown, widget, TemplateError } from '../templates/_html.js'
+import { readerChecks } from '../daemon/reader-checks.js'
 import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -1031,6 +1032,17 @@ describe('queue', () => {
     assert.match(html, /Short brief with <strong>markdown<\/strong>/)
     const second = html.slice(html.indexOf('merge-order-4801') - 2000, html.indexOf('merge-order-4801') + 2000)
     assert.match(second, /<summary>the brief<\/summary>/)
+  })
+
+  test('a question renders its inline markdown, so a merge entry\'s PR link is clickable', async () => {
+    const data = await base()
+    const merge = data.entries.find((e) => e.id === 'merge-order-4801')
+    merge.question = 'Merge [#8884](https://github.com/org/repo/pull/8884) at head `98d72c4`?'
+    const html = queue.render(data)
+    assert.match(html, /<p><strong>Merge <a href="https:\/\/github.com\/org\/repo\/pull\/8884">#8884<\/a> at head <code>98d72c4<\/code>\?<\/strong><\/p>/)
+    assert.ok(!html.includes('[#8884]'), 'the markdown source must not print raw')
+    const flagged = readerChecks(html).filter((f) => /PR number/.test(f.detail) && f.sample.includes('#8884'))
+    assert.equal(flagged.length, 0, 'a linked PR number in a question is not a bare one')
   })
 
   test('an open decision with no body and no context_link throws', async () => {

@@ -166,7 +166,7 @@ const alignments = (line) => splitRow(line).map((c) => {
   return null
 })
 
-function inline(text) {
+export function inline(text) {
   let s = esc(text)
   s = s.replace(/`([^`]+)`/g, (_, c) => `<code>${c}</code>`)
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
