@@ -74,6 +74,17 @@ test('clicking the pop-up label or excerpt keeps the comment box focused', async
   }
 })
 
+test('dragging across the excerpt still selects its text', async () => {
+  await pg.click('#sf-content p')
+  const b = await (await pg.$('.sf-popover-excerpt')).boundingBox()
+  await pg.mouse.move(b.x + 4, b.y + b.height / 2)
+  await pg.mouse.down()
+  await pg.mouse.move(b.x + b.width - 4, b.y + b.height / 2, { steps: 5 })
+  await pg.mouse.up()
+  assert.ok((await pg.evaluate(() => window.getSelection().toString())).length > 0, 'the excerpt drag selected nothing')
+  await closeAll()
+})
+
 test('the pop-up buttons still act after the focus guard', async () => {
   await pg.click('#sf-content p')
   await pg.click('.sf-popover-cancel')
