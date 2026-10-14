@@ -1,7 +1,7 @@
 /* queue template — per-campaign decision queue: open asks with vote widgets,
    review stamps, and open PRs in merge-dependency order. */
 
-import { esc, attr, markdown, widget, badge, table, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
+import { esc, attr, markdown, inline, widget, badge, table, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
 
 export const name = 'queue'
 
@@ -102,7 +102,7 @@ function entryCard(e, i, uniqueId) {
     e.title ? `<div class="sd-card-title">${esc(e.title)}</div>` : '',
     `<div class="sd-row sd-badge-row">${meta}</div>`,
     e.read_first ? readFirst(e.read_first) : '',
-    open ? `<p><strong>${esc(e.question)}</strong></p>` : `<p class="sd-muted">${esc(e.question)}</p>`,
+    open ? `<p><strong>${inline(e.question)}</strong></p>` : `<p class="sd-muted">${inline(e.question)}</p>`,
     entryBody(e.body),
     open
       ? widget({ type: 'decision', id: uniqueId(e.id, `queue.entries[${i}].id`), options: e.options ?? DEFAULT_OPTIONS })

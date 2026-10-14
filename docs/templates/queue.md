@@ -19,7 +19,7 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
     "id": "string",                  // required, unique among open entries — becomes the widget id
     "pane": "string",                // required — which agent pane asked
     "kind": "decision|review|merge", // required
-    "question": "string",            // required, plain English — the one-line ask; the sentence the reader answers
+    "question": "string",            // required, plain English — the one-line ask; the sentence the reader answers; inline markdown (links, code)
     "title": "string",               // optional — a label above the badges, 80 chars max, no "?"; the question is not repeated here
     "read_first": {                  // optional — the board that orients the reader, by the agent that did the work
       "url": "string", "title": "string", "by": "string"
@@ -54,14 +54,14 @@ The board is orchestrator-owned: one writer edits the data file and republishes;
 }
 ```
 
-**An open `decision` or `review` entry must carry a `body` or a `context_link` — rendering throws otherwise.** A vote stripped of its brief leaves the reader choosing from a single sentence and three buttons, and that has produced a rejected sign-off; `merge` entries are exempt because the PR link is the context.
+**An open `decision` or `review` entry must carry a `body` or a `context_link` — rendering throws otherwise.** A vote stripped of its brief leaves the reader choosing from a single sentence and three buttons, and that has produced a rejected sign-off; `merge` entries are exempt because the PR link is the context: put it in the `question` as a markdown link, or in `context_link`.
 
 Three more shapes throw on an open entry, because a printed warning was not enough to stop them: a `title` over 80 characters or containing a `?` (it was restating the question that renders in bold right under it), a `body` over 400 characters with no `read_first` (a relay of another agent's work that should have been that agent's board), and an option `label` over five words (the consequence belongs in `basis`, which renders above the buttons; a sentence on the button also becomes the sentence-long value routed back to the pane).
 
 ## Rendering rules
 
 - Open entries render before answered ones, each an accented card with a vote widget (`data-widget-id` = entry id). Answered entries render muted, badge only, no widget, inside a collapsed `sd-collapse` details block.
-- `read_first` renders as "Read first: <title> by <agent>" above the question. `title` renders as the card title; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters.
+- `read_first` renders as "Read first: <title> by <agent>" above the question. `title` renders as the card title; `question` renders inline markdown (links, code, bold, italic) on one line, never block elements; `body` renders as markdown under the question, folding into an `sd-collapse` when longer than ~400 characters.
 - Each option's `basis` renders as one bullet above the buttons, with the recommended one marked; the button shows only the `label`. **The consequence goes in `basis`, never in the label** — a label is also the value routed back to the pane, so a sentence-long label makes the recorded answer a paragraph. Options listed in the `question` or `body` as `(a) … (b) …` with the default approve/reject/discuss buttons underneath cannot be answered with a click; make them the options.
 - Each open entry carries `<time data-live-age datetime="...">` — the chrome recomputes "waiting 2h" from `filed_at` every 30s, so a long-open tab never shows a stale age.
 - A `review_stamps` row whose versions differ gets a warning badge; matching versions get "current".
