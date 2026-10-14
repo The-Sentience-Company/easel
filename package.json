@@ -1,6 +1,6 @@
 {
   "name": "easel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local review-board daemon: agent publishes HTML boards, user annotates in the browser, feedback flows back durably.",
   "keywords": [
     "agent",
