@@ -1,4 +1,4 @@
-// Anonymous usage heartbeat: a random install id, the version and the OS, at most once a day.
+// Anonymous usage heartbeat: a random install id, the version and the OS, once a day and on each version change.
 // What is sent and how to turn it off: docs/usage.md#telemetry.
 
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises'
@@ -32,8 +32,9 @@ export async function sendHeartbeat({ dataDir, version, env = process.env, fetch
   try {
     if (await telemetryOff(dataDir, env)) return 'off'
     const lastPath = join(dataDir, 'telemetry-last')
-    const last = Number(await readFile(lastPath, 'utf8').catch(() => 0))
-    if (now() - last < DAY_MS) return 'throttled'
+    // An older daemon wrote a bare timestamp here; it has no version, so it never throttles.
+    const last = await readFile(lastPath, 'utf8').then(JSON.parse).catch(() => ({}))
+    if (last.version === version && now() - last.at < DAY_MS) return 'throttled'
     const res = await fetchImpl(env.EASEL_TELEMETRY_URL || DEFAULT_TELEMETRY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,7 +42,7 @@ export async function sendHeartbeat({ dataDir, version, env = process.env, fetch
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     if (!res.ok) return 'failed'
-    await writeFile(lastPath, String(now()))
+    await writeFile(lastPath, JSON.stringify({ at: now(), version }))
     return 'sent'
   } catch {
     return 'failed'

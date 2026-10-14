@@ -222,7 +222,7 @@ if [ "${EASEL_TELEMETRY:-}" = "off" ]; then
   date -u +%Y-%m-%dT%H:%M:%SZ > "$STATE_DIR/telemetry.off"
 fi
 if [ ! -f "$STATE_DIR/install-id" ] && [ ! -f "$STATE_DIR/telemetry.off" ]; then
-  say "telemetry: once a day easel sends an anonymous install id, its version and OS — 'easel telemetry off' stops it (docs/usage.md#telemetry)"
+  say "telemetry: once a day and on each new version easel sends an anonymous install id, its version and OS — 'easel telemetry off' stops it (docs/usage.md#telemetry)"
 fi
 
 if [ ! -f "$CLI" ]; then

@@ -23,8 +23,8 @@ function fakeFetch({ status = 204, error } = {}) {
 }
 
 const freshDir = () => mkdtempSync(join(tmpdir(), 'sf-telemetry-'))
-const send = (dataDir, fetch, { env = {}, at = T0 } = {}) =>
-  sendHeartbeat({ dataDir, version: '0.1.0', env, fetchImpl: fetch.impl, now: () => at })
+const send = (dataDir, fetch, { env = {}, at = T0, version = '0.1.0' } = {}) =>
+  sendHeartbeat({ dataDir, version, env, fetchImpl: fetch.impl, now: () => at })
 
 describe('sendHeartbeat', () => {
   test('first start sends id, version and os to the default collector', async () => {
@@ -73,6 +73,23 @@ describe('sendHeartbeat', () => {
 
     assert.equal(fetch.calls.length, 2)
     assert.equal(fetch.calls[0].body.installId, fetch.calls[1].body.installId)
+  })
+
+  test('a new version sends on its first start even within the day', async () => {
+    const dir = freshDir()
+    const fetch = fakeFetch()
+
+    assert.equal(await send(dir, fetch, { at: T0 }), 'sent')
+    assert.equal(await send(dir, fetch, { at: T0 + 1, version: '0.2.0' }), 'sent')
+    assert.equal(await send(dir, fetch, { at: T0 + 2, version: '0.2.0' }), 'throttled')
+
+    assert.deepEqual(fetch.calls.map((c) => c.body.version), ['0.1.0', '0.2.0'])
+  })
+
+  test('a bare timestamp left by an older daemon does not throttle', async () => {
+    const dir = freshDir()
+    writeFileSync(join(dir, 'telemetry-last'), String(T0))
+    assert.equal(await send(dir, fakeFetch(), { at: T0 + 1 }), 'sent')
   })
 
   test('a network failure resolves to failed and the next start tries again', async () => {
