@@ -85,7 +85,7 @@ What it does **not** do: verify anything beyond your clone's `origin` remote ove
 Once a day, when the daemon starts, easel sends one anonymous heartbeat to `https://api.sentience.com/telemetry/easel-heartbeat`:
 
 ```json
-{ "installId": "3f2b8c1e-…", "version": "0.1.0", "os": "darwin" }
+{ "installId": "3f2b8c1e-…", "version": "0.2.0", "os": "darwin" }
 ```
 
 - `installId` is a random UUID generated on first start and kept in `~/.easel/install-id`. It is not derived from anything about you or your machine.

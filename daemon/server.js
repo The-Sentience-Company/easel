@@ -19,7 +19,7 @@ import { sendHeartbeat } from './telemetry.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
 const ROOT = dirname(fileURLToPath(import.meta.url))
-const VERSION = '0.1.0'
+const VERSION = JSON.parse(await readFile(join(ROOT, '..', 'package.json'), 'utf8')).version
 
 // The running build vs what is on disk: if the checkout has moved past the commit
 // this process booted from, the daemon is serving stale code until `easel update`.
