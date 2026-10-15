@@ -85,6 +85,23 @@ test('the shortcut sends every queued note from inside the comment pop-up', SLOW
   await page.close()
 })
 
+test('a note still being typed in the pop-up is queued and sent with the rest', SLOW, async () => {
+  const { key, page } = await openBoard('send typed note')
+  await queueNote(page, '#one', 'first note')
+  await queueNote(page, '#two', 'second note')
+  await page.waitForFunction(() => document.querySelector('.sf-send-now').textContent === 'Send 2')
+
+  await page.click('#three')
+  await page.waitForSelector('.sf-popover-text')
+  await page.keyboard.type('third note, not yet queued')
+  await pressSendShortcut(page)
+
+  await page.waitForFunction(() => [...document.querySelectorAll('.sf-toast')].some((t) => t.textContent === 'Sent 3 items'), { timeout: 5000 })
+  assert.equal(await draftsOnServer(page, key), 0)
+  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover')), null, 'the queued pop-up closes')
+  await page.close()
+})
+
 test('the shortcut sends from the chat field without sending the chat text', SLOW, async () => {
   const { key, page } = await openBoard('send from chat')
   await queueNote(page, '#one', 'a note')

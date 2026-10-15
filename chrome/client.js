@@ -836,6 +836,12 @@ async function sendDrafts() {
   }
 }
 
+// A note still being typed in the pop-up is part of what the shortcut means to send.
+async function sendFromShortcut() {
+  await queueOpenPopover?.()
+  sendDrafts()
+}
+
 // Session ids are UUID-length; the bubble shows a short form and the full id
 // stays on the title attribute.
 function callsign(agent) {
@@ -1057,10 +1063,12 @@ function setAnnotating(on) {
 }
 
 let popover = null
+let queueOpenPopover = null
 
 function closePopover() {
   if (popover) popover.remove()
   popover = null
+  queueOpenPopover = null
   CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
 }
 
@@ -1261,6 +1269,7 @@ function openPopover(node, event, pin) {
     }
   }
   submitOnEnter(textarea, queue)
+  queueOpenPopover = queue
   const queueBtn = el('button', 'sf-popover-queue', 'Queue')
   queueBtn.type = 'button'
   queueBtn.onclick = queue
@@ -1328,7 +1337,7 @@ document.addEventListener('keydown', (e) => {
   // Works while typing too, and must beat the browser's own Save shortcut.
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === SEND_HOTKEY) {
     e.preventDefault()
-    if (!ended && !e.repeat) sendDrafts()
+    if (!ended && !e.repeat) sendFromShortcut()
     return
   }
   if (e.metaKey || e.ctrlKey || e.altKey) return
