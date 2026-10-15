@@ -48,6 +48,8 @@ const ROUND_BACK_HOTKEY = 'q'
 const ROUND_FORWARD_HOTKEY = 'w'
 const WIDTH_NARROW_HOTKEY = 'e'
 const WIDTH_WIDEN_HOTKEY = 'r'
+const SEND_HOTKEY = 's'
+const SEND_HOTKEY_LABEL = 'Cmd+Shift+S'
 const COMPACT_QUERY = '(max-width: 1500px)'
 const WIDTH_MIN = 600
 const WIDTH_MAX = 1400
@@ -232,7 +234,7 @@ function buildChrome() {
 
   ui.sendNow = el('button', 'sf-send-now', 'Send')
   ui.sendNow.type = 'button'
-  ui.sendNow.title = 'Send queued feedback to the agent'
+  ui.sendNow.title = `Send queued feedback to the agent (${SEND_HOTKEY_LABEL})`
   ui.sendNow.onclick = sendDrafts
   show(ui.sendNow, false)
   ui.chatToggle = el('button', 'sf-chat-toggle', '[C]hat')
@@ -268,6 +270,7 @@ function buildChrome() {
   ui.queueList = el('div', 'sf-queue-list')
   ui.queueSend = el('button', 'sf-queue-send', 'Send')
   ui.queueSend.type = 'button'
+  ui.queueSend.title = `Send queued feedback to the agent (${SEND_HOTKEY_LABEL})`
   ui.queueSend.onclick = sendDrafts
   ui.queue.append(ui.queueHeader, ui.queueList, ui.queueSend)
 
@@ -825,7 +828,8 @@ async function sendDrafts() {
   try {
     // Through the mutation chain: Send must not overtake an in-flight click.
     const res = await enqueueMutation(() => api.send('POST', `/api/b/${KEY}/send`, { clientId }))
-    toast(`Sent ${res.submitted.length} item${res.submitted.length === 1 ? '' : 's'}`)
+    const n = res.submitted.length
+    toast(n ? `Sent ${n} item${n === 1 ? '' : 's'}` : 'Nothing to send')
     sync()
   } catch (err) {
     toast(`Send failed: ${err.message}`)
@@ -1321,6 +1325,12 @@ function stepRound(delta) {
 }
 
 document.addEventListener('keydown', (e) => {
+  // Works while typing too, and must beat the browser's own Save shortcut.
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === SEND_HOTKEY) {
+    e.preventDefault()
+    if (!ended && !e.repeat) sendDrafts()
+    return
+  }
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (typingInFormField(e.target)) return
   const key = e.key.toLowerCase()
