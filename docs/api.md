@@ -253,7 +253,7 @@ body.sf-shell
 │   │   │   └── .sf-status-dot           .sf-connected | .sf-reconnecting
 │   │   ├── button.sf-theme-toggle       cycles auto → light → dark ("[T]heme: {mode}"); override in localStorage sf-theme; hotkey "t"
 │   │   ├── button.sf-annotate-toggle    .sf-on when annotate mode active (on at load); hotkey "a"
-│   │   ├── button.sf-send-now           "Send N" — visible only while drafts exist
+│   │   ├── button.sf-send-now           "Send N" — visible only while drafts exist; hotkey Cmd+Shift+S (Ctrl+Shift+S) sends from anywhere on the board, even while typing; a note open in the comment pop-up is queued first. Not inside the whiteboard or an island frame
 │   │   ├── button.sf-queue-toggle       opens/closes the queue panel (.sf-on while open); contains .sf-queue-count, and .sf-empty while no draft is queued; hotkey "f"
 │   │   ├── button.sf-chat-toggle        opens/closes the chat panel (.sf-on while open)
 │   │   ├── button.sf-end-session        ends the board; .sf-armed on the confirming click
