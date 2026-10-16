@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { preRender, decodeEntities, scopeSvgId, sizeFromViewBox } from '../render/mermaid.js'
+import { preRender, decodeEntities, scopeSvgId, sizeFromViewBox, cacheStats } from '../render/mermaid.js'
 
 const VALID = 'flowchart LR\n  A[start] --> B[end]'
 const BR_LABEL = 'flowchart LR\n  A[vegetarian&lt;br/&gt;tagged] --> B[ok]'
@@ -94,8 +94,35 @@ describe('preRender', () => {
   })
 
   test('a timeout degrades to an error block rather than hanging', async () => {
-    const out = await preRender(block(VALID), { timeoutMs: 1 })
+    // Its own source: a cached bake is served whatever the timeout, which is the point.
+    const out = await preRender(block(`${VALID}\n  B --> C[slow]`), { timeoutMs: 1 })
     assert.match(out, /class="sd-diagram-error"/)
+  })
+
+  test('a republish reuses the baked svg by source hash, scoped to each slot', async () => {
+    const doc = `${block(VALID)}<p>between</p>${block(VALID)}`
+    const first = await preRender(doc)
+    const before = cacheStats()
+    const started = Date.now()
+    const second = await preRender(doc)
+    const after = cacheStats()
+    assert.equal(after.misses, before.misses, 'the second render re-ran the renderer')
+    assert.equal(after.hits - before.hits, 2, 'both blocks should come from the cache')
+    assert.ok(Date.now() - started < 1000, 'a full cache hit must not launch chromium')
+    // Cached output is byte-stable; a fresh sketch bake would jitter.
+    assert.equal(second, first)
+    // The same source in two slots still gets distinct svg ids and ordinals.
+    assert.match(second, /id="[^"]*-0l"/)
+    assert.match(second, /id="[^"]*-1l"/)
+    assert.match(second, /data-diagram-index="1"/)
+  })
+
+  test('a failed render is never cached', async () => {
+    const before = cacheStats()
+    await preRender(block(INVALID))
+    await preRender(block(INVALID))
+    const after = cacheStats()
+    assert.equal(after.hits, before.hits, 'an error block was served from the cache')
   })
 
   test('every url(#…) reference in a baked sequence diagram resolves to an id', async () => {

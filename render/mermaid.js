@@ -140,7 +140,83 @@ function firstLine(text) {
   return line ? line.slice(0, 200) : ''
 }
 
-/** Convertible: both looks baked (mermaid default, sketch behind the toggle); unconvertible: plain mermaid; else error block. */
+/* Baked svg per source: a prose-only republish skips the chromium launches (~3.5 s for two
+   diagrams). In-process, so a restart — which any theme/renderer change needs — starts cold. */
+const CACHE_MAX = 50
+const cache = new Map()
+const stats = { hits: 0, misses: 0 }
+
+export const cacheStats = () => ({ ...stats, size: cache.size })
+
+function cacheGet(key) {
+  const hit = cache.get(key)
+  if (hit === undefined) return undefined
+  // Re-insert so the Map's insertion order doubles as recency.
+  cache.delete(key)
+  cache.set(key, hit)
+  return hit
+}
+
+function cachePut(key, value) {
+  cache.set(key, value)
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
+}
+
+// Each mmdc run is its own chromium launch; two in flight is most of the win
+// without the memory of a mob.
+const RENDER_WORKERS = 2
+
+async function pool(items, width, work) {
+  const queue = [...items]
+  const workers = Array.from({ length: Math.min(width, queue.length) }, async () => {
+    while (queue.length) await work(queue.shift())
+  })
+  await Promise.all(workers)
+}
+
+/** Convertible: both looks baked (mermaid default, sketch behind the toggle); unconvertible: plain mermaid; else { error }. */
+async function renderBlock(source, { timeoutMs, theme, convert }) {
+  const excal = convert ? await convert(source) : null
+  if (excal?.ok) {
+    // Mermaid pair is the default-visible look; sketch sits behind the toggle.
+    const mLight = await renderOne(source, { timeoutMs, theme: 'default' })
+    const mDark = mLight.ok ? await renderOne(source, { timeoutMs, theme: 'dark' }) : mLight
+    return mLight.ok && mDark.ok
+      ? { kind: 'dual', mLight: mLight.svg, mDark: mDark.svg, sketchLight: excal.light, sketchDark: excal.dark }
+      : { kind: 'sketch', sketchLight: excal.light, sketchDark: excal.dark }
+  }
+  if (theme) {
+    const one = await renderOne(source, { timeoutMs, theme })
+    return one.ok ? { kind: 'single', svg: one.svg } : { error: one.message }
+  }
+  // Bare <text> labels (pie, gantt) bake their fill and no CSS reaches them,
+  // so the fallback bakes a variant per theme like the sketch path does.
+  const light = await renderOne(source, { timeoutMs, theme: 'default' })
+  if (!light.ok) return { error: light.message }
+  const dark = await renderOne(source, { timeoutMs, theme: 'dark' })
+  return dark.ok ? { kind: 'themed', light: light.svg, dark: dark.svg } : { kind: 'single', svg: light.svg }
+}
+
+function wrap(entry, slot, at) {
+  switch (entry.kind) {
+    case 'dual':
+      return `<div class="sd-diagram sd-diagram-dual"${at}>` +
+        `<span class="sd-svg-light">${scopeSvgId(entry.mLight, `${slot}l`)}</span>` +
+        `<span class="sd-svg-dark">${scopeSvgId(entry.mDark, `${slot}d`)}</span>` +
+        `<span class="sd-svg-sketch-light">${entry.sketchLight}</span>` +
+        `<span class="sd-svg-sketch-dark">${entry.sketchDark}</span></div>`
+    case 'sketch':
+      return `<div class="sd-diagram sd-diagram-sketch"${at}><span class="sd-svg-light">${entry.sketchLight}</span>` +
+        `<span class="sd-svg-dark">${entry.sketchDark}</span></div>`
+    case 'themed':
+      return `<div class="sd-diagram sd-diagram-themed"${at}>` +
+        `<span class="sd-svg-light">${scopeSvgId(entry.light, `${slot}l`)}</span>` +
+        `<span class="sd-svg-dark">${scopeSvgId(entry.dark, `${slot}d`)}</span></div>`
+    default:
+      return `<div class="sd-diagram"${at}>${scopeSvgId(entry.svg, slot)}</div>`
+  }
+}
+
 export async function preRender(html, options = {}) {
   if (typeof html !== 'string' || html === '') return html === '' ? '' : String(html ?? '')
 
@@ -150,10 +226,29 @@ export async function preRender(html, options = {}) {
   const blocks = [...html.matchAll(BLOCK)]
   if (blocks.length === 0) return html
 
-  let converter = null
   // An explicit theme asks for that one mermaid theme; the sketch look has no
   // equivalent, so it keeps the plain single-variant path.
-  if (options.excalidraw !== false && !theme) {
+  const wantSketch = options.excalidraw !== false && !theme
+  // Source plus the two switches that change what gets baked for it.
+  const keyFor = (hash) => `${hash}:${theme ?? ''}:${wantSketch ? 'sketch' : 'plain'}`
+
+  // Ordinal of the block, not of the successful renders: the whiteboard keys
+  // scenes on it, so a failed diagram must not shift its neighbours.
+  const jobs = blocks.map((match, slot) => {
+    const source = decodeEntities(match[1]).trim()
+    const hash = sourceHash(source)
+    // Wrapper carries the SOURCE hash: baked SVG is not byte-stable (sketch-path
+    // jitter), so change detection reads this attribute, never the svg markup.
+    const at = ` data-diagram-index="${slot}" data-diagram-hash="${hash}"`
+    return { slot, source, hash, at, entry: source === '' ? null : cacheGet(keyFor(hash)) }
+  })
+  const misses = jobs.filter((j) => j.source !== '' && !j.entry)
+  stats.hits += jobs.filter((j) => j.entry).length
+  stats.misses += misses.length
+
+  let converter = null
+  // Only a miss pays the chromium launch; a text-only republish never does.
+  if (wantSketch && misses.length) {
     try {
       const mod = await import('./excalidraw.js')
       converter = await mod.createConverter({ timeoutMs })
@@ -161,60 +256,30 @@ export async function preRender(html, options = {}) {
       converter = null // no bundle / no chromium — every block takes the plain path
     }
   }
-
-  const rendered = []
+  // The converter drives one page, so its calls serialize; mmdc spawns its own
+  // chromium per call, so misses still overlap on the mermaid half.
+  let chain = Promise.resolve()
+  const convert = converter && ((source) => (chain = chain.then(() => converter.convert(source)).catch(() => null)))
   try {
-    for (const match of blocks) {
-      // Ordinal of the block, not of the successful renders: the whiteboard
-      // keys scenes on it, so a failed diagram must not shift its neighbours.
-      const slot = rendered.length
-      const source = decodeEntities(match[1]).trim()
-      // Wrapper carries the SOURCE hash: baked SVG is not byte-stable (sketch-path
-      // jitter), so change detection reads this attribute, never the svg markup.
-      const at = ` data-diagram-index="${slot}" data-diagram-hash="${sourceHash(source)}"`
-      if (source === '') {
-        rendered.push(errorBlock('empty diagram source', '', slot))
-        continue
+    await pool(misses, RENDER_WORKERS, async (job) => {
+      const out = await renderBlock(job.source, { timeoutMs, theme, convert })
+      if (out.error) {
+        job.error = out.error
+        return
       }
-      const excal = converter ? await converter.convert(source) : null
-      if (excal?.ok) {
-        // Mermaid pair is the default-visible look; sketch sits behind the toggle.
-        const mLight = await renderOne(source, { timeoutMs, theme: 'default' })
-        const mDark = mLight.ok ? await renderOne(source, { timeoutMs, theme: 'dark' }) : mLight
-        rendered.push(mLight.ok && mDark.ok
-          ? `<div class="sd-diagram sd-diagram-dual"${at}>` +
-            `<span class="sd-svg-light">${scopeSvgId(mLight.svg, `${slot}l`)}</span>` +
-            `<span class="sd-svg-dark">${scopeSvgId(mDark.svg, `${slot}d`)}</span>` +
-            `<span class="sd-svg-sketch-light">${excal.light}</span>` +
-            `<span class="sd-svg-sketch-dark">${excal.dark}</span></div>`
-          : `<div class="sd-diagram sd-diagram-sketch"${at}><span class="sd-svg-light">${excal.light}</span>` +
-            `<span class="sd-svg-dark">${excal.dark}</span></div>`)
-        continue
-      }
-      if (theme) {
-        const one = await renderOne(source, { timeoutMs, theme })
-        rendered.push(one.ok
-          ? `<div class="sd-diagram"${at}>${scopeSvgId(one.svg, slot)}</div>`
-          : errorBlock(one.message, source, slot))
-        continue
-      }
-      // Bare <text> labels (pie, gantt) bake their fill and no CSS reaches them,
-      // so the fallback bakes a variant per theme like the sketch path does.
-      const light = await renderOne(source, { timeoutMs, theme: 'default' })
-      if (!light.ok) {
-        rendered.push(errorBlock(light.message, source, slot))
-        continue
-      }
-      const dark = await renderOne(source, { timeoutMs, theme: 'dark' })
-      rendered.push(dark.ok
-        ? `<div class="sd-diagram sd-diagram-themed"${at}>` +
-          `<span class="sd-svg-light">${scopeSvgId(light.svg, `${slot}l`)}</span>` +
-          `<span class="sd-svg-dark">${scopeSvgId(dark.svg, `${slot}d`)}</span></div>`
-        : `<div class="sd-diagram"${at}>${scopeSvgId(light.svg, slot)}</div>`)
-    }
+      job.entry = out
+      // A sketch-wanting render without a converter is the no-chromium fallback,
+      // which may be transient — leave it uncached rather than pin the fallback.
+      if (!wantSketch || converter) cachePut(keyFor(job.hash), out)
+    })
   } finally {
     if (converter) await converter.close()
   }
+
+  const rendered = jobs.map((job) =>
+    job.source === '' ? errorBlock('empty diagram source', '', job.slot)
+    : job.entry ? wrap(job.entry, job.slot, job.at)
+    : errorBlock(job.error, job.source, job.slot))
 
   let out = ''
   let cursor = 0

@@ -354,7 +354,7 @@ test('await without ack re-delivers the same batch verbatim; ack stops re-delive
 test('await payload carries node id + excerpt only — no DOM snapshot, no selector chain', async () => {
   const { data } = await api('GET', `/api/b/${key}/feedback?since=0`)
   const allowed = new Set([
-    'id', 'round', 'kind', 'anchor', 'excerpt', 'comment', 'widgetId', 'value', 'text',
+    'id', 'chip', 'round', 'kind', 'anchor', 'excerpt', 'comment', 'widgetId', 'value', 'text',
   ])
   assert.ok(data.items.length, 'the fixture must have produced feedback')
   for (const item of data.items) {

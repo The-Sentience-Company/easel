@@ -54,6 +54,9 @@ export function createStore(db = openDb()) {
     submittedSince: db.prepare(
       `SELECT * FROM feedback WHERE surface_key = ? AND state = 'submitted' AND id > ? ORDER BY id`
     ),
+    submittedForRound: db.prepare(
+      `SELECT * FROM feedback WHERE surface_key = ? AND state = 'submitted' AND round_seq = ? ORDER BY id`
+    ),
     // "Is the round on screen one a reader has already seen" — auto-open asks.
     markViewed: db.prepare(
       `UPDATE surfaces SET viewed_round = ? WHERE key = ? AND (viewed_round IS NULL OR viewed_round < ?)`
@@ -168,6 +171,38 @@ export function createStore(db = openDb()) {
   /* The browser needs state to draw drafts; an agent does not — it asked for one
      board and everything it collects is submitted. Per item, so it scales. */
   const forAgent = ({ key, state, createdAt, submittedAt, ...item }) => item
+
+  // The A1/A2 chip the browser draws (client.js markAnnotated): unique anchors of the round's
+  // submitted items in id order, widgets and chat skipped. Submitted ids only grow, so it never renumbers.
+  const chipId = (i) => String.fromCharCode(65 + (Math.floor(i / 9) % 26)) + ((i % 9) + 1)
+  const chipsForRound = (key, seq) => {
+    const chips = new Map()
+    const byAnchor = new Map()
+    for (const row of q.submittedForRound.all(key, seq)) {
+      if (row.kind === 'widget' || row.kind === 'chat' || !row.sid) continue
+      const anchor = row.pin_x != null && row.pin_y != null ? `${row.sid}@${row.pin_x},${row.pin_y}` : row.sid
+      if (!byAnchor.has(anchor)) byAnchor.set(anchor, chipId(byAnchor.size))
+      chips.set(row.id, byAnchor.get(anchor))
+    }
+    return chips
+  }
+
+  // A widget item restates what the agent authored; enough excerpt stays to tell `t5-2` from `t5-3`.
+  const WIDGET_EXCERPT = 60
+  const forAgentBatch = (key, items) => {
+    const chips = new Map()
+    return items.map((row) => {
+      const item = forAgent(row)
+      if (item.kind === 'widget') {
+        const { anchor, context, excerpt, ...rest } = item
+        return { ...rest, ...(excerpt ? { excerpt: excerpt.slice(0, WIDGET_EXCERPT) } : {}) }
+      }
+      if (item.kind === 'chat' || item.round == null) return item
+      if (!chips.has(item.round)) chips.set(item.round, chipsForRound(key, item.round))
+      const chip = chips.get(item.round).get(item.id)
+      return chip ? { id: item.id, chip, ...item } : item
+    })
+  }
 
   return {
     db,
@@ -356,5 +391,6 @@ export function createStore(db = openDb()) {
 
     feedbackItem,
     forAgent,
+    forAgentBatch,
   }
 }
