@@ -923,7 +923,10 @@ function markAnnotated(items) {
   state.commentsByKey = new Map()
   state.markerIds = new Map()
   const order = []
-  for (const item of items) {
+  // Submitted first, drafts after: a draft queued before another tab's Send keeps a
+  // lower id, and the chips the agent receives count submitted items only.
+  const ordered = [...items.filter((i) => i.state !== 'draft'), ...items.filter((i) => i.state === 'draft')]
+  for (const item of ordered) {
     const sid = item.anchor?.sid
     if (!sid || item.kind === 'widget') continue
     const key = anchorKey(item.anchor)

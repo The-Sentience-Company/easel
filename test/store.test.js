@@ -132,3 +132,25 @@ test('opening a db that predates agent_id backfills the column', () => {
   migrated.addChat('old1', 'agent', 'post-migration', 'agent-1')
   assert.equal(migrated.chatFor('old1')[1].agent, 'agent-1')
 })
+
+test('agent batches carry the browser chip per anchor and trim widgets to id and value', () => {
+  draft('first on s-1')
+  draft('second on s-1')
+  store.addFeedback({ surface_key: K, round_seq: 1, client_id: 'c1', sid: 's-2', comment: 'on s-2', excerpt: 'e' })
+  store.addFeedback({
+    surface_key: K, round_seq: 1, client_id: 'c1', sid: 's-3', comment: 'pin', excerpt: 'e', pin_x: 0.25, pin_y: 0.5,
+  })
+  store.addFeedback({
+    surface_key: K, round_seq: 1, kind: 'widget', client_id: 'c1', sid: 's-9', widget_id: 'w1', widget_value: 'yes',
+    excerpt: 'x'.repeat(200), context_json: JSON.stringify({ heading: 'h' }),
+  })
+  store.submitDrafts(K, 'c1')
+  const all = store.forAgentBatch(K, store.submittedSince(K, 0))
+  assert.deepEqual(all.map((i) => i.chip), ['A1', 'A1', 'A2', 'A3', undefined])
+  const widget = all.at(-1)
+  assert.deepEqual(Object.keys(widget).sort(), ['excerpt', 'id', 'kind', 'round', 'value', 'widgetId'])
+  assert.equal(widget.excerpt.length, 60)
+  // A cursor mid-round still numbers against the whole round, so chips never shift.
+  const later = store.forAgentBatch(K, store.submittedSince(K, all[1].id))
+  assert.deepEqual(later.map((i) => i.chip), ['A2', 'A3', undefined])
+})

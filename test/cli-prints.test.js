@@ -160,6 +160,11 @@ test('easel await batch output ends with the trailer line', async () => {
     stdout.includes('answer each item on the board, at its anchor, in the next round'),
     `trailer line should appear in stdout, got: ${stdout}`,
   )
+  // One item per line, chip first, no always-false lifecycle flags — still one JSON document.
+  const batch = stdout.slice(0, stdout.indexOf('answer each item'))
+  assert.match(batch, /^  \{"id":\d+,"chip":"A1"/m)
+  assert.ok(!batch.includes('"timedOut"'), `envelope still carries false flags: ${batch}`)
+  assert.doesNotThrow(() => JSON.parse(batch))
 })
 
 test('easel await tells the agent to open each pasted image, by path', async () => {

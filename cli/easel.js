@@ -107,6 +107,16 @@ function output(data, asJson, human) {
   else console.log(human ? human(data) : JSON.stringify(data, null, 2))
 }
 
+/* A feedback batch prints one item per line, still one JSON document: an agent reads
+   it, and the pretty form spent most of its tokens on whitespace and brackets. */
+function batchJson(data) {
+  const { items = [], ...envelope } = data
+  const head = JSON.stringify(envelope).slice(0, -1)
+  const sep = head === '{' ? '' : ','
+  if (!items.length) return `${head}${sep}"items":[]}`
+  return `${head}${sep}"items":[\n${items.map((i) => `  ${JSON.stringify(i)}`).join(',\n')}\n]}`
+}
+
 /* One clone means the daemon serves the tree you edit. Name that once, on the
    two commands that expose it, rather than leaving it to look like a bug.
    Silent under --json: callers pipe stderr in and the banner corrupts the parse. */
@@ -242,7 +252,7 @@ const commands = {
       body.resumed = true
       backoff = 1000
       if (data.timedOut) continue // window expired — re-attach with the same cursor
-      output(data, values.json)
+      console.log(batchJson(data))
       if (!values.json && data.items?.length) console.log('answer each item on the board, at its anchor, in the next round')
       // Listed after the JSON, not only in the skill: a path buried in the batch went unopened.
       const images = values.json ? [] : (data.items ?? []).flatMap((i) => i.images ?? [])
@@ -266,7 +276,7 @@ const commands = {
     const key = positionals[0] || fail(USAGE)
     const qs = values.since != null ? `?since=${Number(values.since)}` : ''
     const data = await call('GET', `/api/b/${key}/feedback${qs}`)
-    output(data, values.json)
+    console.log(batchJson(data))
   },
 
   async reply() {

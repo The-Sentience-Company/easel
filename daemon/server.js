@@ -876,14 +876,11 @@ async function handleAwait(req, res, match) {
 
   const respond = (items, flags = {}) => {
     if (res.destroyed || res.writableEnded) return
+    // Lifecycle flags print only when set: four always-false booleans on every wake were pure envelope.
     json(res, 200, {
-      items: items.map(store.forAgent),
+      items: store.forAgentBatch(board.key, items),
       upto: items.length ? items[items.length - 1].id : cursor,
       cursor,
-      timedOut: false,
-      cancelled: false,
-      superseded: false,
-      dropped: false,
       ...flags,
     })
   }
@@ -1031,7 +1028,7 @@ const handlers = {
     const board = requireBoard(match[1], res)
     if (!board) return
     const since = Number(url.searchParams.get('since') ?? 0)
-    json(res, 200, { items: store.submittedSince(board.key, since).map(store.forAgent) })
+    json(res, 200, { items: store.forAgentBatch(board.key, store.submittedSince(board.key, since)) })
   },
 
   async feedbackCreate(req, res, match) {
