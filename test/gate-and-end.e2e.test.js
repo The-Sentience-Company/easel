@@ -51,16 +51,20 @@ const gateState = () => ({
   title: document.querySelector('.sf-gate-title').textContent,
 })
 
-/** Holds every /state response until released, so the gate can be observed. */
+/** Holds every /state response for `ms` — or, with Infinity, until the returned
+    release() runs — so the gate can be observed. */
 async function holdState(page, ms) {
+  const held = []
   await page.setRequestInterception(true)
   page.on('request', (req) => {
     if (/\/api\/b\/[^/]+\/state/.test(req.url())) {
-      setTimeout(() => req.continue().catch(() => {}), ms)
+      if (ms === Infinity) held.push(req)
+      else setTimeout(() => req.continue().catch(() => {}), ms)
       return
     }
     req.continue().catch(() => {})
   })
+  return () => held.splice(0).forEach((req) => req.continue().catch(() => {}))
 }
 
 test('the shell ships the gate, so the blank page is covered before any JS runs', async () => {
@@ -90,10 +94,13 @@ test('a normal load reveals the gate and shows no banner', async () => {
 test('the gate holds while the content has not arrived', async () => {
   const key = await openBoard()
   const page = await browser.newPage()
-  await holdState(page, 2500)
+  // Held until after the assertions: a fixed delay raced the navigation under
+  // full-suite load, and a late paint read as the gate having let content through.
+  const release = await holdState(page, Infinity)
   page.goto(`${BASE}/b/${key}`).catch(() => {})
   await page.waitForSelector('.sf-gate', { visible: true })
   const g = await page.evaluate(gateState)
+  release()
   assert.equal(g.gated, true)
   assert.equal(g.contentVisible, false, 'the empty content must not be on screen')
   assert.match(g.title, /Checking layout/)
