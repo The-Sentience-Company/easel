@@ -75,6 +75,12 @@ export function createStore(db = openDb()) {
       `SELECT * FROM feedback WHERE surface_key = ? AND state = 'draft' AND kind = 'widget'
        AND widget_id = ? AND client_id = ?`
     ),
+    identicalDraft: db.prepare(
+      `SELECT * FROM feedback WHERE surface_key = @surface_key AND state = 'draft' AND kind = 'annotation'
+       AND client_id = @client_id AND round_seq IS @round_seq AND sid = @sid AND quote IS @quote
+       AND prefix IS @prefix AND suffix IS @suffix AND comment IS @comment AND payload_json IS @payload_json
+       AND pin_x IS @pin_x AND pin_y IS @pin_y ORDER BY id LIMIT 1`
+    ),
     updateWidgetDraft: db.prepare(
       `UPDATE feedback SET widget_value = ?, round_seq = ?, sid = ?, excerpt = ?, context_json = ?, created_at = ? WHERE id = ?`
     ),
@@ -287,6 +293,14 @@ export function createStore(db = openDb()) {
       q.updateWidgetDraft.run(fields.widget_value, fields.round_seq, fields.sid, fields.excerpt, fields.context_json ?? null, now(), existing.id)
       q.touchBoard.run(now(), fields.surface_key)
       return feedbackItem(q.feedbackById.get(existing.id))
+    },
+    identicalDraft(f) {
+      const row = q.identicalDraft.get({
+        surface_key: f.surface_key, client_id: f.client_id, round_seq: f.round_seq, sid: f.sid,
+        quote: f.quote, prefix: f.prefix, suffix: f.suffix, comment: f.comment,
+        payload_json: f.payload_json, pin_x: f.pin_x, pin_y: f.pin_y,
+      })
+      return row ? feedbackItem(row) : null
     },
     feedbackRow: (id) => q.feedbackById.get(id),
     deleteFeedback: (id) => q.deleteFeedback.run(id),

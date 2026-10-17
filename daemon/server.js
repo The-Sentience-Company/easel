@@ -1065,12 +1065,17 @@ const handlers = {
       const dir = join(ATTACHMENTS_DIR, board.key)
       await mkdir(dir, { recursive: true })
       for (const [, type, b64] of images) {
-        const path = join(dir, `${randomBytes(6).toString('hex')}.${IMAGE_EXT[type]}`)
-        await writeFile(path, Buffer.from(b64, 'base64'))
+        // Named by content, so a repeated note's images compare equal by path.
+        const bytes = Buffer.from(b64, 'base64')
+        const path = join(dir, `${createHash('sha256').update(bytes).digest('hex')}.${IMAGE_EXT[type]}`)
+        // An existing file already holds these bytes and may be open by a reader.
+        await writeFile(path, bytes, { flag: 'wx' }).catch((err) => {
+          if (err.code !== 'EEXIST') throw err
+        })
         imagePaths.push(path)
       }
     }
-    const item = store.addFeedback({
+    const fields = {
       surface_key: board.key,
       round_seq: roundRow?.seq ?? null,
       kind: 'annotation',
@@ -1086,7 +1091,10 @@ const handlers = {
       payload_json: imagePaths.length ? JSON.stringify({ images: imagePaths }) : null,
       pin_x: pin[0],
       pin_y: pin[1],
-    })
+    }
+    // A retried or double-pressed Queue repeats the note word for word; two unsent
+    // copies tell the agent nothing more, so the repeat gets the draft already held.
+    const item = store.identicalDraft(fields) ?? store.addFeedback(fields)
     broadcast(board.key, 'feedback', { id: item.id })
     json(res, 200, item)
   },
