@@ -28,7 +28,8 @@ before(async () => {
   })
   const file = join(DATA_DIR, 'links.html')
   writeFileSync(file, `<h1>Links</h1>
-<p><a id="board" href="http://127.0.0.1:${PORT}/b/other?round=2#s3">board</a></p>
+<p><a id="malformed" href="http://[::1">unparsable</a></p>
+<p><a id="board"href="http://127.0.0.1:${PORT}/b/other?round=2#s3">board</a></p>
 <p><a id="localhost" href="http://localhost:${PORT}/">dashboard</a></p>
 <p><a id="elsewhere" href="http://127.0.0.1:5173/app">dev server</a></p>
 <p><a id="external" href="https://example.com/x">external</a></p>`)

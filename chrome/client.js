@@ -1093,6 +1093,8 @@ CONTENT.addEventListener('mouseover', (e) => {
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '0.0.0.0', '[::1]'])
 function tunnelLinks() {
   for (const link of document.querySelectorAll('a[href]')) {
+    // One unparsable author href must not stop the pass for every link after it.
+    if (!URL.canParse(link.href, location.href)) continue
     const url = new URL(link.href, location.href)
     if (LOOPBACK.has(url.hostname) && url.port === document.body.dataset.daemonPort) {
       link.href = location.origin + url.pathname + url.search + url.hash
