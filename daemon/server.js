@@ -1067,8 +1067,11 @@ const handlers = {
       for (const [, type, b64] of images) {
         // Named by content, so a repeated note's images compare equal by path.
         const bytes = Buffer.from(b64, 'base64')
-        const path = join(dir, `${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.${IMAGE_EXT[type]}`)
-        await writeFile(path, bytes)
+        const path = join(dir, `${createHash('sha256').update(bytes).digest('hex')}.${IMAGE_EXT[type]}`)
+        // An existing file already holds these bytes and may be open by a reader.
+        await writeFile(path, bytes, { flag: 'wx' }).catch((err) => {
+          if (err.code !== 'EEXIST') throw err
+        })
         imagePaths.push(path)
       }
     }

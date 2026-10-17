@@ -68,6 +68,7 @@ test('Queue pressed three times and Enter once on a slow daemon queues one note'
 
   assert.equal(held.length, 1, 'only the first press may reach the daemon')
   assert.equal(await page.evaluate(() => document.querySelector('.sf-popover .sf-popover-queue').disabled), true)
+  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover-text').readOnly), true, 'text typed now would be lost')
   held.forEach((req) => req.continue())
   await page.waitForFunction(() => !document.querySelector('.sf-popover'))
   const queued = await drafts(page, key)
