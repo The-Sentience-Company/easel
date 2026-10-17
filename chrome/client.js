@@ -1088,16 +1088,23 @@ CONTENT.addEventListener('mouseover', (e) => {
 })
 
 // Boards link to the daemon as 127.0.0.1. Opened through a tunnel such as Tailscale Serve,
-// send those links through the address this page came from instead.
+// point those links at the address this page came from, in the DOM itself so every way of
+// opening one (middle-click, long-press, copy, drag) sees the tunnel address.
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '0.0.0.0', '[::1]'])
-document.addEventListener('click', (e) => {
-  const link = e.target.closest?.('a[href]')
-  if (!link || LOOPBACK.has(location.hostname)) return
-  const url = new URL(link.href, location.href)
-  if (LOOPBACK.has(url.hostname) && url.port === document.body.dataset.daemonPort) {
-    link.href = location.origin + url.pathname + url.search + url.hash
+function tunnelLinks() {
+  for (const link of document.querySelectorAll('a[href]')) {
+    // One unparsable author href must not stop the pass for every link after it.
+    if (!URL.canParse(link.href, location.href)) continue
+    const url = new URL(link.href, location.href)
+    if (LOOPBACK.has(url.hostname) && url.port === document.body.dataset.daemonPort) {
+      link.href = location.origin + url.pathname + url.search + url.hash
+    }
   }
-}, true)
+}
+if (!LOOPBACK.has(location.hostname)) {
+  tunnelLinks()
+  new MutationObserver(tunnelLinks).observe(document.body, { childList: true, subtree: true })
+}
 
 CONTENT.addEventListener('click', (e) => {
   const option = e.target.closest('[data-option]')

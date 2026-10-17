@@ -28,6 +28,7 @@ before(async () => {
   })
   const file = join(DATA_DIR, 'links.html')
   writeFileSync(file, `<h1>Links</h1>
+<p><a id="malformed" href="http://[::1">unparsable</a></p>
 <p><a id="board" href="http://127.0.0.1:${PORT}/b/other?round=2#s3">board</a></p>
 <p><a id="localhost" href="http://localhost:${PORT}/">dashboard</a></p>
 <p><a id="elsewhere" href="http://127.0.0.1:5173/app">dev server</a></p>
@@ -58,9 +59,66 @@ async function clickedHref(origin, id) {
   }
 }
 
+/** The href as middle-click, long-press, copy link and drag read it: no click event fires. */
+async function hrefAtRest(origin, id) {
+  const page = await browser.newPage()
+  try {
+    await page.goto(`${origin}/b/${key}`, { waitUntil: 'networkidle0' })
+    await page.waitForSelector(`#${id}`)
+    return await page.$eval(`#${id}`, (link) => link.href)
+  } finally {
+    await page.close()
+  }
+}
+
+/** The URL a middle-click on the link opens in a new tab. */
+async function middleClickedUrl(origin, id) {
+  const page = await browser.newPage()
+  try {
+    await page.goto(`${origin}/b/${key}`, { waitUntil: 'networkidle0' })
+    await page.waitForSelector(`#${id}`)
+    // A middle-clicked tab has no opener, so it is caught as the next target created.
+    const opened = new Promise((resolve) => browser.once('targetcreated', resolve))
+    await page.click(`#${id}`, { button: 'middle' })
+    const target = await opened
+    const url = target.url()
+    await (await target.page())?.close()
+    return url
+  } finally {
+    await page.close()
+  }
+}
+
 test('links to the daemon follow the tunnel address', async () => {
   assert.equal(await clickedHref(TUNNEL, 'board'), `${TUNNEL}/b/other?round=2#s3`)
   assert.equal(await clickedHref(TUNNEL, 'localhost'), `${TUNNEL}/`)
+})
+
+test('the href itself carries the tunnel address, so every way of opening it does', async () => {
+  assert.equal(await hrefAtRest(TUNNEL, 'board'), `${TUNNEL}/b/other?round=2#s3`)
+  assert.equal(await hrefAtRest(TUNNEL, 'localhost'), `${TUNNEL}/`)
+  assert.equal(await hrefAtRest(TUNNEL, 'elsewhere'), 'http://127.0.0.1:5173/app')
+  assert.equal(await hrefAtRest(TUNNEL, 'external'), 'https://example.com/x')
+})
+
+test('a middle-click opens the tunnel address in the new tab', async () => {
+  assert.equal(await middleClickedUrl(TUNNEL, 'board'), `${TUNNEL}/b/other?round=2#s3`)
+})
+
+test('a link arriving in a new round carries the tunnel address without a reload', async () => {
+  const file = join(DATA_DIR, 'rounds.html')
+  writeFileSync(file, '<h1>Rounds</h1><p>first round</p>')
+  const roundsKey = (await api('POST', '/api/open', { file, title: 'Rounds' })).data.key
+  const page = await browser.newPage()
+  try {
+    await page.goto(`${TUNNEL}/b/${roundsKey}`, { waitUntil: 'networkidle0' })
+    writeFileSync(file, `<h1>Rounds</h1><p><a id="fresh" href="http://127.0.0.1:${PORT}/b/fresh">fresh</a></p>`)
+    await api('POST', `/api/b/${roundsKey}/publish`, { note: 'round 2' })
+    await page.waitForSelector('#fresh')
+    assert.equal(await page.$eval('#fresh', (link) => link.href), `${TUNNEL}/b/fresh`)
+  } finally {
+    await page.close()
+  }
 })
 
 test('links to other ports and other sites are left alone', async () => {
