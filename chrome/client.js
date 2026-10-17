@@ -1260,9 +1260,14 @@ function openPopover(node, event, pin) {
     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>'
   attachBtn.onclick = () => picker.click()
   const actions = el('div', 'sf-popover-actions')
-  const queue = async () => {
+  // A press while the POST is out joins it: on a slow daemon each repeat would
+  // queue another copy, and the send shortcut still waits for the one in flight.
+  let pending = null
+  const queue = () => (pending ??= queueOnce().finally(() => (pending = null)))
+  const queueOnce = async () => {
     const comment = textarea.value.trim()
     if (!comment && !images.length) return
+    queueBtn.disabled = true
     try {
       await api.send('POST', `/api/b/${KEY}/feedback`, {
         clientId,
@@ -1275,6 +1280,7 @@ function openPopover(node, event, pin) {
       toast('Queued')
       sync()
     } catch (err) {
+      queueBtn.disabled = false
       toast(`Queue failed: ${err.message}`)
     }
   }
