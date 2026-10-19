@@ -1,5 +1,5 @@
-/* On a slow daemon a second press of Queue (or Enter) while the first POST is
-   still out must not queue the same note again. */
+/* On a slow daemon the Queue pop-up must not wait on the POST, must not queue a
+   note twice, and a Send pressed meanwhile must carry the note. */
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -20,7 +20,7 @@ let daemon
 let browser
 
 before(async () => {
-  writeFileSync(PAGE, '<h1>queue once</h1><p id="one">para one</p><p id="two">para two</p>')
+  writeFileSync(PAGE, '<h1>queue once</h1><p id="one">para one</p><p id="two">para two</p><p id="three">para three</p>')
   daemon = startDaemon(PORT, DATA_DIR)
   await waitHealthy(BASE)
   browser = await (await import('puppeteer')).default.launch({ headless: 'new', args: ['--no-sandbox'] })
@@ -55,20 +55,18 @@ async function drafts(page, key) {
   return data.feedback.filter((i) => i.state === 'draft')
 }
 
-test('Queue pressed three times and Enter once on a slow daemon queues one note', SLOW, async () => {
+test('Queue hides the pop-up at once on a slow daemon and queues the note once', SLOW, async () => {
   const { key, page } = await openBoard('slow queue')
   const held = await stallFeedback(page)
   await page.click('#one')
   await page.waitForSelector('.sf-popover-text')
   await page.keyboard.type('only once please')
-  for (let i = 0; i < 3; i++) await page.evaluate(() => document.querySelector('.sf-popover .sf-popover-queue').click())
-  await page.focus('.sf-popover-text')
+  await page.keyboard.press('Enter')
   await page.keyboard.press('Enter')
   await new Promise((r) => setTimeout(r, 300))
 
   assert.equal(held.length, 1, 'only the first press may reach the daemon')
-  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover .sf-popover-queue').disabled), true)
-  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover-text').readOnly), true, 'text typed now would be lost')
+  assert.equal(await page.$('.sf-popover:not([style*="none"])'), null, 'the pop-up must not wait on the daemon')
   held.forEach((req) => req.continue())
   await page.waitForFunction(() => !document.querySelector('.sf-popover'))
   const queued = await drafts(page, key)
@@ -77,24 +75,42 @@ test('Queue pressed three times and Enter once on a slow daemon queues one note'
   await page.close()
 })
 
-test('a failed Queue re-enables the button so the note can be queued again', SLOW, async () => {
+test('a failed Queue brings the note back so it can be queued again', SLOW, async () => {
   const { key, page } = await openBoard('failed queue')
   const held = await stallFeedback(page)
   await page.click('#two')
   await page.waitForSelector('.sf-popover-text')
   await page.keyboard.type('retry me')
   await page.keyboard.press('Enter')
-  await page.waitForFunction(() => document.querySelector('.sf-popover .sf-popover-queue').disabled)
+  await page.waitForFunction(() => document.querySelector('.sf-popover').style.display === 'none')
   held.shift().abort()
   await page.waitForFunction(() => [...document.querySelectorAll('.sf-toast')].some((t) => t.textContent.startsWith('Queue failed')))
-  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover .sf-popover-queue').disabled), false)
+  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover').style.display), '')
+  assert.equal(await page.evaluate(() => document.querySelector('.sf-popover-text').value), 'retry me')
 
   await page.focus('.sf-popover-text')
   await page.keyboard.press('Enter')
-  await page.waitForFunction(() => document.querySelector('.sf-popover .sf-popover-queue').disabled)
+  await page.waitForFunction(() => document.querySelector('.sf-popover').style.display === 'none')
   held.shift().continue()
   await page.waitForFunction(() => !document.querySelector('.sf-popover'))
   assert.equal((await drafts(page, key)).filter((i) => i.comment === 'retry me').length, 1)
+  await page.close()
+})
+
+test('Send pressed while a Queue is still out carries that note', SLOW, async () => {
+  const { key, page } = await openBoard('send during queue')
+  const held = await stallFeedback(page)
+  await page.click('#three')
+  await page.waitForSelector('.sf-popover-text')
+  await page.keyboard.type('ride along')
+  await page.keyboard.press('Enter')
+  await page.evaluate(() => document.querySelector('.sf-send-now').click())
+  await new Promise((r) => setTimeout(r, 300))
+  held.forEach((req) => req.continue())
+  await page.waitForFunction(() => [...document.querySelectorAll('.sf-toast')].some((t) => t.textContent.startsWith('Sent')))
+  const clientId = await page.evaluate(() => localStorage.getItem('sf-client-id'))
+  const { data } = await api('GET', `/api/b/${key}/state?clientId=${clientId}`)
+  assert.equal(data.feedback.find((i) => i.comment === 'ride along')?.state, 'submitted')
   await page.close()
 })
 

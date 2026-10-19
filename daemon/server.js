@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { HttpError, readBody } from './body.js'
 import { createStore } from './store.js'
 import { now, DATA_DIR } from './db.js'
-import { annotateAndDiff, blankBakedDiagrams, contextForSid, excerptForSid, extractIslands } from './differ.js'
+import { anchorForSid, annotateAndDiff, blankBakedDiagrams, extractIslands } from './differ.js'
 import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 import { readerChecks, sinceLast } from './reader-checks.js'
@@ -1050,10 +1050,11 @@ const handlers = {
     const latestSeq = store.lastRound(board.key)?.seq
     const source =
       board.wip_html && roundRow?.seq === latestSeq ? board.wip_html : (roundRow?.html ?? '')
-    const excerpt = excerptForSid(source, anchor.sid) ?? excerptForSid(roundRow?.html ?? '', anchor.sid)
+    const found =
+      anchorForSid(source, anchor.sid) ?? (source === roundRow.html ? null : anchorForSid(roundRow.html, anchor.sid))
     // A sid absent from the annotated round would store an unanchorable orphan row.
-    if (excerpt == null) return json(res, 400, { error: `no such anchor in round ${roundRow.seq}: ${anchor.sid}` })
-    const context = contextForSid(source, anchor.sid) ?? contextForSid(roundRow?.html ?? '', anchor.sid)
+    if (!found) return json(res, 400, { error: `no such anchor in round ${roundRow.seq}: ${anchor.sid}` })
+    const { excerpt, context } = found
     // Island pins: fractional click point, both coords or neither.
     const pin = [anchor.x, anchor.y].map((v) =>
       typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 1e4) / 1e4 : null
@@ -1134,13 +1135,14 @@ const handlers = {
     if (!widgetId || value == null) return json(res, 400, { error: 'widgetId and value required' })
     const roundRow = round != null ? store.round(board.key, round) : store.lastRound(board.key)
     if (!roundRow) return json(res, 404, { error: `no such round: ${round}` })
-    const context = sid ? contextForSid(roundRow?.html ?? '', sid) : null
+    const found = sid ? anchorForSid(roundRow?.html ?? '', sid) : null
+    const context = found?.context
     const item = store.upsertWidgetDraft({
       surface_key: board.key,
       round_seq: roundRow?.seq ?? null,
       client_id: clientId,
       sid: sid ?? null,
-      excerpt: sid ? excerptForSid(roundRow?.html ?? '', sid) : null,
+      excerpt: found?.excerpt ?? null,
       context_json: context ? JSON.stringify(context) : null,
       widget_id: widgetId,
       widget_value: String(value),

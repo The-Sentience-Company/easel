@@ -558,18 +558,18 @@ export function annotateAndDiff(html, prevHtml = null) {
 // Section context for an anchor: nearest preceding heading, enclosing card title,
 // and an ordinal among identically-texted sids — disambiguates repeated anchors.
 export function contextForSid(html, sid, max = 120) {
-  const tree = parseFragment(html)
+  const tree = typeof html === 'string' ? parseFragment(html) : html
   let target = null
   let heading = null
   let card = null
   let lastHeading = null
-  const texts = [] // [sid, tag, normalized text] in document order
+  const sidNodes = [] // [sid, element] in document order
   ;(function walk(node, chain) {
     if (!node.childNodes) return
     for (const child of node.childNodes) {
       if (isElement(child)) {
         const childSid = getAttr(child, 'data-sid')
-        if (childSid) texts.push([childSid, child.tagName, norm(textOf(child))])
+        if (childSid) sidNodes.push([childSid, child])
         if (childSid === sid && !target) {
           target = child
           heading = lastHeading
@@ -588,7 +588,7 @@ export function contextForSid(html, sid, max = 120) {
   if (!target) return null
   const own = norm(textOf(target))
   // Same tag only: a one-cell table's table/thead/tr ancestors share the th's text.
-  const dups = texts.filter(([, tag, t]) => tag === target.tagName && t === own)
+  const dups = sidNodes.filter(([, n]) => n.tagName === target.tagName && norm(textOf(n)) === own)
   const context = {}
   if (heading) context.heading = heading
   if (card && card !== own.slice(0, max)) context.card = card
@@ -600,7 +600,7 @@ export function contextForSid(html, sid, max = 120) {
 }
 
 export function excerptForSid(html, sid, max = 200) {
-  const tree = parseFragment(html)
+  const tree = typeof html === 'string' ? parseFragment(html) : html
   let found = null
   ;(function walk(node) {
     if (found || !node.childNodes) return
@@ -616,4 +616,11 @@ export function excerptForSid(html, sid, max = 200) {
   const text = norm(textOf(found))
   // An island placeholder has no text; its title is what locates a pin.
   return (text || getAttr(found, 'data-island-title') || '').slice(0, max)
+}
+
+// Excerpt and context from one parse: a large board costs hundreds of ms per parse.
+export function anchorForSid(html, sid) {
+  const tree = parseFragment(html)
+  const excerpt = excerptForSid(tree, sid)
+  return excerpt == null ? null : { excerpt, context: contextForSid(tree, sid) }
 }

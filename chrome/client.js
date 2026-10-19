@@ -1260,30 +1260,42 @@ function openPopover(node, event, pin) {
     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>'
   attachBtn.onclick = () => picker.click()
   const actions = el('div', 'sf-popover-actions')
-  // A press while the POST is out joins it and the note stays frozen until it settles:
-  // a repeat would queue another copy, and anything typed meanwhile would be lost.
-  let pending = null
-  const queue = () => (pending ??= queueOnce().finally(() => (pending = null)))
-  const freeze = (on) => (queueBtn.disabled = attachBtn.disabled = textarea.readOnly = strip.inert = on)
-  const queueOnce = async () => {
+  // The pop-up hides on press and the POST runs behind it, through the mutation chain
+  // so a Send pressed meanwhile carries this note. A failure brings the note back.
+  const queue = () => {
     const comment = textarea.value.trim()
     if (!comment && !images.length) return
-    freeze(true)
-    try {
-      await api.send('POST', `/api/b/${KEY}/feedback`, {
+    const note = popover
+    note.style.display = 'none'
+    popover = null
+    closePopover()
+    return enqueueMutation(() =>
+      api.send('POST', `/api/b/${KEY}/feedback`, {
         clientId,
         round: state.data.currentRound.seq,
         anchor: { sid, ...extra },
         comment,
         ...(images.length ? { images } : {}),
       })
-      closePopover()
-      toast('Queued')
-      sync()
-    } catch (err) {
-      freeze(false)
-      toast(`Queue failed: ${err.message}`)
-    }
+    ).then(
+      () => {
+        note.remove()
+        toast('Queued')
+        sync()
+      },
+      (err) => {
+        // Never close a newer pop-up the reader is typing in; the toast keeps the words.
+        if (popover) {
+          note.remove()
+          return toast(`Queue failed: ${err.message} — "${comment}"`)
+        }
+        toast(`Queue failed: ${err.message}`)
+        note.style.display = ''
+        popover = note
+        queueOpenPopover = queue
+        textarea.focus()
+      }
+    )
   }
   submitOnEnter(textarea, queue)
   queueOpenPopover = queue
