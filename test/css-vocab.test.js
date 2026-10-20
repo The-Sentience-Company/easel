@@ -26,7 +26,8 @@ const CHROME_CLASSES = [
   'sf-tuner', 'sf-tuner-title', 'sf-tuner-row', 'sf-tuner-color',
   'sf-tuner-select', 'sf-tuner-range', 'sf-tuner-actions', 'sf-tuner-send', 'sf-tuner-reset',
   'sf-prior-answered',
-  'sf-tabs', 'sf-tabs-strip', 'sf-tab', 'sf-tab-label', 'sf-tab-count', 'sf-tab-next', 'sf-tab-next-kicker', 'sf-tab-next-label',
+  'sf-tabs', 'sf-tabs-strip', 'sf-tab', 'sf-tab-label', 'sf-tab-count', 'sf-tab-keys',
+  'sf-tab-pager', 'sf-tab-prev', 'sf-tab-next', 'sf-tab-pager-text', 'sf-tab-pager-kicker', 'sf-tab-pager-label', 'sf-tab-pager-arrow', 'sf-tab-pager-key',
 ]
 
 describe('easel.css covers the chrome vocabulary', () => {

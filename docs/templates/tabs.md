@@ -47,7 +47,7 @@ One to three words, ideally with the range they hold ("Planning · 1–9"). A lo
 
 You don't build any of this; it comes with the tabs:
 
-- a bar that stays on screen while they scroll, and a "Next tab" button at the end of each tab
+- a bar that stays on screen while they scroll, Previous/Next tab buttons at the end of each tab, and Z/X to step between tabs
 - a dot on tabs whose content changed this round, and a count of annotations on each tab
 - the open tab in the URL (`#tab=Label`), so a link opens the right tab; it stays open when they switch rounds
 - clicking a feedback row opens the tab that holds it

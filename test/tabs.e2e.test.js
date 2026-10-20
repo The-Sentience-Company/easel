@@ -22,7 +22,7 @@ const board = (extra = '') => ({
   sections: [
     { heading: 'Overview', body: 'always visible intro' },
     { heading: 'Plan one', body: 'alpha body', tab: 'Alpha' },
-    { heading: 'Plan two', body: 'alpha second body', tab: 'Alpha' },
+    { heading: 'Plan two', body: ['alpha second body', ...Array.from({ length: 60 }, (_, i) => `- filler line ${i}`)].join('\n\n'), tab: 'Alpha' },
     { heading: 'Beta work', body: `beta body${extra}`, tab: 'Beta' },
     { heading: 'Gamma work', body: 'gamma body\n\n```\nshort\n```', tab: 'Gamma' },
   ],
@@ -146,6 +146,42 @@ describe('tabbed review board', () => {
     await pg.waitForSelector('.sf-queue-item')
     await pg.evaluate("document.querySelector('.sf-queue-item').click()")
     assert.equal((await probe(pg)).selected, 'Gamma', 'revealing an anchor in a hidden tab must open that tab')
+    await pg.close()
+  })
+
+  test('switching tabs never moves the bar, stuck or not, even back to a tab read before', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.waitForSelector('.sf-tabs')
+    const barTop = () => pg.evaluate("Math.round(document.querySelector('.sf-tabs').getBoundingClientRect().top)")
+    await pg.evaluate("scrollTo(0, document.querySelector('.sf-tabs').getBoundingClientRect().top + scrollY - 300)")
+    for (const label of ['Beta', 'Gamma', 'Alpha']) {
+      await clickTab(pg, label)
+      assert.equal(await barTop(), 300, `the unstuck bar moved opening ${label}`)
+    }
+    await pg.evaluate('scrollTo(0, scrollY + 1500)')
+    const stuck = await barTop()
+    assert.ok(stuck < 300, 'the bar should be stuck under the chrome by now')
+    for (const label of ['Beta', 'Gamma', 'Alpha']) {
+      await clickTab(pg, label)
+      assert.equal(await barTop(), stuck, `the stuck bar moved opening ${label}`)
+    }
+    await pg.close()
+  })
+
+  test('Z and X step through tabs without wrapping, and the pager names its keys', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.waitForSelector('.sf-tabs')
+    const steps = []
+    for (const k of ['z', 'x', 'x', 'x', 'z']) {
+      await pg.keyboard.press(k)
+      steps.push((await probe(pg)).selected)
+    }
+    assert.deepEqual(steps, ['Alpha', 'Beta', 'Gamma', 'Gamma', 'Beta'])
+    const pager = await pg.evaluate(`[...document.querySelectorAll('[data-tab]')].map((p) =>
+      [...p.querySelectorAll('.sf-tab-pager button')].map((b) => b.className + ':' + b.querySelector('.sf-tab-pager-key').textContent))`)
+    assert.deepEqual(pager, [['sf-tab-next:X'], ['sf-tab-prev:Z', 'sf-tab-next:X'], ['sf-tab-prev:Z']])
     await pg.close()
   })
 
