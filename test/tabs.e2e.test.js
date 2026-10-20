@@ -24,7 +24,7 @@ const board = (extra = '') => ({
     { heading: 'Plan one', body: 'alpha body', tab: 'Alpha' },
     { heading: 'Plan two', body: 'alpha second body', tab: 'Alpha' },
     { heading: 'Beta work', body: `beta body${extra}`, tab: 'Beta' },
-    { heading: 'Gamma work', body: 'gamma body', tab: 'Gamma' },
+    { heading: 'Gamma work', body: 'gamma body\n\n```\nshort\n```', tab: 'Gamma' },
   ],
 })
 
@@ -76,11 +76,30 @@ describe('tabbed review board', () => {
     await pg.close()
   })
 
-  test('the hash opens its tab on load', async () => {
+  test('the hash opens its tab on load, and a later hash change switches to it', async () => {
     const pg = await browser.newPage()
     await pg.goto(`${BASE}/b/${key}#tab=Gamma`, { waitUntil: 'networkidle0' })
     await pg.waitForSelector('.sf-tabs')
     assert.deepEqual((await probe(pg)).shown, ['Gamma'])
+    await pg.evaluate("location.hash = '#tab=Beta'")
+    await pg.waitForFunction("document.querySelector('.sf-tab[aria-selected=\"true\"]').textContent === 'Beta'")
+    await pg.close()
+  })
+
+  test('a mangled hash falls back to the first tab and the board still renders', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}#tab=Planning%E2%80`, { waitUntil: 'networkidle0' })
+    await pg.waitForSelector('.sf-tabs')
+    assert.deepEqual((await probe(pg)).shown, ['Alpha'])
+    assert.equal(await pg.evaluate("document.body.classList.contains('sf-gated')"), false, 'the gate must lift')
+    await pg.close()
+  })
+
+  test('a short code block in a hidden tab gets no wrap chip', async () => {
+    const pg = await browser.newPage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    await pg.waitForSelector('.sf-tabs')
+    assert.equal(await pg.evaluate("document.querySelectorAll('#sf-content pre .sf-wrap-toggle').length"), 0)
     await pg.close()
   })
 

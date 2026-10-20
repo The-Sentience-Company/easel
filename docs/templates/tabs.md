@@ -26,6 +26,7 @@ Rules (a broken one fails the publish with the section's path):
 - Once tabs start, every later section names its tab.
 - Keep each tab's sections together. A label can't come back after another tab.
 - You need at least two different labels.
+- A section that only introduced a group ("Planning (videos 1 to 9)") is now the tab label; drop it rather than repeat it as the tab's first heading.
 
 ## page
 

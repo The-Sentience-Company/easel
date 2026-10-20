@@ -450,18 +450,30 @@ function attachCollapse() {
 
 // Sibling runs of [data-tab] panels become one tab set. The bar is chrome outside
 // every sid, so a click on it switches tabs and never opens an annotation.
-const DIFF_KINDS = ['added', 'modified', 'moved']
 const tabChoice = new Map() // set index -> label the reader picked; survives rebuilds and round flips
 const tabScroll = new Map() // `${set}|${label}` -> scrollY the reader left that tab at
 let tabSets = []
+const tabStripObserver = new ResizeObserver((entries) => entries.forEach((e) => markTabOverflow(e.target)))
 
+// A hand-edited or truncated link must fall back to the first tab, not abort the render.
 const hashTab = () => {
   const m = location.hash.match(/^#tab=(.+)$/)
-  return m ? decodeURIComponent(m[1]) : null
+  try {
+    return m ? decodeURIComponent(m[1]) : null
+  } catch {
+    return null
+  }
 }
+
+window.addEventListener('hashchange', () => {
+  const set = tabSets[0]
+  const k = set ? set.panels.findIndex((p) => p.dataset.tab === hashTab()) : -1
+  if (k !== -1) selectTab(set, k, { scroll: 'top' })
+})
 
 function attachTabs() {
   tabSets = []
+  tabStripObserver.disconnect()
   for (const first of CONTENT.querySelectorAll('[data-tab]')) {
     if (first.previousElementSibling?.matches('[data-tab]')) continue
     const panels = [first]
@@ -508,7 +520,7 @@ function buildTabSet(panels) {
   tabSets.push(set)
   const wanted = tabChoice.get(set.index) ?? (set.index === 0 ? hashTab() : null)
   selectTab(set, Math.max(0, panels.findIndex((p) => p.dataset.tab === wanted)), { scroll: 'none' })
-  markTabOverflow(set.strip)
+  tabStripObserver.observe(set.strip)
 }
 
 // A strip that scrolls sideways hides its scrollbar, so a fade marks the edge with more tabs.
@@ -565,6 +577,8 @@ function refreshTabBadges() {
       else delete tab.dataset.sfDiff
       tab.title = [panel.dataset.tab, diff && `${diff} this round`, notes && `${notes} annotated`].filter(Boolean).join(' · ')
     })
+    // Badges widen tabs without resizing the strip, so its observer would not see them.
+    markTabOverflow(set.strip)
   }
 }
 
@@ -604,14 +618,12 @@ function render() {
 
   renderRounds(d)
   if (rebuild && !showWip && state.diffView && d.diff) applyDiff(d.diff)
-  if (rebuild) attachTabs()
   // Feedback is tied to the round it was left on; other rounds' items stay out.
   // A draft not yet stamped with a round (null) belongs to the round on screen.
   const roundFeedback = d.feedback.filter((i) => i.round == null || i.round === d.currentRound.seq)
   if (!rebuild) clearAnnotations()
   // Assigns the marker ids the queue rows label themselves with, so it runs first.
   markAnnotated(roundFeedback)
-  refreshTabBadges()
   renderQueue(roundFeedback)
   renderChat(d.chat)
   renderAudit(d.audit)
@@ -631,7 +643,10 @@ function render() {
     attachWhiteboardButtons()
     attachWrapButtons()
     mountIslands(d, showWip)
+    // After the wrap chips: a pre in a hidden panel measures like one in a closed <details>.
+    attachTabs()
   }
+  refreshTabBadges()
 }
 
 // A widget answered on an earlier round shows that verdict as a badge, so a
@@ -838,8 +853,10 @@ function renderRounds(d) {
   }
 }
 
+const DIFF_KINDS = ['added', 'modified', 'moved']
+
 function applyDiff(diff) {
-  for (const k of ['added', 'modified', 'moved']) {
+  for (const k of DIFF_KINDS) {
     for (const sid of diff[k] || []) {
       const node = CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
       if (node) node.classList.add(`sf-diff-${k}`)
