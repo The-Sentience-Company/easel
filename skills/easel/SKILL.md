@@ -51,6 +51,8 @@ easel open <file.html|file.md>                                                  
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | a layout the other templates cannot give: side-by-side comparisons, mockups, custom composition — hand-authored HTML through the same chrome and annotation layer |
 
+**A long board whose content falls into groups the reader jumps between** (phases, areas, chapters) can split into tabs instead of one long scroll — `review` and `page` only, not the default; read `references/templates/tabs.md` before adding them.
+
 **Then Read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file; never write the JSON from memory of the schema.** Memory silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its schema and the rules that only matter inside that flow, so this file doesn't repeat them and they can't drift.
 
 **The template decides the shape; `references/authoring.md` decides whether the reader can act on it** — glossing internal names, shipping the diff rather than describing the edit, giving a decision the basis for answering it, sourcing claims, the run manifest behind any model output, and the shape of every paragraph — a run of terms, options, labels, or steps is a table or list in any template's prose field, never one paragraph. Read it before authoring any board, not only ones carrying decisions.

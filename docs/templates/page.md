@@ -57,6 +57,8 @@ Both recipes that used to live in this section now have templates, and hand-buil
 
 Adjudicating labeled cases and goldens is `rulings`; two-candidate *blind* compares stay on `eval`.
 
+A long page whose content falls into groups can split into tabs: wrap each group in `<div data-tab="Label">` (`tabs.md`).
+
 The page shape, compressed:
 
 ```html

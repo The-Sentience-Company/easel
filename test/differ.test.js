@@ -436,3 +436,18 @@ describe('diagrams diff as one unit', () => {
     assert.deepEqual(r2.diff.removed, [])
   })
 })
+
+describe('tab panels are layout, not content', () => {
+  test('a [data-tab] wrapper takes no sid; what it holds still does', () => {
+    const { html } = annotateAndDiff('<div data-tab="A"><p>alpha</p></div><div data-tab="B"><p>beta</p></div>')
+    assert.deepEqual([...html.matchAll(/<(\w+)[^>]*data-sid=/g)].map((m) => m[1]), ['p', 'p'])
+  })
+
+  test('moving an untabbed board into tabs marks nothing as changed', () => {
+    const r1 = annotateAndDiff('<section><h2>one</h2><p>alpha</p></section><section><h2>two</h2><p>beta</p></section>')
+    const r2 = annotateAndDiff(
+      '<div data-tab="A"><section><h2>one</h2><p>alpha</p></section></div><div data-tab="B"><section><h2>two</h2><p>beta</p></section></div>',
+      r1.html)
+    assert.deepEqual([r2.diff.added, r2.diff.modified, r2.diff.moved, r2.diff.removed], [[], [], [], []])
+  })
+})
