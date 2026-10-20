@@ -20,6 +20,7 @@ easel open --template review --data plan.json --title "Retry budget"
   "sections": [                      // optional
     {
       "heading": "string",           // required
+      "tab": "string",               // optional — groups sections into tabs; rules in tabs.md
       "body": "string",              // optional, markdown
       "badges": [                    // optional
         "plain label",

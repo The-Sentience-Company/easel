@@ -104,7 +104,10 @@ function collectBlocks(root) {
       if (!isElement(child)) return
       const childPath = [...path, i]
       const diagram = isDiagram(child)
-      if (BLOCK_TAGS.has(child.tagName) && hasVisibleContent(child)) {
+      // A tab panel is layout, not content: as a block it would take every click
+      // in its whitespace and diff as one huge node whenever anything inside moved.
+      const tabPanel = getAttr(child, 'data-tab') != null
+      if (BLOCK_TAGS.has(child.tagName) && !tabPanel && hasVisibleContent(child)) {
         blocks.push({
           node: child,
           path: childPath,

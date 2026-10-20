@@ -1963,6 +1963,115 @@ button.sf-audit-badge {
 .sf-sev-warn  { border-left: 3px solid var(--color-warning); }
 .sf-sev-error { border-left: 3px solid var(--color-error); }
 
+/* tabs ------------------------------------------------------------------ */
+/* Built by client.js from sibling [data-tab] panels. Sticks under #sf-chrome so a
+   long tab switches without scrolling back; page ground, so it reads as the page. */
+#sf-content .sf-tabs {
+  position: sticky;
+  top: var(--sf-chrome-h, 0px);
+  z-index: 3;
+  margin: 12px 0 36px;
+  background: var(--color-base-200);
+  box-shadow: inset 0 -1px 0 var(--border);
+  font-family: var(--font-sans);
+}
+/* position: relative so a tab's offsetLeft is measured from the strip when centring it. */
+.sf-tabs-strip {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sf-tabs-strip::-webkit-scrollbar { display: none; }
+.sf-tabs-strip[data-sf-more="end"] { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+.sf-tabs-strip[data-sf-more="start"] { mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
+.sf-tabs-strip[data-sf-more="start end"] { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+#sf-content button.sf-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 14px 11px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--color-muted-content);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+/* A runaway label would crowd every other tab off a phone's bar; the full text is in the title. */
+.sf-tab-label { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; }
+#sf-content button.sf-tab:hover { color: var(--color-base-content); border-bottom-color: color-mix(in oklch, var(--color-primary) 35%, transparent); }
+#sf-content button.sf-tab[aria-selected="true"] { color: var(--color-base-content); border-bottom-color: var(--color-primary); }
+#sf-content button.sf-tab:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -4px; }
+/* Same hues as the diff bars, so a dot on a hidden tab reads as the bar it hides. */
+#sf-content button.sf-tab[data-sf-diff]::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--diff-edge);
+}
+#sf-content .sf-tab[data-sf-diff="added"]    { --diff-edge: var(--color-success); }
+#sf-content .sf-tab[data-sf-diff="modified"] { --diff-edge: var(--color-warning); }
+#sf-content .sf-tab[data-sf-diff="moved"]    { --diff-edge: var(--color-info); }
+#sf-content .sf-tab-count {
+  min-width: 17px;
+  height: 15px;
+  padding: 0 5px;
+  border-radius: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  background: var(--marker-0);
+  color: var(--marker-content);
+}
+#sf-content button.sf-tab-next {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin: 44px 0 0 auto;
+  min-width: min(100%, 260px);
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+#sf-content button.sf-tab-next:hover { border-color: var(--color-primary); }
+#sf-content button.sf-tab-next:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.sf-tab-next-kicker {
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted-content);
+}
+.sf-tab-next-label { font-family: var(--font-serif); font-size: 1.12rem; font-weight: 600; }
+.sf-tab-next-label::after { content: " →"; color: var(--color-primary); }
+html[data-theme^="fig"] .sf-tab-next-label { font-family: 'Optima', 'Seravek', var(--font-sans); }
+/* The first section of a panel sits under the bar's own rule; a second rule would double it. */
+[data-tab] > .sd-section:first-of-type > h2 { padding-top: 0; border-top: 0; margin-top: 0; }
+@media print {
+  #sf-content .sf-tabs, #sf-content .sf-tab-next { display: none; }
+  #sf-content [data-tab][hidden] { display: block !important; }
+}
+
 /* layout gate ----------------------------------------------------------- */
 /* The shell ships #sf-content empty and client.js paints it, so without this
    every board opens on a blank page. */

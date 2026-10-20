@@ -322,6 +322,41 @@ describe('widgets', () => {
 })
 
 describe('review', () => {
+  describe('tabs', () => {
+    const sec = (heading, tab) => (tab === undefined ? { heading, body: heading } : { heading, body: heading, tab })
+
+    test('sections before the first tab stay above it; each tab wraps its run of sections', () => {
+      const html = review.render({
+        title: 't',
+        sections: [sec('intro'), sec('a1', 'A'), sec('a2', 'A'), sec('b1', 'B')],
+        decisions: [{ id: 'final', question: 'ship?', options: ['yes', 'no'] }],
+      })
+      const panels = [...html.matchAll(/<div data-tab="([^"]+)">([\s\S]*?)\n<\/div>/g)].map((m) => [m[1], (m[2].match(/<h2>[^<]+/g) || []).length])
+      assert.deepEqual(panels, [['A', 2], ['B', 1]])
+      assert.ok(html.indexOf('intro') < html.indexOf('data-tab'), 'the untabbed lead section renders above the tabs')
+      assert.ok(html.lastIndexOf('data-tab') < html.indexOf('data-widget-id="final"'), 'board-wide decisions stay outside every tab')
+    })
+
+    test('a board with no tab field renders exactly as before', () => {
+      assert.doesNotMatch(review.render({ title: 't', sections: [sec('a'), sec('b')] }), /data-tab/)
+    })
+
+    test('labels are escaped into the attribute', () => {
+      const html = review.render({ title: 't', sections: [sec('x', 'R&D "plan"'), sec('y', 'Other')] })
+      assert.match(html, /data-tab="R&amp;D &quot;plan&quot;"/)
+    })
+
+    for (const [name, sections, message] of [
+      ['an untabbed section after tabs start', [sec('a', 'A'), sec('b', 'B'), sec('c')], /sections\[2\]\.tab must be a non-empty string/],
+      ['a tab reopened after another', [sec('a', 'A'), sec('b', 'B'), sec('c', 'A')], /reopens an earlier tab/],
+      ['a single tab', [sec('a', 'A'), sec('b', 'A')], /at least two different labels/],
+    ]) {
+      test(`throws on ${name}`, () => {
+        assert.throws(() => review.render({ title: 't', sections }), (err) => err instanceof TemplateError && message.test(err.message))
+      })
+    }
+  })
+
   test('a section never ships pre-closed — an old collapse key is inert, not an error', () => {
     const html = review.render({
       title: 't',

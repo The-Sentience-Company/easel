@@ -62,6 +62,27 @@ const renderBlocks = (blocks, path) => requireArray(blocks, path).map((b, j) => 
   fail(`${p}.kind must be cards, callouts, or island`)
 })
 
+/** Sections before the first `tab` stay above the tab bar; from there on every
+    section names its tab, and a tab's sections sit together. */
+const groupTabs = (sections, htmls) => {
+  const first = sections.findIndex((s) => s?.tab !== undefined)
+  if (first === -1) return htmls.join('\n')
+  const tabs = []
+  sections.slice(first).forEach((s, k) => {
+    const i = first + k
+    const label = requireString(s.tab, `review.sections[${i}].tab`)
+    const last = tabs[tabs.length - 1]
+    if (last?.label === label) return last.htmls.push(htmls[i])
+    if (tabs.some((t) => t.label === label)) fail(`review.sections[${i}].tab "${label}" reopens an earlier tab — keep each tab's sections together`)
+    tabs.push({ label, htmls: [htmls[i]] })
+  })
+  if (tabs.length < 2) fail(`review: tabs need at least two different labels, got only "${tabs[0].label}"`)
+  return [
+    ...htmls.slice(0, first),
+    ...tabs.map((t) => `<div data-tab="${attr(t.label)}">\n${t.htmls.join('\n')}\n</div>`),
+  ].join('\n')
+}
+
 export function render(data) {
   requireObject(data, 'review')
   requireString(data.title, 'review.title')
@@ -129,7 +150,7 @@ export function render(data) {
       }</div></section>`
     : ''
 
-  const sectionHtml = sections.map((s, i) => {
+  const sectionHtmls = sections.map((s, i) => {
     requireObject(s, `review.sections[${i}]`)
     requireString(s.heading, `review.sections[${i}].heading`)
     const body = markdown(s.body ?? '')
@@ -149,7 +170,8 @@ export function render(data) {
       inlineVotes,
       '</section>',
     ].filter(Boolean).join('\n')
-  }).join('\n')
+  })
+  const sectionHtml = groupTabs(sections, sectionHtmls)
 
   const decisionHtml = decisions.length
     ? [

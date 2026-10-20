@@ -448,6 +448,126 @@ function attachCollapse() {
   }
 }
 
+// Sibling runs of [data-tab] panels become one tab set. The bar is chrome outside
+// every sid, so a click on it switches tabs and never opens an annotation.
+const DIFF_KINDS = ['added', 'modified', 'moved']
+const tabChoice = new Map() // set index -> label the reader picked; survives rebuilds and round flips
+const tabScroll = new Map() // `${set}|${label}` -> scrollY the reader left that tab at
+let tabSets = []
+
+const hashTab = () => {
+  const m = location.hash.match(/^#tab=(.+)$/)
+  return m ? decodeURIComponent(m[1]) : null
+}
+
+function attachTabs() {
+  tabSets = []
+  for (const first of CONTENT.querySelectorAll('[data-tab]')) {
+    if (first.previousElementSibling?.matches('[data-tab]')) continue
+    const panels = [first]
+    for (let n = first.nextElementSibling; n?.matches('[data-tab]'); n = n.nextElementSibling) panels.push(n)
+    buildTabSet(panels)
+  }
+}
+
+function buildTabSet(panels) {
+  // The strip scrolls and fades at its edges; the bar around it stays opaque so text never shows through.
+  const set = { index: tabSets.length, bar: el('div', 'sf-tabs'), strip: el('div', 'sf-tabs-strip'), tabs: [], panels }
+  set.strip.setAttribute('role', 'tablist')
+  set.bar.appendChild(set.strip)
+  panels.forEach((panel, i) => {
+    const tab = el('button', 'sf-tab')
+    tab.type = 'button'
+    tab.id = `sf-tab-${set.index}-${i}`
+    tab.setAttribute('role', 'tab')
+    tab.append(el('span', 'sf-tab-label', panel.dataset.tab))
+    tab.onclick = () => selectTab(set, i, { scroll: 'restore' })
+    panel.setAttribute('role', 'tabpanel')
+    panel.setAttribute('aria-labelledby', tab.id)
+    set.strip.appendChild(tab)
+    set.tabs.push(tab)
+    // Reading straight through should not mean scrolling back up to the bar.
+    if (i < panels.length - 1) {
+      const next = el('button', 'sf-tab-next')
+      next.type = 'button'
+      next.append(el('span', 'sf-tab-next-kicker', 'Next tab'), el('span', 'sf-tab-next-label', panels[i + 1].dataset.tab))
+      next.onclick = () => selectTab(set, i + 1, { scroll: 'top', focus: true })
+      panel.appendChild(next)
+    }
+  })
+  set.bar.addEventListener('keydown', (e) => {
+    const at = set.tabs.indexOf(document.activeElement)
+    if (at === -1) return
+    const to = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: set.tabs.length - 1 }[e.key]
+    if (to === undefined) return
+    e.preventDefault()
+    selectTab(set, (to + set.tabs.length) % set.tabs.length, { scroll: 'restore', focus: true })
+  })
+  set.strip.addEventListener('scroll', () => markTabOverflow(set.strip), { passive: true })
+  panels[0].before(set.bar)
+  tabSets.push(set)
+  const wanted = tabChoice.get(set.index) ?? (set.index === 0 ? hashTab() : null)
+  selectTab(set, Math.max(0, panels.findIndex((p) => p.dataset.tab === wanted)), { scroll: 'none' })
+  markTabOverflow(set.strip)
+}
+
+// A strip that scrolls sideways hides its scrollbar, so a fade marks the edge with more tabs.
+function markTabOverflow(strip) {
+  const more = []
+  if (strip.scrollLeft > 1) more.push('start')
+  if (strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1) more.push('end')
+  strip.dataset.sfMore = more.join(' ')
+}
+
+function selectTab(set, i, { scroll, focus } = {}) {
+  const was = set.tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true')
+  if (was === i && scroll !== 'top') return
+  if (was !== -1) tabScroll.set(`${set.index}|${set.panels[was].dataset.tab}`, window.scrollY)
+  set.tabs.forEach((t, k) => {
+    t.setAttribute('aria-selected', String(k === i))
+    t.tabIndex = k === i ? 0 : -1
+  })
+  set.panels.forEach((p, k) => { p.hidden = k !== i })
+  const label = set.panels[i].dataset.tab
+  tabChoice.set(set.index, label)
+  if (set.index === 0) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${encodeURIComponent(label)}`)
+  const tab = set.tabs[i]
+  set.strip.scrollLeft = tab.offsetLeft - set.strip.clientWidth / 2 + tab.offsetWidth / 2
+  if (focus) tab.focus({ preventScroll: true })
+  if (scroll === 'none') return
+  // The new panel starts right under the stuck bar; never jump a reader who is still above it.
+  const bar = getComputedStyle(set.bar)
+  const panelTop = set.panels[i].getBoundingClientRect().top + window.scrollY
+    - set.bar.offsetHeight - (parseFloat(bar.marginBottom) || 0) - (parseFloat(bar.top) || 0)
+  const saved = scroll === 'restore' ? tabScroll.get(`${set.index}|${label}`) : undefined
+  if (saved !== undefined) window.scrollTo({ top: saved })
+  else if (window.scrollY > panelTop) window.scrollTo({ top: panelTop })
+}
+
+// A node in a hidden panel has no box to scroll to, so its tab opens first.
+function revealTabFor(node) {
+  for (const set of tabSets) {
+    const k = set.panels.findIndex((p) => p.contains(node))
+    if (k !== -1 && set.panels[k].hidden) selectTab(set, k, { scroll: 'none' })
+  }
+}
+
+// What a hidden tab holds that the reader would otherwise miss: this round's changes and annotations.
+function refreshTabBadges() {
+  for (const set of tabSets) {
+    set.tabs.forEach((tab, k) => {
+      const panel = set.panels[k]
+      tab.querySelector('.sf-tab-count')?.remove()
+      const notes = panel.querySelectorAll('.sf-marker').length
+      if (notes) tab.append(el('span', 'sf-tab-count', String(notes)))
+      const diff = DIFF_KINDS.find((kind) => panel.querySelector(`.sf-diff-${kind}`))
+      if (diff) tab.dataset.sfDiff = diff
+      else delete tab.dataset.sfDiff
+      tab.title = [panel.dataset.tab, diff && `${diff} this round`, notes && `${notes} annotated`].filter(Boolean).join(' · ')
+    })
+  }
+}
+
 // Queue boards emit <time data-live-age datetime>; recompute so a long-open
 // tab never shows a stale "waiting" age. Publish-time text is the fallback.
 function refreshLiveAges() {
@@ -484,12 +604,14 @@ function render() {
 
   renderRounds(d)
   if (rebuild && !showWip && state.diffView && d.diff) applyDiff(d.diff)
+  if (rebuild) attachTabs()
   // Feedback is tied to the round it was left on; other rounds' items stay out.
   // A draft not yet stamped with a round (null) belongs to the round on screen.
   const roundFeedback = d.feedback.filter((i) => i.round == null || i.round === d.currentRound.seq)
   if (!rebuild) clearAnnotations()
   // Assigns the marker ids the queue rows label themselves with, so it runs first.
   markAnnotated(roundFeedback)
+  refreshTabBadges()
   renderQueue(roundFeedback)
   renderChat(d.chat)
   renderAudit(d.audit)
@@ -1020,6 +1142,7 @@ function highlightQueueRows(key, on) {
 function revealAnchor(sid) {
   const node = CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
   if (!node) return
+  revealTabFor(node)
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   node.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
   clearTimeout(flashTimer)
@@ -1076,7 +1199,7 @@ function closePopover() {
 }
 
 // Chrome-injected controls inside content act, never annotate.
-const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle'
+const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-tabs, .sf-tab-next'
 
 CONTENT.addEventListener('mouseover', (e) => {
   if (!state.annotating || popover) return
@@ -1138,7 +1261,7 @@ function anchorText(node) {
 }
 
 function stripMarkers(fragment) {
-  fragment.querySelectorAll('.sf-marker').forEach((m) => m.remove())
+  fragment.querySelectorAll('.sf-marker, .sf-tabs, .sf-tab-next').forEach((m) => m.remove())
   return fragment.textContent || ''
 }
 
@@ -2130,6 +2253,8 @@ function buildTuner() {
 // ---------------------------------------------------------------- boot
 
 buildChrome()
+// The tab bar sticks just under the chrome, whose height changes with compact mode and the rounds strip.
+new ResizeObserver(() => document.documentElement.style.setProperty('--sf-chrome-h', `${CHROME.offsetHeight}px`)).observe(CHROME)
 buildWhiteboard()
 setAnnotating(true)
 sync()
