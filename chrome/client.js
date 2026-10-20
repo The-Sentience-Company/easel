@@ -46,6 +46,8 @@ const THEME_HOTKEY = 't'
 const ANNOTATE_HOTKEY = 'a'
 const ROUND_BACK_HOTKEY = 'q'
 const ROUND_FORWARD_HOTKEY = 'w'
+const TAB_BACK_HOTKEY = 'z'
+const TAB_FORWARD_HOTKEY = 'x'
 const WIDTH_NARROW_HOTKEY = 'e'
 const WIDTH_WIDEN_HOTKEY = 'r'
 const SEND_HOTKEY = 's'
@@ -451,7 +453,6 @@ function attachCollapse() {
 // Sibling runs of [data-tab] panels become one tab set. The bar is chrome outside
 // every sid, so a click on it switches tabs and never opens an annotation.
 const tabChoice = new Map() // set index -> label the reader picked; survives rebuilds and round flips
-const tabScroll = new Map() // `${set}|${label}` -> scrollY the reader left that tab at
 let tabSets = []
 const tabStripObserver = new ResizeObserver((entries) => entries.forEach((e) => markTabOverflow(e.target)))
 
@@ -468,7 +469,7 @@ const hashTab = () => {
 window.addEventListener('hashchange', () => {
   const set = tabSets[0]
   const k = set ? set.panels.findIndex((p) => p.dataset.tab === hashTab()) : -1
-  if (k !== -1) selectTab(set, k, { scroll: 'top' })
+  if (k !== -1) selectTab(set, k)
 })
 
 function attachTabs() {
@@ -493,19 +494,29 @@ function buildTabSet(panels) {
     tab.id = `sf-tab-${set.index}-${i}`
     tab.setAttribute('role', 'tab')
     tab.append(el('span', 'sf-tab-label', panel.dataset.tab))
-    tab.onclick = () => selectTab(set, i, { scroll: 'restore' })
+    tab.onclick = () => selectTab(set, i)
     panel.setAttribute('role', 'tabpanel')
     panel.setAttribute('aria-labelledby', tab.id)
     set.strip.appendChild(tab)
     set.tabs.push(tab)
     // Reading straight through should not mean scrolling back up to the bar.
-    if (i < panels.length - 1) {
-      const next = el('button', 'sf-tab-next')
-      next.type = 'button'
-      next.append(el('span', 'sf-tab-next-kicker', 'Next tab'), el('span', 'sf-tab-next-label', panels[i + 1].dataset.tab))
-      next.onclick = () => selectTab(set, i + 1, { scroll: 'top', focus: true })
-      panel.appendChild(next)
+    const pager = el('div', 'sf-tab-pager')
+    for (const [cls, kicker, to, arrow, key] of [
+      ['sf-tab-prev', 'Previous tab', i - 1, '←', TAB_BACK_HOTKEY],
+      ['sf-tab-next', 'Next tab', i + 1, '→', TAB_FORWARD_HOTKEY],
+    ]) {
+      if (!panels[to]) continue
+      const btn = el('button', cls)
+      btn.type = 'button'
+      const text = el('span', 'sf-tab-pager-text')
+      text.append(el('span', 'sf-tab-pager-kicker', kicker), el('span', 'sf-tab-pager-label', panels[to].dataset.tab))
+      const parts = [el('kbd', 'sf-tab-pager-key', key.toUpperCase()), el('span', 'sf-tab-pager-arrow', arrow), text]
+      btn.append(...(to < i ? parts : parts.reverse()))
+      btn.title = `${kicker}: ${panels[to].dataset.tab} (${key.toUpperCase()})`
+      btn.onclick = () => selectTab(set, to, { focus: true })
+      pager.appendChild(btn)
     }
+    panel.appendChild(pager)
   })
   set.bar.addEventListener('keydown', (e) => {
     const at = set.tabs.indexOf(document.activeElement)
@@ -513,13 +524,14 @@ function buildTabSet(panels) {
     const to = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: set.tabs.length - 1 }[e.key]
     if (to === undefined) return
     e.preventDefault()
-    selectTab(set, (to + set.tabs.length) % set.tabs.length, { scroll: 'restore', focus: true })
+    selectTab(set, (to + set.tabs.length) % set.tabs.length, { focus: true })
   })
   set.strip.addEventListener('scroll', () => markTabOverflow(set.strip), { passive: true })
+  set.bar.appendChild(el('span', 'sf-tab-keys', `[${TAB_BACK_HOTKEY.toUpperCase()}]·[${TAB_FORWARD_HOTKEY.toUpperCase()}]`))
   panels[0].before(set.bar)
   tabSets.push(set)
   const wanted = tabChoice.get(set.index) ?? (set.index === 0 ? hashTab() : null)
-  selectTab(set, Math.max(0, panels.findIndex((p) => p.dataset.tab === wanted)), { scroll: 'none' })
+  selectTab(set, Math.max(0, panels.findIndex((p) => p.dataset.tab === wanted)), { scroll: false })
   tabStripObserver.observe(set.strip)
 }
 
@@ -531,10 +543,11 @@ function markTabOverflow(strip) {
   strip.dataset.sfMore = more.join(' ')
 }
 
-function selectTab(set, i, { scroll, focus } = {}) {
+// The bar never moves on screen: stuck, the new tab opens at its top under it; not
+// yet stuck, the page stays put. Panel min-height keeps a short tab from clamping the scroll.
+function selectTab(set, i, { scroll = true, focus } = {}) {
   const was = set.tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true')
-  if (was === i && scroll !== 'top') return
-  if (was !== -1) tabScroll.set(`${set.index}|${set.panels[was].dataset.tab}`, window.scrollY)
+  if (was === i) return
   set.tabs.forEach((t, k) => {
     t.setAttribute('aria-selected', String(k === i))
     t.tabIndex = k === i ? 0 : -1
@@ -546,21 +559,31 @@ function selectTab(set, i, { scroll, focus } = {}) {
   const tab = set.tabs[i]
   set.strip.scrollLeft = tab.offsetLeft - set.strip.clientWidth / 2 + tab.offsetWidth / 2
   if (focus) tab.focus({ preventScroll: true })
-  if (scroll === 'none') return
-  // The new panel starts right under the stuck bar; never jump a reader who is still above it.
+  if (!scroll) return
   const bar = getComputedStyle(set.bar)
   const panelTop = set.panels[i].getBoundingClientRect().top + window.scrollY
     - set.bar.offsetHeight - (parseFloat(bar.marginBottom) || 0) - (parseFloat(bar.top) || 0)
-  const saved = scroll === 'restore' ? tabScroll.get(`${set.index}|${label}`) : undefined
-  if (saved !== undefined) window.scrollTo({ top: saved })
-  else if (window.scrollY > panelTop) window.scrollTo({ top: panelTop })
+  if (window.scrollY > panelTop) window.scrollTo({ top: panelTop })
+}
+
+// Z/X step the tab set nearest the viewport: the one on screen, else the closest off it.
+function stepTab(delta) {
+  const gap = (set) => {
+    const top = set.bar.getBoundingClientRect().top
+    const bottom = set.panels.find((p) => !p.hidden).getBoundingClientRect().bottom
+    return Math.max(0, top - window.innerHeight, -bottom)
+  }
+  const set = [...tabSets].sort((a, b) => gap(a) - gap(b))[0]
+  if (!set) return
+  const at = set.tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true')
+  if (set.panels[at + delta]) selectTab(set, at + delta)
 }
 
 // A node in a hidden panel has no box to scroll to, so its tab opens first.
 function revealTabFor(node) {
   for (const set of tabSets) {
     const k = set.panels.findIndex((p) => p.contains(node))
-    if (k !== -1 && set.panels[k].hidden) selectTab(set, k, { scroll: 'none' })
+    if (k !== -1 && set.panels[k].hidden) selectTab(set, k, { scroll: false })
   }
 }
 
@@ -1216,7 +1239,7 @@ function closePopover() {
 }
 
 // Chrome-injected controls inside content act, never annotate.
-const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-tabs, .sf-tab-next'
+const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-tabs, .sf-tab-pager'
 
 CONTENT.addEventListener('mouseover', (e) => {
   if (!state.annotating || popover) return
@@ -1278,7 +1301,7 @@ function anchorText(node) {
 }
 
 function stripMarkers(fragment) {
-  fragment.querySelectorAll('.sf-marker, .sf-tabs, .sf-tab-next').forEach((m) => m.remove())
+  fragment.querySelectorAll('.sf-marker, .sf-tabs, .sf-tab-pager').forEach((m) => m.remove())
   return fragment.textContent || ''
 }
 
@@ -1512,7 +1535,9 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (typingInFormField(e.target)) return
   const key = e.key.toLowerCase()
-  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY].includes(key)) return
+  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY, TAB_BACK_HOTKEY, TAB_FORWARD_HOTKEY].includes(key)) return
+  // A board without tabs leaves Z and X to the browser.
+  if ((key === TAB_BACK_HOTKEY || key === TAB_FORWARD_HOTKEY) && !tabSets.length) return
   e.preventDefault()
   if (key === QUEUE_HOTKEY) toggleQueue()
   else if (key === CHAT_HOTKEY) toggleChat()
@@ -1520,6 +1545,8 @@ document.addEventListener('keydown', (e) => {
   else if (key === ANNOTATE_HOTKEY) setAnnotating(!state.annotating)
   else if (key === ROUND_BACK_HOTKEY) stepRound(-1)
   else if (key === ROUND_FORWARD_HOTKEY) stepRound(1)
+  else if (key === TAB_BACK_HOTKEY) stepTab(-1)
+  else if (key === TAB_FORWARD_HOTKEY) stepTab(1)
   else if (key === WIDTH_NARROW_HOTKEY) nudgeWidth(-1)
   else nudgeWidth(1)
 })

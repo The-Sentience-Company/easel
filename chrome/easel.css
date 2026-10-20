@@ -1967,6 +1967,7 @@ button.sf-audit-badge {
 /* Built by client.js from sibling [data-tab] panels. Sticks under #sf-chrome so a
    long tab switches without scrolling back; page ground, so it reads as the page. */
 #sf-content .sf-tabs {
+  display: flex;
   position: sticky;
   top: var(--sf-chrome-h, 0px);
   z-index: 3;
@@ -1978,6 +1979,8 @@ button.sf-audit-badge {
 /* position: relative so a tab's offsetLeft is measured from the strip when centring it. */
 .sf-tabs-strip {
   position: relative;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   gap: 2px;
   overflow-x: auto;
@@ -2033,39 +2036,69 @@ button.sf-audit-badge {
   background: var(--marker-0);
   color: var(--marker-content);
 }
-#sf-content button.sf-tab-next {
+/* Previous left, next right, each wearing its hotkey; the chip faces outward so the pair reads as a mirror. */
+#sf-content .sf-tab-pager {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  margin: 44px 0 0 auto;
-  min-width: min(100%, 260px);
-  padding: 14px 18px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+#sf-content :is(button.sf-tab-prev, button.sf-tab-next) {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 48%;
+  padding: 7px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--color-base-100);
   color: var(--color-base-content);
   font: inherit;
-  text-align: right;
   cursor: pointer;
-  transition: border-color 0.12s;
+  transition: border-color 0.12s, background-color 0.12s;
 }
-#sf-content button.sf-tab-next:hover { border-color: var(--color-primary); }
-#sf-content button.sf-tab-next:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
-.sf-tab-next-kicker {
-  font-size: 0.7rem;
+#sf-content button.sf-tab-prev { text-align: left; }
+#sf-content button.sf-tab-next { margin-left: auto; text-align: right; }
+#sf-content :is(button.sf-tab-prev, button.sf-tab-next):hover { border-color: var(--color-primary); }
+#sf-content :is(button.sf-tab-prev, button.sf-tab-next):focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.sf-tab-pager-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.sf-tab-pager-kicker {
+  font-size: 0.64rem;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted-content);
 }
-.sf-tab-next-label { font-family: var(--font-serif); font-size: 1.12rem; font-weight: 600; }
-.sf-tab-next-label::after { content: " →"; color: var(--color-primary); }
-html[data-theme^="fig"] .sf-tab-next-label { font-family: 'Optima', 'Seravek', var(--font-sans); }
+.sf-tab-pager-label { font-size: 0.9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sf-tab-pager-arrow { color: var(--color-primary); font-size: 1rem; line-height: 1; flex: none; }
+.sf-tab-pager-key, .sf-tab-keys {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--color-muted-content);
+}
+.sf-tab-pager-key {
+  flex: none;
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 1.4;
+}
+.sf-tab-keys { flex: none; align-self: center; padding-left: 12px; cursor: default; }
+/* No keyboard to press them with. */
+@media (max-width: 720px) { .sf-tab-pager-key, .sf-tab-keys { display: none; } }
+/* Tall enough that the page can always scroll to put this panel's top under the stuck
+   bar: a short tab would otherwise shrink the page and drag the bar down with it. */
+#sf-content [data-tab]:not([hidden]) { min-height: calc(100vh - var(--sf-chrome-h, 0px) - 80px); }
 /* The first section of a panel sits under the bar's own rule; a second rule would double it. */
 [data-tab] > .sd-section:first-of-type > h2 { padding-top: 0; border-top: 0; margin-top: 0; }
 @media print {
-  #sf-content .sf-tabs, #sf-content .sf-tab-next { display: none; }
+  #sf-content .sf-tabs, #sf-content .sf-tab-pager { display: none; }
   #sf-content [data-tab][hidden] { display: block !important; }
 }
 
