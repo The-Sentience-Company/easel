@@ -1321,12 +1321,11 @@ function selectionAnchor(node) {
   }
 }
 
-// Clicking an element that already carries drafts manages them instead of
-// stacking another one — the page-side answer to "how do I remove this?".
+// Clicking an element that already carries drafts lists them, each removable, above
+// a focused comment box, so a further note or dictation goes straight in.
 function openDraftManager(node, event, drafts, pin) {
-  closePopover()
-  popover = el('div', 'sf-popover')
-  popover.appendChild(el('div', 'sf-popover-label', drafts.length === 1 ? 'Queued note' : `${drafts.length} queued notes`))
+  openPopover(node, event, pin)
+  const rows = [el('div', 'sf-popover-label', drafts.length === 1 ? 'Queued note' : `${drafts.length} queued notes`)]
   for (const item of drafts) {
     const row = el('div', 'sf-draft-row')
     row.appendChild(el('div', 'sf-draft-comment', item.comment || (item.images?.length ? '(image)' : '(no comment)')))
@@ -1337,18 +1336,9 @@ function openDraftManager(node, event, drafts, pin) {
       removeFeedback(item.id)
     }
     row.appendChild(remove)
-    popover.appendChild(row)
+    rows.push(row)
   }
-  const actions = el('div', 'sf-popover-actions')
-  const addBtn = el('button', 'sf-popover-queue', 'Add another')
-  addBtn.type = 'button'
-  addBtn.onclick = () => openPopover(node, event, pin)
-  const cancelBtn = el('button', 'sf-popover-cancel', 'Close')
-  cancelBtn.type = 'button'
-  cancelBtn.onclick = closePopover
-  actions.append(addBtn, cancelBtn)
-  popover.appendChild(actions)
-  CHROME.appendChild(popover)
+  popover.prepend(...rows)
   placePopover(popover, event)
 }
 
@@ -1487,6 +1477,14 @@ function openPopover(node, event, pin) {
     return el('div', 'sf-popover-label', extra.quote ? 'Selection' : 'Element')
   }
 }
+
+// An open comment box takes the focus back after a mouse click on a tab, the pager or blank
+// page, so dictation still lands in it. Keyboard activation, text fields and selections keep theirs.
+document.addEventListener('click', (e) => {
+  const box = popover?.querySelector('.sf-popover-text')
+  if (!box || !e.detail || typingInFormField(document.activeElement) || window.getSelection()?.isCollapsed === false) return
+  box.focus({ preventScroll: true })
+})
 
 document.addEventListener(
   'keydown',

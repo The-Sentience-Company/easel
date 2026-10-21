@@ -21,7 +21,9 @@ let pg
 
 before(async () => {
   const filler = '<p>filler</p>'.repeat(40)
-  writeFileSync(PAGE, `<section class="sd-section"><h2>One</h2><p>para one</p>${filler}</section>`)
+  const tabs = ['Alpha', 'Beta'].map((t) => `<section class="sd-section" data-tab="${t}"><h2>${t}</h2><p>${t} body</p></section>`).join('')
+  const noted = '<section class="sd-section"><h2>Noted</h2><p class="noted">a note goes here</p></section>'
+  writeFileSync(PAGE, `<section class="sd-section"><h2>One</h2><p>para one</p>${filler}</section>${noted}${tabs}`)
   daemon = startDaemon(PORT, DATA_DIR)
   await waitHealthy(BASE)
   key = (await api('POST', '/api/open', { file: PAGE, title: 'popover focus' })).data.key
@@ -89,4 +91,52 @@ test('the pop-up buttons still act after the focus guard', async () => {
   await pg.click('#sf-content p')
   await pg.click('.sf-popover-cancel')
   assert.equal(await pg.evaluate(() => document.querySelector('.sf-popover')), null)
+})
+
+// Wispr Flow reads the OS focus, which follows document.activeElement; a focused
+// tab button or page body takes the dictation even though the pop-up still shows.
+const focused = () => pg.evaluate(() => document.activeElement?.className)
+
+test('switching tabs while the comment box is open keeps it focused', async () => {
+  for (const control of ['.sf-tab[aria-selected="false"]', '[data-tab]:not([hidden]) .sf-tab-pager button']) {
+    await pg.click('[data-tab]:not([hidden]) p')
+    await pg.click(control)
+    assert.equal(await focused(), 'sf-popover-text', `after clicking ${control}`)
+    assert.equal(await insertLands(), 'dictated', `after clicking ${control}`)
+    await closeAll()
+  }
+})
+
+test('a tab chosen from the keyboard keeps the focus while the comment box is open', async () => {
+  await pg.click('[data-tab]:not([hidden]) p')
+  await pg.focus('.sf-tab[aria-selected="false"]')
+  await pg.keyboard.press('Enter')
+  assert.equal(await focused(), 'sf-tab')
+  await closeAll()
+})
+
+test('a click on blank page or the top bar keeps the comment box focused', async () => {
+  await pg.click('#sf-content p')
+  await pg.click('.sf-title')
+  assert.equal(await focused(), 'sf-popover-text', 'after clicking the top bar')
+  const blank = await pg.evaluate(() => ({ x: 2, y: innerHeight / 2 }))
+  assert.equal(await pg.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-sid], .sf-popover') ?? null, blank), null,
+    'precondition: the point is blank page')
+  await pg.mouse.click(blank.x, blank.y)
+  assert.equal(await focused(), 'sf-popover-text', 'after clicking blank page')
+  assert.equal(await insertLands(), 'dictated')
+  await closeAll()
+})
+
+test('clicking an element with a queued note opens a focused comment box under the note', async () => {
+  await pg.click('.noted')
+  await pg.type('.sf-popover-text', 'first note')
+  await pg.click('.sf-popover-queue')
+  await pg.waitForSelector('.noted .sf-marker')
+  await pg.click('.noted')
+  assert.deepEqual(await pg.evaluate(() => [...document.querySelectorAll('.sf-draft-comment')].map((n) => n.textContent)), ['first note'])
+  assert.equal(await focused(), 'sf-popover-text')
+  assert.equal(await insertLands(), 'dictated')
+  await pg.click('.sf-draft-remove')
+  await pg.waitForFunction(() => !document.querySelector('.noted .sf-marker'))
 })
