@@ -1478,11 +1478,11 @@ function openPopover(node, event, pin) {
   }
 }
 
-// An open comment box takes the focus back after a click on a tab, the pager or blank
-// page, so dictation still lands in it. A text field or a text selection keeps its own.
-document.addEventListener('click', () => {
+// An open comment box takes the focus back after a mouse click on a tab, the pager or blank
+// page, so dictation still lands in it. Keyboard activation, text fields and selections keep theirs.
+document.addEventListener('click', (e) => {
   const box = popover?.querySelector('.sf-popover-text')
-  if (!box || typingInFormField(document.activeElement) || window.getSelection()?.isCollapsed === false) return
+  if (!box || !e.detail || typingInFormField(document.activeElement) || window.getSelection()?.isCollapsed === false) return
   box.focus({ preventScroll: true })
 })
 

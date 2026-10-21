@@ -107,6 +107,14 @@ test('switching tabs while the comment box is open keeps it focused', async () =
   }
 })
 
+test('a tab chosen from the keyboard keeps the focus while the comment box is open', async () => {
+  await pg.click('[data-tab]:not([hidden]) p')
+  await pg.focus('.sf-tab[aria-selected="false"]')
+  await pg.keyboard.press('Enter')
+  assert.equal(await focused(), 'sf-tab')
+  await closeAll()
+})
+
 test('a click on blank page or the top bar keeps the comment box focused', async () => {
   await pg.click('#sf-content p')
   await pg.click('.sf-title')
