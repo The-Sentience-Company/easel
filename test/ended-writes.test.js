@@ -128,6 +128,7 @@ test('the writes an ended board still accepts are exactly these', () => {
   assert.deepEqual(exemptWrites.slice().sort(), [
     'ack',
     'cancelWaiting',
+    'composeState',
     'config',
     'end',
     'feedbackDelete',

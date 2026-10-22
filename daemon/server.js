@@ -257,11 +257,47 @@ async function writeConfig(patch) {
 const autoOpenLast = new Map() // key -> ts of last spawn
 const AUTO_OPEN_COOLDOWN_MS = Number(process.env.EASEL_AUTO_OPEN_COOLDOWN_MS || 15000)
 
+// A tab opening switches the browser's active tab, so dictation mid-comment would
+// paste into the new page. Opens wait until no tab has had a text box focused for a while.
+const composing = new Map() // clientId -> ts its claim lapses unless renewed
+let composingEndedAt = 0
+const deferredOpens = new Set()
+const COMPOSE_QUIET_MS = Number(process.env.EASEL_COMPOSE_QUIET_MS || 10000)
+const COMPOSE_TTL_MS = 60000
+let deferredTimer = null
+
+function readerComposing() {
+  const now = Date.now()
+  for (const [id, until] of composing) {
+    if (until <= now) {
+      composing.delete(id)
+      composingEndedAt = Math.max(composingEndedAt, until)
+    }
+  }
+  return composing.size > 0 || now - composingEndedAt < COMPOSE_QUIET_MS
+}
+
+function flushDeferredOpens() {
+  deferredTimer = null
+  if (readerComposing()) {
+    deferredTimer = setTimeout(flushDeferredOpens, COMPOSE_QUIET_MS)
+    return
+  }
+  const keys = [...deferredOpens]
+  deferredOpens.clear()
+  keys.forEach(maybeAutoOpen)
+}
+
 // Off by default; a burst of publishes opens at most one tab per cooldown, and a
 // a board someone is already viewing never opens.
 function maybeAutoOpen(key) {
   if (configCache.autoOpen !== true) return
   if ((sseClients.get(key)?.size ?? 0) > 0 || globalTabCount(key) > 0) return
+  if (readerComposing()) {
+    deferredOpens.add(key)
+    deferredTimer ??= setTimeout(flushDeferredOpens, COMPOSE_QUIET_MS)
+    return
+  }
   const lastAt = autoOpenLast.get(key) ?? 0
   if (Date.now() - lastAt < AUTO_OPEN_COOLDOWN_MS) return
   autoOpenLast.set(key, Date.now())
@@ -1213,6 +1249,16 @@ const handlers = {
     const body = await readBody(req)
     if (typeof body.autoOpen !== 'boolean') return json(res, 400, { error: 'autoOpen boolean required' })
     json(res, 200, await writeConfig({ autoOpen: body.autoOpen }))
+  },
+
+  async composeState(req, res) {
+    const body = await readBody(req)
+    if (!body.clientId || typeof body.composing !== 'boolean') {
+      return json(res, 400, { error: 'clientId and composing boolean required' })
+    }
+    if (body.composing) composing.set(body.clientId, Date.now() + COMPOSE_TTL_MS)
+    else if (composing.delete(body.clientId)) composingEndedAt = Date.now()
+    json(res, 200, { ok: true })
   },
 
   statusOne(req, res, match) {

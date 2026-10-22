@@ -128,6 +128,42 @@ test('a click on blank page or the top bar keeps the comment box focused', async
   await closeAll()
 })
 
+// Auto-open holds while the daemon hears the box is focused: a new tab would take the dictation.
+test('the tab tells the daemon while the comment box has the focus, and when it stops', async () => {
+  const sent = []
+  let lastAt = Date.now()
+  const onRequest = (r) => {
+    if (!r.url().endsWith('/api/composing')) return
+    lastAt = Date.now()
+    sent.push(JSON.parse(r.postData()).composing)
+  }
+  pg.on('request', onRequest)
+  // Reports go out one at a time, so earlier tests' tail can still be draining.
+  while (Date.now() - lastAt < 300) await new Promise((r) => setTimeout(r, 50))
+  sent.length = 0
+  try {
+    await pg.click('#sf-content p')
+    await pg.waitForFunction(() => document.activeElement?.className === 'sf-popover-text')
+    await closeAll()
+    for (let i = 0; i < 40 && sent.length < 2; i++) await new Promise((r) => setTimeout(r, 50))
+    assert.deepEqual(sent, [true, false])
+  } finally {
+    pg.off('request', onRequest)
+  }
+})
+
+test('a right-click on the page keeps the comment box focused', async () => {
+  await pg.click('#sf-content p')
+  const b = await (await pg.$('.noted')).boundingBox()
+  const at = { x: b.x + 5, y: b.y + b.height / 2 }
+  assert.equal(await pg.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.sf-popover') ?? null, at), null,
+    'precondition: the right-click misses the pop-up')
+  await pg.mouse.click(at.x, at.y, { button: 'right' })
+  assert.equal(await focused(), 'sf-popover-text')
+  assert.equal(await insertLands(), 'dictated')
+  await closeAll()
+})
+
 test('clicking an element with a queued note opens a focused comment box under the note', async () => {
   await pg.click('.noted')
   await pg.type('.sf-popover-text', 'first note')

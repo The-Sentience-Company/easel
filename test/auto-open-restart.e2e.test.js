@@ -26,6 +26,7 @@ function bootstrap(index, { graceMs = 1000 } = {}) {
   process.env.EASEL_OPEN_CMD = stub
   process.env.EASEL_AUTO_OPEN_COOLDOWN_MS = '500'
   process.env.EASEL_WAITING_GRACE_MS = String(graceMs)
+  process.env.EASEL_COMPOSE_QUIET_MS = '800'
   const api = makeApi(base)
   return {
     dir,
@@ -131,6 +132,33 @@ test('an agent that waits again on a round already read does not reopen it', SLO
     })
     await sleep(300)
     assert.equal(h.opened().length, 2, 'waiting again on a round already read must not reopen it')
+  } finally {
+    daemon?.kill()
+  }
+})
+
+// A new tab takes the browser's focus, so dictation into a comment box would paste
+// into it. The open waits until the reader has been out of any text box for a while.
+test('a board published while the reader is in a text box opens once they leave it', SLOW, async () => {
+  const h = bootstrap(2)
+  const daemon = startDaemon(h.port, h.dir)
+  try {
+    await waitHealthy(h.base)
+    const page = join(h.dir, 'p.html')
+    writeFileSync(page, '<p>held</p>')
+    const key = (await h.api('POST', '/api/open', { file: page, title: 'held' })).data.key
+    await h.api('POST', '/api/config', { autoOpen: true })
+
+    await h.api('POST', '/api/composing', { clientId: 'tab-a', composing: true })
+    writeFileSync(page, '<p>held</p><p>round 2</p>')
+    await h.api('POST', `/api/b/${key}/publish`, {})
+    await sleep(1200)
+    assert.deepEqual(h.opened(), [], 'no tab opens while a text box has the focus')
+
+    await h.api('POST', '/api/composing', { clientId: 'tab-a', composing: false })
+    await sleep(300)
+    assert.deepEqual(h.opened(), [], 'nor straight after, while the reader may be clicking the next section')
+    assert.deepEqual(await h.openedAtLeast(1), [`${h.base}/b/${key}`], 'the held board opens once the reader is out')
   } finally {
     daemon?.kill()
   }
