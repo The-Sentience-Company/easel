@@ -61,6 +61,13 @@ export const ROUTES = [
     write: true,
     endedOk: 'daemon-wide setting, not tied to any board',
   },
+  {
+    method: 'POST',
+    pattern: /^\/api\/composing$/,
+    handler: 'composeState',
+    write: true,
+    endedOk: 'daemon-wide reader focus that holds auto-open, not tied to any board',
+  },
   { method: 'GET', pattern: /^\/api\/b\/([^/]+)\/status$/, handler: 'statusOne', write: false },
   {
     method: 'POST',

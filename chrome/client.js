@@ -1478,13 +1478,41 @@ function openPopover(node, event, pin) {
   }
 }
 
-// An open comment box takes the focus back after a mouse click on a tab, the pager or blank
-// page, so dictation still lands in it. Keyboard activation, text fields and selections keep theirs.
-document.addEventListener('click', (e) => {
-  const box = popover?.querySelector('.sf-popover-text')
-  if (!box || !e.detail || typingInFormField(document.activeElement) || window.getSelection()?.isCollapsed === false) return
-  box.focus({ preventScroll: true })
-})
+// An open comment box takes the focus back after a mouse click (right-click too) on a tab, the
+// pager or blank page, so dictation still lands in it. Keyboard activation, text fields and selections keep theirs.
+for (const type of ['click', 'auxclick']) {
+  document.addEventListener(type, (e) => {
+    const box = popover?.querySelector('.sf-popover-text')
+    if (!box || !e.detail || typingInFormField(document.activeElement) || window.getSelection()?.isCollapsed === false) return
+    box.focus({ preventScroll: true })
+  })
+}
+
+// While a text box here has the focus, the daemon holds auto-open: a new tab would take
+// the dictation. The claim is renewed while held, so a crashed tab cannot hold it forever.
+const composeTabId = crypto.randomUUID()
+let composingSent = false
+let composingRenew = null
+let composingPost = Promise.resolve()
+// Chained, so a quick off-then-on cannot reach the daemon in the wrong order.
+function postComposing(on) {
+  const body = JSON.stringify({ clientId: composeTabId, composing: on })
+  composingPost = composingPost.then(() =>
+    fetch('/api/composing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {})
+  )
+}
+function reportComposing(field) {
+  const now = Boolean(field) && document.hasFocus() && typingInFormField(field)
+  if (now === composingSent) return
+  composingSent = now
+  clearInterval(composingRenew)
+  postComposing(now)
+  if (now) composingRenew = setInterval(() => postComposing(true), 20000)
+}
+document.addEventListener('focusin', (e) => reportComposing(e.target))
+document.addEventListener('focusout', (e) => reportComposing(e.relatedTarget))
+window.addEventListener('focus', () => reportComposing(document.activeElement))
+for (const type of ['blur', 'pagehide']) window.addEventListener(type, () => reportComposing(null))
 
 document.addEventListener(
   'keydown',
