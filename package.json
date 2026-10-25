@@ -59,7 +59,7 @@
   "devDependencies": {
     "@excalidraw/excalidraw": "0.18.1",
     "@excalidraw/mermaid-to-excalidraw": "2.2.2",
-    "esbuild": "0.28.1",
+    "esbuild": "0.28.2",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
