@@ -68,6 +68,13 @@ export const ROUTES = [
     write: true,
     endedOk: 'daemon-wide reader focus that holds auto-open, not tied to any board',
   },
+  {
+    method: 'POST',
+    pattern: /^\/api\/comment-box-log$/,
+    handler: 'commentBoxLog',
+    write: true,
+    endedOk: 'a local diagnostic log of the comment box, never shown to the agent',
+  },
   { method: 'GET', pattern: /^\/api\/b\/([^/]+)\/status$/, handler: 'statusOne', write: false },
   {
     method: 'POST',

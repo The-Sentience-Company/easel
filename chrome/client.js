@@ -1232,6 +1232,7 @@ let popover = null
 let queueOpenPopover = null
 
 function closePopover() {
+  logCommentBox('close')
   if (popover) popover.remove()
   popover = null
   queueOpenPopover = null
@@ -1418,6 +1419,7 @@ function openPopover(node, event, pin) {
   const queue = () => {
     const comment = textarea.value.trim()
     if (!comment && !images.length) return
+    logCommentBox('queue')
     const note = popover
     note.style.display = 'none'
     popover = null
@@ -1472,6 +1474,7 @@ function openPopover(node, event, pin) {
   CHROME.appendChild(popover)
   placePopover(popover, event)
   textarea.focus()
+  logCommentBox('open')
 
   function excerptToLabel() {
     return el('div', 'sf-popover-label', extra.quote ? 'Selection' : 'Element')
@@ -1513,6 +1516,59 @@ document.addEventListener('focusin', (e) => reportComposing(e.target))
 document.addEventListener('focusout', (e) => reportComposing(e.relatedTarget))
 window.addEventListener('focus', () => reportComposing(document.activeElement))
 for (const type of ['blur', 'pagehide']) window.addEventListener(type, () => reportComposing(null))
+
+// A dictation that never lands leaves no trace in the page, so while a comment box is open what
+// reaches it (focus, paste, input; lengths only, never the text) goes to the daemon's comment-box.log.
+let commentBoxEvents = []
+let commentBoxFlush = null
+const describeNode = (node) =>
+  node instanceof Element ? `${node.tagName.toLowerCase()}${node.classList[0] ? `.${node.classList[0]}` : ''}` : node ? String(node) : null
+function logCommentBox(type, extra) {
+  const box = popover?.querySelector('.sf-popover-text')
+  if (!box) return
+  commentBoxEvents.push({
+    at: new Date().toISOString(),
+    type,
+    ...extra,
+    length: box.value.length,
+    caret: box.selectionStart,
+    boxFocused: document.activeElement === box,
+    pageFocused: document.hasFocus(),
+    active: describeNode(document.activeElement),
+  })
+  commentBoxFlush ??= setTimeout(flushCommentBoxLog, 1000)
+}
+function flushCommentBoxLog() {
+  clearTimeout(commentBoxFlush)
+  commentBoxFlush = null
+  if (!commentBoxEvents.length) return
+  const body = JSON.stringify({ board: KEY, events: commentBoxEvents })
+  commentBoxEvents = []
+  fetch('/api/comment-box-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {})
+}
+for (const type of ['focusin', 'focusout']) {
+  document.addEventListener(type, (e) => logCommentBox(type, { target: describeNode(e.target), related: describeNode(e.relatedTarget) }), true)
+}
+for (const type of ['focus', 'blur']) window.addEventListener(type, (e) => e.target === window && logCommentBox(`window-${type}`))
+document.addEventListener('visibilitychange', () => logCommentBox('visibility', { state: document.visibilityState }))
+for (const type of ['beforeinput', 'input']) {
+  document.addEventListener(type, (e) => logCommentBox(type, { target: describeNode(e.target), inputType: e.inputType, dataLength: e.data?.length ?? null }), true)
+}
+for (const type of ['compositionstart', 'compositionend']) {
+  document.addEventListener(type, (e) => logCommentBox(type, { target: describeNode(e.target), dataLength: e.data?.length ?? null }), true)
+}
+document.addEventListener(
+  'paste',
+  (e) => {
+    const data = e.clipboardData
+    logCommentBox('paste', { target: describeNode(e.target), types: [...(data?.types || [])], textLength: data?.getData('text/plain').length ?? null })
+    // After every listener and the browser's own insert, so the length shows whether the text landed.
+    setTimeout(() => logCommentBox('paste-after', { prevented: e.defaultPrevented }))
+  },
+  true
+)
+document.addEventListener('keydown', (e) => (e.metaKey || e.ctrlKey) && logCommentBox('keydown', { key: e.key, target: describeNode(e.target) }), true)
+window.addEventListener('pagehide', flushCommentBoxLog)
 
 document.addEventListener(
   'keydown',
