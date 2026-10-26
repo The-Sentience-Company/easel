@@ -1270,6 +1270,7 @@ const handlers = {
     const board = typeof body.board === 'string' ? body.board : null
     const lines = body.events.slice(0, COMMENT_BOX_LOG_MAX_EVENTS).map((e) => JSON.stringify({ board, ...e }) + '\n')
     await mkdir(DATA_DIR, { recursive: true })
+    await truncateOversizedLog(COMMENT_BOX_LOG_PATH)
     await appendFile(COMMENT_BOX_LOG_PATH, lines.join(''))
     json(res, 200, { ok: true })
   },
@@ -1758,7 +1759,6 @@ await loadConfig()
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`easeld ${VERSION} listening on http://127.0.0.1:${PORT}`)
   truncateOversizedLog(join(DATA_DIR, 'daemon.log'))
-  truncateOversizedLog(COMMENT_BOX_LOG_PATH)
   setImmediate(attachBootWatchers)
   sendHeartbeat({ dataDir: DATA_DIR, version: VERSION })
 })
