@@ -3,7 +3,7 @@
 
 import { createServer } from 'node:http'
 import { spawn, execFileSync } from 'node:child_process'
-import { readFile, writeFile, mkdir, stat, truncate, rm, readdir } from 'node:fs/promises'
+import { readFile, writeFile, appendFile, mkdir, stat, truncate, rm, readdir } from 'node:fs/promises'
 import { watch } from 'node:fs'
 import { createHash, randomBytes } from 'node:crypto'
 import { join, dirname, basename, resolve, sep } from 'node:path'
@@ -233,6 +233,9 @@ setInterval(() => {
 // ---------------------------------------------------------------- config + auto-open
 
 const CONFIG_PATH = join(DATA_DIR, 'config.json')
+// What the open comment box saw (focus, paste, input), so a lost dictation can be explained afterwards.
+const COMMENT_BOX_LOG_PATH = join(DATA_DIR, 'comment-box.log')
+const COMMENT_BOX_LOG_MAX_EVENTS = 500
 
 // Cached so the auto-open path needs no await: a file read there would let two
 // triggers interleave between the cooldown check and its update, and both spawn.
@@ -1261,6 +1264,16 @@ const handlers = {
     json(res, 200, { ok: true })
   },
 
+  async commentBoxLog(req, res) {
+    const body = await readBody(req)
+    if (!Array.isArray(body.events)) return json(res, 400, { error: 'events array required' })
+    const board = typeof body.board === 'string' ? body.board : null
+    const lines = body.events.slice(0, COMMENT_BOX_LOG_MAX_EVENTS).map((e) => JSON.stringify({ board, ...e }) + '\n')
+    await mkdir(DATA_DIR, { recursive: true })
+    await appendFile(COMMENT_BOX_LOG_PATH, lines.join(''))
+    json(res, 200, { ok: true })
+  },
+
   statusOne(req, res, match) {
     const board = requireBoard(match[1], res)
     if (!board) return
@@ -1745,6 +1758,7 @@ await loadConfig()
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`easeld ${VERSION} listening on http://127.0.0.1:${PORT}`)
   truncateOversizedLog(join(DATA_DIR, 'daemon.log'))
+  truncateOversizedLog(COMMENT_BOX_LOG_PATH)
   setImmediate(attachBootWatchers)
   sendHeartbeat({ dataDir: DATA_DIR, version: VERSION })
 })

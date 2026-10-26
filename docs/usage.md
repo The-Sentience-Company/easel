@@ -28,7 +28,7 @@ rm -rf ~/.easel        # or $EASEL_DATA_DIR — every board you ever published
 | Variable | Effect |
 |---|---|
 | `EASEL_PORT` | Port the daemon listens on. Defaults to 4400. The installed entry point is generated with this port baked in, so the CLI and daemon cannot drift apart — an explicit `EASEL_URL` in your own environment still wins. |
-| `EASEL_DATA_DIR` | Where `easel.db` and `daemon.log` live. Defaults to `~/.easel/`. |
+| `EASEL_DATA_DIR` | Where `easel.db`, `daemon.log` and `comment-box.log` live. Defaults to `~/.easel/`. `comment-box.log` records what reached an open comment box (focus, pastes, input; lengths only, never the text), so a dictation that did not land can be traced: `tail -n 50 ~/.easel/comment-box.log`. |
 | `EASEL_NODE` | Interpreter the agent runs under. Set it at install time and it is written into the plist, because a launchd agent does not inherit your shell. Otherwise the launcher resolves node at every launch. |
 
 All three are read at install time; re-run `install.sh` to change one.
