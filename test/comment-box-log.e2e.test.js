@@ -73,7 +73,7 @@ test('an open comment box logs focus, dictated input and pastes, with lengths an
   const paste = rows.find((e) => e.type === 'paste')
   assert.equal(paste.textLength, 'or many cards'.length)
   assert.deepEqual(paste.types, ['text/plain'])
-  assert.equal(rows.find((e) => e.type === 'paste-after').prevented, false)
+  assert.equal(rows.find((e) => e.type === 'paste-after').prevented, true)
   const raw = readFileSync(LOG, 'utf8')
   assert.ok(!raw.includes('dictated') && !raw.includes('many cards'), 'the log must not hold what was typed')
 })
