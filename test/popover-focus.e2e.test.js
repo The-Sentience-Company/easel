@@ -176,3 +176,42 @@ test('clicking an element with a queued note opens a focused comment box under t
   await pg.click('.sf-draft-remove')
   await pg.waitForFunction(() => !document.querySelector('.noted .sf-marker'))
 })
+
+// A real Cmd+V: the text goes on the clipboard through a copy, then the paste command.
+async function realPaste(text, { swapClipboardMidPaste = false } = {}) {
+  const cdp = await pg.target().createCDPSession()
+  await pg.evaluate((text) => {
+    const scratch = Object.assign(document.createElement('textarea'), { value: text })
+    document.body.appendChild(scratch)
+    scratch.select()
+    document.execCommand('copy')
+    scratch.remove()
+    document.querySelector('.sf-popover-text').focus()
+  }, text)
+  if (swapClipboardMidPaste) {
+    // Wispr Flow restores the previous clipboard once its text is read, so the
+    // browser's own read for the insert finds that, not the dictation.
+    await pg.evaluate(() => {
+      document.addEventListener('copy', (e) => (e.clipboardData.setData('application/x-restored', '1'), e.preventDefault()), { once: true })
+      document.addEventListener('paste', (e) => (e.clipboardData.getData('text/plain'), document.execCommand('copy')), { capture: true, once: true })
+    })
+  }
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'v', code: 'KeyV', modifiers: 4, commands: ['paste'] })
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'v', code: 'KeyV', modifiers: 4 })
+  await cdp.detach()
+  return pg.evaluate(() => document.querySelector('.sf-popover-text').value)
+}
+
+test('a pasted dictation lands even when the clipboard is restored straight after the paste', async () => {
+  await pg.click('#sf-content p')
+  assert.equal(await realPaste('twenty-five dictated char', { swapClipboardMidPaste: true }), 'twenty-five dictated char')
+  await closeAll()
+})
+
+test('an ordinary paste lands once, at the caret', async () => {
+  await pg.click('#sf-content p')
+  await pg.type('.sf-popover-text', 'ab')
+  await pg.keyboard.press('ArrowLeft')
+  assert.equal(await realPaste('XY'), 'aXYb')
+  await closeAll()
+})

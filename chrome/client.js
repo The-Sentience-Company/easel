@@ -1491,6 +1491,21 @@ for (const type of ['click', 'auxclick']) {
   })
 }
 
+// The box inserts a paste from the page's first read of the clipboard: an app that restores the
+// clipboard once its text is read (Wispr Flow) leaves the browser's own later read empty.
+document.addEventListener(
+  'paste',
+  (e) => {
+    const box = popover?.querySelector('.sf-popover-text')
+    if (e.target !== box || box.readOnly) return
+    const text = e.clipboardData?.getData('text/plain')
+    if (!text) return
+    e.preventDefault()
+    document.execCommand('insertText', false, text)
+  },
+  true
+)
+
 // While a text box here has the focus, the daemon holds auto-open: a new tab would take
 // the dictation. The claim is renewed while held, so a crashed tab cannot hold it forever.
 const composeTabId = crypto.randomUUID()
