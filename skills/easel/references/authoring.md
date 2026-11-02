@@ -23,7 +23,9 @@ Anything quoted or decided on another board, an earlier round, or a prior ruling
 
 ## A decision carries the basis for answering it
 
-Adjacent to the widget: one line per option saying what it costs or buys, the recommendation and why, and the evidence it rests on. In the data that is each option's `basis` and `recommended`; the templates render them as a list above the buttons. The button label itself is two or three words — "Size floor", "Leave them", "Ticket it" — never the consequence, the caveat, or "(recommended)". A question plus a list of option labels is not a decision — it is a board that comes back unanswered.
+Adjacent to the widget: one line per option saying what it costs or buys, the recommendation and why, and the evidence it rests on. In the data the evidence is the decision's `detail` and the per-option lines are each option's `basis` and `recommended`; the templates render them in that order directly above the buttons, so all of it is in view as the reader answers. A table higher in the section has scrolled away by then. The button label itself is two or three words — "Size floor", "Leave them", "Ticket it" — never the consequence, the caveat, or "(recommended)". A question plus a list of option labels is not a decision — it is a board that comes back unanswered.
+
+When the answer can differ from one item to the next — per row, file, or case — write one decision per item, its `detail` carrying that item's evidence and diff, because the reader judges one item at a time and needs that item's facts at that item's buttons. **Never a table of every item above one decision about the set.**
 
 ## Every proposed step earns its place in one line
 
@@ -31,7 +33,7 @@ Each new component, table, column, job, CLI, or extra PR states why it exists an
 
 ## Every problem ships its recommended fix
 
-A findings table has a "recommended" column with no empty cells. Where you genuinely have no recommendation, say so — "no fix proposed, I need your steer" — rather than trailing off. Diagnosing and stopping makes the reader supply the fix.
+A findings table has a "recommended" column with no empty cells. When the reader rules on each finding, each row becomes that finding's decision instead, its fix the recommended option. Where you genuinely have no recommendation, say so — "no fix proposed, I need your steer" — rather than trailing off. Diagnosing and stopping makes the reader supply the fix.
 
 ## Name a process, state its three facts
 
