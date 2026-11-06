@@ -218,6 +218,11 @@ describe('install.sh: plist generation', () => {
     assert.doesNotMatch(plist, /<key>EASEL_HOME<\/key>/)
   })
 
+  // A person waits on every request; Background stalled board loads past 2s on an idle Mac.
+  test('the daemon runs as Interactive, not a throttled background job', () => {
+    assert.match(generate(fn), /<key>ProcessType<\/key>\s*<string>Interactive<\/string>/)
+  })
+
   test('the generated plist parses', () => {
     const box = mkdtempSync(join(tmpdir(), 'easel-plist-'))
     const out = join(box, 'test.plist')

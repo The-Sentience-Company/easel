@@ -40,6 +40,6 @@ __NODE_ENV__
   <string>__STATE__/daemon.log</string>
 
   <key>ProcessType</key>
-  <string>Background</string>
+  <string>Interactive</string>
 </dict>
 </plist>
