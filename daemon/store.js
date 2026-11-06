@@ -2,6 +2,11 @@
 
 import { openDb, now } from './db.js'
 
+const UNACKED_COUNTS = `SELECT c.surface_key, c.agent_id,
+         (SELECT count(*) FROM feedback f
+          WHERE f.surface_key = c.surface_key AND f.state = 'submitted' AND f.id > c.acked_upto) AS n
+  FROM cursors c`
+
 export function createStore(db = openDb()) {
   const q = {
     insertBoard: db.prepare(
@@ -16,6 +21,11 @@ export function createStore(db = openDb()) {
       `SELECT * FROM surfaces WHERE status = 'open' AND template = ? AND data_file = ? ORDER BY created_at DESC LIMIT 1`
     ),
     allBoards: db.prepare(`SELECT * FROM surfaces WHERE status != 'archived' ORDER BY updated_at DESC`),
+    // Named columns: SELECT * would drag every board's draft html through each status poll.
+    statusBoards: db.prepare(
+      `SELECT key, title, file, data_file, template, status, updated_at FROM surfaces
+       WHERE status != 'archived' ORDER BY updated_at DESC`
+    ),
     touchBoard: db.prepare(`UPDATE surfaces SET updated_at = ? WHERE key = ?`),
     // Only fills a blank: an explicit --title is the author's, not the data's.
     fillTitle: db.prepare(`UPDATE surfaces SET title = ? WHERE key = ? AND (title IS NULL OR title = '')`),
@@ -38,6 +48,7 @@ export function createStore(db = openDb()) {
       `SELECT count(*) AS n FROM feedback WHERE surface_key = ? AND round_seq = ?`
     ),
     rounds: db.prepare(`SELECT seq, note, published_at FROM rounds WHERE surface_key = ? ORDER BY seq`),
+    roundCount: db.prepare(`SELECT count(*) AS n FROM rounds WHERE surface_key = ?`),
     // One grouped count, because the index asks every board for its round count.
     roundCounts: db.prepare(`SELECT surface_key, count(*) AS n FROM rounds GROUP BY surface_key`),
     round: db.prepare(`SELECT * FROM rounds WHERE surface_key = ? AND seq = ?`),
@@ -101,7 +112,8 @@ export function createStore(db = openDb()) {
        ON CONFLICT (surface_key, agent_id) DO UPDATE SET
          acked_upto = MAX(acked_upto, excluded.acked_upto), updated_at = excluded.updated_at`
     ),
-    cursorsFor: db.prepare(`SELECT agent_id, acked_upto FROM cursors WHERE surface_key = ?`),
+    unackedCounts: db.prepare(UNACKED_COUNTS),
+    unackedFor: db.prepare(`${UNACKED_COUNTS} WHERE c.surface_key = ?`),
 
     whiteboard: db.prepare(`SELECT * FROM whiteboards WHERE surface_key = ? AND diagram_index = ?`),
     // The WHERE makes the update itself conditional: a stale writer changes no
@@ -222,6 +234,7 @@ export function createStore(db = openDb()) {
       return file ? q.openBoardByFile.get(file) : undefined
     },
     allBoards: () => q.allBoards.all(),
+    statusBoards: () => q.statusBoards.all(),
     touch: (key) => q.touchBoard.run(now(), key),
     fillTitle: (key, title) => q.fillTitle.run(title, key),
     setStatus: (key, status) => q.setStatus.run(status, now(), key),
@@ -271,6 +284,7 @@ export function createStore(db = openDb()) {
     },
     wipIslands: (key) => parseJson(q.boardByKey.get(key)?.wip_islands_json),
     rounds: (key) => q.rounds.all(key).map((r) => ({ seq: r.seq, note: r.note, publishedAt: r.published_at })),
+    roundCount: (key) => q.roundCount.get(key).n,
     roundCounts: () => new Map(q.roundCounts.all().map((r) => [r.surface_key, r.n])),
     round: (key, seq) => q.round.get(key, seq),
     lastRound: (key) => q.lastRound.get(key),
@@ -334,7 +348,15 @@ export function createStore(db = openDb()) {
       q.upsertCursor.run(key, agent, clamped, now())
       return q.getCursor.get(key, agent).acked_upto
     },
-    cursorsFor: (key) => q.cursorsFor.all(key),
+    unackedCounts() {
+      const counts = new Map()
+      for (const { surface_key, agent_id, n } of q.unackedCounts.all()) {
+        if (!counts.has(surface_key)) counts.set(surface_key, {})
+        counts.get(surface_key)[agent_id] = n
+      }
+      return counts
+    },
+    unackedFor: (key) => Object.fromEntries(q.unackedFor.all(key).map((r) => [r.agent_id, r.n])),
 
     whiteboard(key, index) {
       const row = q.whiteboard.get(key, index)

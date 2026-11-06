@@ -28,6 +28,31 @@ test('drafts are not visible to submittedSince', () => {
   assert.equal(store.draftsForClient(K, 'c1').length, 1)
 })
 
+test('roundCount counts one board without loading its rounds', () => {
+  assert.equal(store.roundCount(K), 0)
+  store.addRound(K, 1, '<p>a</p>', 'r1', null, null)
+  store.addRound(K, 2, '<p>b</p>', 'r2', null, null)
+  assert.equal(store.roundCount(K), store.rounds(K).length)
+  assert.equal(store.roundCount('no-rounds'), 0)
+})
+
+test('unackedCounts counts submitted items past each agent cursor, never drafts', () => {
+  store.createBoard({ key: 'cafef00d', title: 'other', file: '/tmp/y.html', template: null, data_file: null })
+  widget('a')
+  const midway = store.maxSubmittedId(K)
+  widget('b')
+  store.ack(K, 'behind', 0)
+  store.ack(K, 'midway', midway)
+  store.ack(K, 'caught-up', store.maxSubmittedId(K))
+  store.ack('cafef00d', 'elsewhere', 0)
+  draft('unsent')
+  const counts = store.unackedCounts()
+  assert.deepEqual(counts.get(K), { behind: 2, midway: 1, 'caught-up': 0 })
+  assert.deepEqual(counts.get('cafef00d'), { elsewhere: 0 })
+  assert.deepEqual(store.unackedFor(K), counts.get(K), 'one board reads the same as all of them')
+  assert.deepEqual(store.unackedFor('no-cursors'), {})
+})
+
 test('late-submitted draft renumbers past an already-acked widget id', () => {
   draft('queued early')          // id 1
   const w = widget('yes')        // id 2

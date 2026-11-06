@@ -533,6 +533,22 @@ test('chrome assets demand revalidation and answer 304 to a matching etag', asyn
   assert.equal(again.status, 304)
 })
 
+test('both status routes report what an agent has not acked', async () => {
+  const agent = 'unacked-agent'
+  const unacked = async () => {
+    const one = (await api('GET', `/api/b/${key}/status`)).data
+    const all = (await api('GET', '/api/status')).data.boards.find((b) => b.key === key)
+    assert.equal(one.unacked[agent], all.unacked[agent], 'the two routes agree')
+    return one.unacked[agent]
+  }
+  await api('POST', `/api/b/${key}/ack`, { agent, upto: 0 })
+  const start = await unacked()
+  await api('POST', `/api/b/${key}/chat`, { clientId: 'c-unacked', text: 'one more' })
+  assert.equal(await unacked(), start + 1)
+  await api('POST', `/api/b/${key}/ack`, { agent, upto: Number.MAX_SAFE_INTEGER })
+  assert.equal(await unacked(), 0)
+})
+
 test('end closes the board; publish on ended board is rejected', async () => {
   const { data } = await api('POST', `/api/b/${key}/end`, {})
   assert.equal(data.status, 'ended')
