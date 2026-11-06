@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS rounds (
   published_at TEXT NOT NULL,
   PRIMARY KEY (surface_key, seq)
 );
+-- Covers the round list: note and published_at sit past html, which is megabytes per board.
+CREATE INDEX IF NOT EXISTS rounds_list ON rounds(surface_key, seq, note, published_at);
 
 -- Scene outlives the round it was drawn against: source_hash records which
 -- diagram version that was, so a later publish marks it stale, never deletes it.

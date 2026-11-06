@@ -22,6 +22,14 @@ const widget = (value) =>
     widget_id: 'w1', widget_value: value, submitted_at: new Date().toISOString(),
   })
 
+test('listing rounds never reads their html', () => {
+  const db = openDb(join(mkdtempSync(join(tmpdir(), 'sf-test-')), 't.db'))
+  const [plan] = db
+    .prepare(`EXPLAIN QUERY PLAN SELECT seq, note, published_at FROM rounds WHERE surface_key = ? ORDER BY seq`)
+    .all('k')
+  assert.match(plan.detail, /COVERING INDEX rounds_list/)
+})
+
 test('drafts are not visible to submittedSince', () => {
   draft('a')
   assert.equal(store.submittedSince(K, 0).length, 0)
