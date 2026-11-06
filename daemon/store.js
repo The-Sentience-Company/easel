@@ -2,6 +2,11 @@
 
 import { openDb, now } from './db.js'
 
+const UNACKED_COUNTS = `SELECT c.surface_key, c.agent_id,
+         (SELECT count(*) FROM feedback f
+          WHERE f.surface_key = c.surface_key AND f.state = 'submitted' AND f.id > c.acked_upto) AS n
+  FROM cursors c`
+
 export function createStore(db = openDb()) {
   const q = {
     insertBoard: db.prepare(
@@ -43,6 +48,7 @@ export function createStore(db = openDb()) {
       `SELECT count(*) AS n FROM feedback WHERE surface_key = ? AND round_seq = ?`
     ),
     rounds: db.prepare(`SELECT seq, note, published_at FROM rounds WHERE surface_key = ? ORDER BY seq`),
+    roundCount: db.prepare(`SELECT count(*) AS n FROM rounds WHERE surface_key = ?`),
     // One grouped count, because the index asks every board for its round count.
     roundCounts: db.prepare(`SELECT surface_key, count(*) AS n FROM rounds GROUP BY surface_key`),
     round: db.prepare(`SELECT * FROM rounds WHERE surface_key = ? AND seq = ?`),
@@ -106,12 +112,8 @@ export function createStore(db = openDb()) {
        ON CONFLICT (surface_key, agent_id) DO UPDATE SET
          acked_upto = MAX(acked_upto, excluded.acked_upto), updated_at = excluded.updated_at`
     ),
-    unackedCounts: db.prepare(
-      `SELECT c.surface_key, c.agent_id,
-              (SELECT count(*) FROM feedback f
-               WHERE f.surface_key = c.surface_key AND f.state = 'submitted' AND f.id > c.acked_upto) AS n
-       FROM cursors c`
-    ),
+    unackedCounts: db.prepare(UNACKED_COUNTS),
+    unackedFor: db.prepare(`${UNACKED_COUNTS} WHERE c.surface_key = ?`),
 
     whiteboard: db.prepare(`SELECT * FROM whiteboards WHERE surface_key = ? AND diagram_index = ?`),
     // The WHERE makes the update itself conditional: a stale writer changes no
@@ -282,6 +284,7 @@ export function createStore(db = openDb()) {
     },
     wipIslands: (key) => parseJson(q.boardByKey.get(key)?.wip_islands_json),
     rounds: (key) => q.rounds.all(key).map((r) => ({ seq: r.seq, note: r.note, publishedAt: r.published_at })),
+    roundCount: (key) => q.roundCount.get(key).n,
     roundCounts: () => new Map(q.roundCounts.all().map((r) => [r.surface_key, r.n])),
     round: (key, seq) => q.round.get(key, seq),
     lastRound: (key) => q.lastRound.get(key),
@@ -353,6 +356,7 @@ export function createStore(db = openDb()) {
       }
       return counts
     },
+    unackedFor: (key) => Object.fromEntries(q.unackedFor.all(key).map((r) => [r.agent_id, r.n])),
 
     whiteboard(key, index) {
       const row = q.whiteboard.get(key, index)

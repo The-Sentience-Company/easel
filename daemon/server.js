@@ -1238,7 +1238,7 @@ const handlers = {
   statusAll(req, res, match, url) {
     const rounds = store.roundCounts()
     const unacked = store.unackedCounts()
-    const all = store.statusBoards().map((s) => statusRow(s, rounds.get(s.key) ?? 0, unacked))
+    const all = store.statusBoards().map((s) => statusRow(s, rounds.get(s.key) ?? 0, unacked.get(s.key) ?? {}))
     all.sort((a, b) => statusRank(a) - statusRank(b) || String(b.updatedAt).localeCompare(String(a.updatedAt)))
     const total = all.length
     const waiting = all.filter((r) => r.agentWaiting).length
@@ -1570,7 +1570,7 @@ const ASSET_TYPES = {
   '.png': 'image/png',
 }
 
-function statusRow(s, roundCount = null, unackedByBoard = store.unackedCounts()) {
+function statusRow(s, roundCount = null, unacked = store.unackedFor(s.key)) {
   return {
     key: s.key,
     title: s.title,
@@ -1578,8 +1578,8 @@ function statusRow(s, roundCount = null, unackedByBoard = store.unackedCounts())
     dataFile: s.data_file,
     template: s.template,
     status: s.status,
-    rounds: roundCount ?? store.rounds(s.key).length,
-    unacked: unackedByBoard.get(s.key) ?? {},
+    rounds: roundCount ?? store.roundCount(s.key),
+    unacked,
     updatedAt: s.updated_at,
     agentWaiting: agentWaiting(s.key),
     listenerLost: listenerLost(s.key),
