@@ -398,8 +398,10 @@ body.sf-shell {
 .sd-grid {
   display: grid;
   gap: var(--space);
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 }
+/* Dense boxes (a table, a fence, a long body) or more than three: one column. */
+.sd-grid-stack { grid-template-columns: 1fr; }
 .sd-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .sd-col { display: flex; flex-direction: column; gap: var(--space); }
 
@@ -1010,6 +1012,10 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   margin-bottom: 4px;
 }
 .sd-widget-help { font-size: 0.85rem; color: var(--color-muted-content); margin-bottom: 10px; }
+/* Above the question: what this builds and why the reader is the one deciding. */
+.sd-widget-frame { margin: 0 0 10px; font-size: 0.9rem; color: var(--color-body-content); }
+.sd-widget-frame p { margin: 2px 0; }
+.sd-widget-frame strong { color: var(--color-base-content); }
 .sd-widget-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 /* One line per option, above the buttons: what picking it causes, and which
    one is recommended — so the label itself can stay two or three words. */

@@ -207,9 +207,13 @@ export function badge(label, style, path, title) {
 
 /** Widget markup only — client.js owns behavior. Options are native buttons so
     the annotation layer cannot swallow the click. */
-export function widget({ type, id, prompt, help, options, compact }) {
+export function widget({ type, id, prompt, help, options, compact, frame }) {
   requireString(type, 'widget.type')
   requireString(id, 'widget.id')
+  if (frame) {
+    requireString(frame.what, `widget[${id}].what`)
+    requireString(frame.why_you, `widget[${id}].why_you`)
+  }
   const allowed = ['vote', 'decision', 'approve', 'rating']
   if (!allowed.includes(type)) fail(`widget.type must be one of ${allowed.join(', ')}, got "${type}"`)
   const opts = requireArray(options, `widget[${id}].options`)
@@ -236,8 +240,15 @@ export function widget({ type, id, prompt, help, options, compact }) {
       ).join('')}</ul>`
     : ''
 
+  // The three facts a cold reader needs before the question: what this builds,
+  // why the call is theirs, and (per option, in basis) what each choice changes.
+  const frameHtml = frame
+    ? `<div class="sd-widget-frame"><p><strong>What this is:</strong> ${esc(frame.what)}</p><p><strong>Why you decide:</strong> ${esc(frame.why_you)}</p></div>`
+    : ''
+
   return [
     `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}"${compact ? ' class="sd-widget-compact"' : ''}>`,
+    frameHtml,
     prompt ? `<div class="sd-widget-prompt">${esc(prompt)}</div>` : '',
     help ? `<div class="sd-widget-help">${markdown(help)}</div>` : '',
     basis,

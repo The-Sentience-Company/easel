@@ -5,9 +5,18 @@
     {
       "heading": "Where the budget lives",
       "badges": [
-        {"label": "decided", "tone": "success"},
-        {"label": "needs-review", "tone": "warning"},
-        {"label": "blocked-on-integration-with-the-scheduler-lane", "tone": "error"},
+        {
+          "label": "decided",
+          "tone": "success"
+        },
+        {
+          "label": "needs-review",
+          "tone": "warning"
+        },
+        {
+          "label": "blocked-on-integration-with-the-scheduler-lane",
+          "tone": "error"
+        },
         "no-tone-plain-badge"
       ],
       "body": "Per-agent is the only option that survives a cleared context.\n\n```mermaid\nflowchart LR\n  A[agent calls<br/>easel await] --> B{cursor<br/>advanced?}\n  B -->|no| C[re-deliver<br/>same batch]\n  B -->|yes| D[block until<br/>newer feedback]\n```\n\nThe alternative couples the budget to a process that `/clear` can kill.\n\n> A truncated read must stay re-fetchable forever.\n\n- Cursor is server-side, keyed by agent id\n- `await` is idempotent by construction\n- No resident poller, ever"
@@ -27,11 +36,26 @@
       "question": "Where does the retry budget live?",
       "context": "Per-agent survives /clear; per-call is simpler but dies with the process.",
       "options": [
-        {"value": "per-agent", "label": "Per-agent (server-side)"},
-        {"value": "per-call", "label": "Per-call"},
-        {"value": "defer", "label": "Defer to integration"}
+        {
+          "value": "per-agent",
+          "label": "Per-agent (server-side)",
+          "basis": "A retry keeps going after you clear the session; a stale terminal re-running await is harmless.",
+          "recommended": true
+        },
+        {
+          "value": "per-call",
+          "label": "Per-call",
+          "basis": "Simpler to build; a retry dies with the process, so a cleared session loses it."
+        },
+        {
+          "value": "defer",
+          "label": "Defer to integration",
+          "basis": "Nothing changes now; the budget is decided when the integration lands."
+        }
       ],
-      "detail": "Recommendation: **per-agent**. It is the only shape where a stale terminal re-running `await` is harmless."
+      "detail": "Recommendation: **per-agent**. It is the only shape where a stale terminal re-running `await` is harmless.",
+      "what": "The agent that publishes a board keeps retrying a failed publish for a while instead of giving up at the first error.",
+      "why_you": "Where the budget lives decides whether a retry survives you clearing the session; that is a behaviour you will meet, not a build detail."
     }
   ],
   "votes": [
@@ -39,7 +63,10 @@
       "id": "ship-round-2",
       "type": "approve",
       "question": "Ship round 2 as-is?",
-      "options": ["approve", "hold"]
+      "options": [
+        "approve",
+        "hold"
+      ]
     }
   ]
 }

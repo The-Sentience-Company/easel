@@ -14,6 +14,8 @@ const RULES = {
   prose: 'A long section carries a list, table, or block (review.md)',
   block: 'Parallel or boxed content leaves the prose and takes a block: cards, callouts, or an island (review.md)',
   table: 'One row per thing, not one per pair — a repeating first column is a cross product (authoring.md)',
+  frame: 'A decision carries what it builds, why the reader decides it, and what each option changes (authoring.md)',
+  stack: 'Cards and callouts hold two or three short parallel things; dense or many boxes were stacked, and read better as prose or a table (review.md)',
 }
 
 const STRUCTURE = /<table|<ul|<ol|<pre|<details|sd-grid|sd-card|sd-callout|data-island/
@@ -74,6 +76,16 @@ export function readerChecks(html, { template } = {}) {
   // Pointers.
   const pointers = [...strip(prose).matchAll(POINTERS)].map((m) => m[0])
   if (pointers.length) add('pointer', `${pointers.length} pointer${pointers.length > 1 ? 's' : ''} to content not on this round`, [...new Set(pointers)].slice(0, 5).join(' · '))
+
+  // Decisions published without the frame: boards opened before the review
+  // template required it, and other templates' decision widgets.
+  const unframed = [...html.matchAll(/<div data-widget="decision"[^>]*data-widget-id="([^"]*)"[^>]*>([\s\S]*?)<div class="sd-widget-options"/g)]
+    .filter((m) => !m[2].includes('sd-widget-frame')).map((m) => m[1])
+  if (unframed.length) add('frame', `${unframed.length} decision${unframed.length > 1 ? 's' : ''} without "What this is" and "Why you decide" lines`, unframed.slice(0, 5).join(', '))
+
+  // Grids the template stacked because their boxes were dense or too many.
+  const stacked = (html.match(/class="sd-grid sd-grid-stack"/g) || []).length
+  if (stacked) add('stack', `${stacked} block${stacked > 1 ? 's' : ''} of cards or callouts stacked into one column`, '')
 
   // Labels: a button over five words.
   for (const m of html.matchAll(/<button[^>]*data-option="[^"]*"[^>]*>([\s\S]*?)<\/button>/g)) {

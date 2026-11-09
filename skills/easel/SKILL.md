@@ -25,7 +25,7 @@ After publishing, the chat message is the link, one line on what changed, and wh
 The reader stops and spends a comment when one of these is missing — `references/authoring.md` has the why and the rest.
 
 1. **A term table** before the first section when the board leans on three or more internal names (card ids, callsigns, names this session coined); every other internal name glossed in the sentence that first uses it.
-2. **Evidence and one bullet per option directly above the buttons**, the pick marked; the button is two or three words. A call whose answer can differ per item is one decision per item, never one decision under a table of the whole set.
+2. **The three facts above every decision's buttons**: what a person gets when this ships (`what`), why the reader is the one deciding (`why_you`), and one line per option on what picking it changes for them (`basis`), the pick marked; the review template refuses a decision without them. The button is two or three words. A call whose answer can differ per item is one decision per item, never one decision under a table of the whole set.
 3. **Restate, never point**: whatever the reader acts on is on this round, not "see round 9" or a path.
 4. **The artifact, not a description of it**: the diff, the payload, the rendered option, the image.
 5. **Every paragraph takes the shape of what it is made of**: options, terms, labeled facts and steps are lists or tables, never one paragraph.
