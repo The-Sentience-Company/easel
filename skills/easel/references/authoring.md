@@ -4,12 +4,15 @@ The template decides the shape. These decide whether the reader can act on it. E
 
 ## Ship the artifact, never a description of it
 
-When the board's subject IS a change to something concrete, the change is on the board:
+When the board's subject IS a change to something concrete, or to how something behaves, the change is on the board:
 
 - a real unified diff in a ` ```diff ` fence for any text, prompt, config, or rule edit — **the fence works in every template's prose field**, not only `page`
 - the verbatim payload in an `sd-collapse` for anything being reasoned about
 - a rendered mockup for every UI option, showing every state the decision turns on — selected, opened, hovered — plus the surface it sits in; islands allow full CSS, so those states render
 - real images for an image vote, at the size they ship at
+- a worked example for a decision about behaviour: one real input (a message, a settings row, a request) and what the person sees under each option, side by side, because a behaviour described in prose reads the same for every option until the reader sees two outputs differ
+- a diagram in a ` ```mermaid ` fence when the flow crosses more than two parts (an app, a server, a third-party service), its boxes labelled with what happens
+- a state table for a control with three or more states: one row per state, what the person sees and what a click does
 
 A round that asks about an option and does not render that option burns the round. "Proposed, not applied" and "we'll show this next round" are for cosmetics only.
 
@@ -42,6 +45,8 @@ Cadence ("nightly 05:00 UTC", "once a month", "by hand"), trigger (what fires it
 ## Source every non-obvious claim, or mark it a hypothesis
 
 The query, the commit sha, the trace, the `file:line`. "Is there any way to prove this?" must be answerable from the board with no round trip. Any per-item verdict the board renders ships the evidence it came from, not just the label.
+
+A premise one command settles (a count, a flag's value, whether a file exists) is run before the round goes out, and the board shows the command and its output; every other premise carries the word *reasoned*, so the reader can tell a checked fact from an inference before acting on it.
 
 ## Model output ships its run manifest
 
