@@ -70,11 +70,24 @@ describe('word-level emphasis stays inside an unambiguous pair', () => {
     assert.deepEqual(kinds(html), ['del', 'del', 'add', 'add'])
   })
 
-  test('unequal runs get no word marks', () => {
-    // Three out, two in: there is no correspondence to read, so the tint alone.
+  test('unequal runs sharing no edge words get no word marks', () => {
     const html = body('-a one', '-b two', '-c three', '+d four', '+e five')
     assert.deepEqual(marks(html), [])
     assert.deepEqual(kinds(html), ['del', 'del', 'del', 'add', 'add'])
+  })
+
+  test('re-wrapped prose marks the changed words across its new line breaks', () => {
+    // Two lines out, three in: wrap points and indentation moved, but only the words changed.
+    const html = body(
+      '-    id of the DM partner, as returned by',
+      '-        ``lookup``.',
+      '+    id of someone in the conversation, as returned',
+      '+        by ``lookup``. It matches every conversation that includes',
+      '+        them, channels too.',
+    )
+    assert.deepEqual(marks(html), ['DM partner', 'someone in', 'conversation',
+      '. It matches every conversation that includes', 'them, channels too'])
+    assert.deepEqual(kinds(html), ['del', 'del', 'add', 'add', 'add'])
   })
 
   test('a rewritten line marks whole rather than shredding into confetti', () => {

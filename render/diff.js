@@ -153,7 +153,28 @@ function pairedBlock(kinds, lines, i) {
   while (kinds[i + dels + gap + adds] === 'add') adds++
   if (!adds) return null
   if (dels === adds) return { dels, gap, pairs: dels }
-  return dels === 1 ? { dels: 1, gap, pairs: 1 } : null
+  return dels === 1 ? { dels: 1, gap, pairs: 1 } : { dels, gap, pairs: 0, adds }
+}
+
+/* Unequal runs are usually re-wrapped prose, so the whole run diffs as one word
+   stream; line breaks and indentation drop out, then marks map back per line. */
+function runMarks(delLines, addLines) {
+  const side = (lines) => {
+    const toks = lines.map((l) => tokenize(l.slice(1)))
+    const at = toks.flatMap((t, line) => t.flatMap((w, k) => (w.trim() ? [[line, k]] : [])))
+    return { toks, at, words: at.map(([line, k]) => toks[line][k]) }
+  }
+  const a = side(delLines)
+  const b = side(addLines)
+  const flags = changedFlags(a.words, b.words)
+  const perLine = (s, f) => s.toks.map((t, line) => {
+    if (!f) return markRuns(t, null)
+    const lf = new Array(t.length).fill(false)
+    s.at.forEach(([l, k], w) => { if (l === line && f[w]) lf[k] = true })
+    bridgeGaps(t, lf)
+    return markRuns(t, lf)
+  })
+  return [perLine(a, flags && flags[0]), perLine(b, flags && flags[1])]
 }
 
 export function renderDiffBody(source) {
@@ -166,8 +187,16 @@ export function renderDiffBody(source) {
   for (let i = 0; i < lines.length; i++) {
     const block = pairedBlock(kinds, lines, i)
     if (block) {
-      const { dels, gap, pairs } = block
+      const { dels, gap, pairs, adds } = block
       const addAt = i + dels + gap
+      if (adds) {
+        const [delHtml, addHtml] = runMarks(lines.slice(i, i + dels), lines.slice(addAt, addAt + adds))
+        for (let k = 0; k < dels; k++) out[i + k] = lineHtml('del', lines[i + k], i + k, delHtml[k])
+        for (let k = 0; k < gap; k++) out[i + dels + k] = lineHtml('ctx', lines[i + dels + k], i + dels + k)
+        for (let k = 0; k < adds; k++) out[addAt + k] = lineHtml('add', lines[addAt + k], addAt + k, addHtml[k])
+        i += dels + gap + adds - 1
+        continue
+      }
       for (let k = 0; k < dels; k++) out[i + k] = lineHtml('del', lines[i + k], i + k)
       for (let k = 0; k < gap; k++) out[i + dels + k] = lineHtml('ctx', lines[i + dels + k], i + dels + k)
       for (let k = 0; k < pairs; k++) {
