@@ -34,6 +34,35 @@ describe('frame', () => {
   })
 })
 
+const ABOUT = '<div class="sd-about"><div class="sd-about-title">What this is</div><p>The chat finds a tool it was not given and runs it; this round changes how it runs one.</p></div>'
+
+describe('about', () => {
+  const section = '<section class="sd-section"><h2>h</h2><p>b</p></section>'
+  const types = (html, opts) => readerChecks(html, opts).map((f) => f.type)
+
+  test('a review board with no "What this is" block is flagged; other templates are not', () => {
+    assert.deepEqual(types(section, { template: 'review' }), ['about'])
+    assert.deepEqual(types(section, { template: 'queue' }), [])
+    assert.deepEqual(types(section), [])
+  })
+
+  test('a block that says what the work is passes; one that opens on the ask or a status is flagged with its first words', () => {
+    assert.deepEqual(types(ABOUT + section, { template: 'review' }), [])
+    for (const opener of ['What I need from you', '5 decisions, then one approve.', 'One pick.', 'Round 4: done.', 'Approve the three lines below.', 'Sign off one case.']) {
+      const html = `<div class="sd-about"><div class="sd-about-title">What this is</div><p>${opener}</p></div>` + section
+      const f = readerChecks(html, { template: 'review' }).filter((x) => x.type === 'about')
+      assert.equal(f.length, 1, opener)
+      assert.match(f[0].detail, /opens on the ask or a status/)
+      assert.ok(f[0].sample.startsWith(opener.split(' ').slice(0, 3).join(' ')), f[0].sample)
+    }
+  })
+
+  test('a count that goes on to say what the work is in the same paragraph passes', () => {
+    const p = '5 decisions, then one approve. First: which screens the rule covers. The rule is drafted around the recommended answers below; the PR opens with this text and merges only after you approve it here.'
+    assert.deepEqual(types(`<div class="sd-about"><div class="sd-about-title">What this is</div><p>${p}</p></div>` + section, { template: 'review' }), [])
+  })
+})
+
 describe('stack', () => {
   test('a stacked grid is reported once per block; a plain grid is not', () => {
     const html = '<div class="sd-grid sd-grid-stack"><div class="sd-card">a</div></div><div class="sd-grid"><div class="sd-card">b</div></div>'
@@ -279,7 +308,7 @@ describe('formatFindings', () => {
 
 test('a review section past 500 words needs a block; a table alone no longer clears it', () => {
   const para = ('<p>' + 'word '.repeat(100) + '</p>').repeat(3)
-  const section = (inner) => `<section class="sd-section"><h2>B. Triage</h2>${inner}</section>`
+  const section = (inner) => `${ABOUT}<section class="sd-section"><h2>B. Triage</h2>${inner}</section>`
   const tableOnly = section(para + '<table><tr><td>a</td></tr></table>' + para)
   const types = (html, opts) => readerChecks(html, opts).map((f) => f.type)
   assert.deepEqual(types(tableOnly, { template: 'review' }), ['block'])

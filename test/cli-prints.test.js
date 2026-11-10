@@ -79,6 +79,7 @@ test('open --template review prints a rule block', async () => {
   const dataFile = join(DATA_DIR, 'review.json')
   writeFileSync(dataFile, JSON.stringify({
     title: 'Test',
+    about: 'the work',
     sections: [{ heading: 'S', body: 'body' }],
   }))
   const { stdout } = await cli('open', '--template', 'review', '--data', dataFile, '--title', 'Review')

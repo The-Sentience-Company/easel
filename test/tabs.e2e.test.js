@@ -19,6 +19,7 @@ let browser
 const SOURCE = join(DATA_DIR, 'tabs.json')
 const board = (extra = '') => ({
   title: 'tabbed board',
+  about: 'the work',
   sections: [
     { heading: 'Overview', body: 'always visible intro' },
     { heading: 'Plan one', body: 'alpha body', tab: 'Alpha' },

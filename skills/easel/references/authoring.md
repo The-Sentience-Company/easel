@@ -20,6 +20,31 @@ A round that asks about an option and does not render that option burns the roun
 
 Table, column, service, job, model id, flag, code path, acronym, campaign shorthand — and the board's own numbering. An internal name is any name that did not exist before this project, or that this session coined: a card id, a pane callsign, a label like "Fix 4(a)" or "arm B", a phrase from a design note. The test is not whether *you* know it; it is whether the reader could have met it anywhere but here. The gloss is the words themselves, not a link out, in the sentence that first uses the name; when the board leans on three or more such names, gloss them in a term | meaning table before the first section. This is the single most common reason a reader stops to ask a question instead of answering the one you asked.
 
+## Say what the work is before the ask
+
+Write the board's `about` for a reader who has not seen the project: what the thing does for a person today, what was wrong, what this round changes, and what is left. A reader who meets only the ask spends the round asking what they are looking at, and a diff they cannot place is one they cannot approve. Match the depth to how far the reader stands from the subject:
+
+| The board is about | `about` carries |
+|---|---|
+| product behaviour: a reply the product gives, a tool it runs, a message it sends, a test of one of those | a short paragraph on each of the four points; a term table when they lean on internal names; a before-and-after diagram or a worked example (the message, the reply) |
+| the reader's own tooling: a rule in their config, a skill, a step of a process they run | one or two sentences; the reader knows the system, and the ask is the content |
+
+The ask stays in `summary`. The review template refuses a board whose `about` is missing, and the publish check names an `about` that opens on the ask or a status.
+
+RIGHT, product behaviour:
+
+> The chat gets a fixed list of tools at the start of every conversation; a tool it rarely needs is found by searching an index, then run. Until now a found tool was added to that list, which threw away the provider's cache and made every later message in the conversation pay for the whole history again. The fix keeps the list fixed: the search reply carries the found tool's settings as text, and one always-present tool runs it by name. That changed the words the model reads in five places, one section each below.
+>
+> *(then a before-and-after diagram of the two paths)*
+
+RIGHT, the reader's own tooling:
+
+> A rule in your config asks every pull request that changes a screen to ship before-and-after captures; only your agents follow it. This moves the rule into the repo so every agent loads it.
+
+WRONG, the ask with nothing on the work (the reader cannot tell a good diff from a bad one):
+
+> **What I need from you.** Read five diffs below, one per file, each with its own Approve button.
+
 ## Restate, never point
 
 Anything quoted or decided on another board, an earlier round, or a prior ruling is restated in full where it is used. "Your round-9 ruling", "Decision 6", "as we discussed on the other board" all fail. A link may accompany the restatement; it never replaces it.
@@ -29,7 +54,7 @@ Anything quoted or decided on another board, an earlier round, or a prior ruling
 Write every decision for a reader who has not seen the project. Directly above the buttons, in this order:
 
 1. **What this is** (`what`): one sentence on what a person using the product, or the reader as its operator, gets or sees when this ships.
-2. **Why you decide** (`why_you`): one sentence on what the author could not settle alone, or what it costs if the wrong option ships. An earlier ruling it rests on is restated here, never pointed at.
+2. **Why you decide** (`why_you`): one sentence on what this decision alone settles, or what goes wrong for the person if the wrong option ships. An earlier ruling it rests on is restated here, never pointed at. The line is specific to its decision; the template refuses two decisions on one board carrying the same line, because a sentence true of every decision tells the reader nothing about any of them. RIGHT: "If the search reply's next line is unclear, the model calls the found tool by a name it no longer has, and the user sees a failed turn." WRONG, on every decision of one board: "Every line a model reads is yours to approve before merge."
 3. **What each option changes** (`basis`, one per option, `recommended` on the pick): the consequence that person or the reader would notice, with an example where the options give different output.
 
 The review template renders them in that order and refuses a decision that lacks any of them, because a question phrased in the author's terms (a column, a counter, a prompt line) reads as clear and still cannot be answered. An author who cannot write the `why_you` line has found a decision that is the lane's to make, not the reader's. The evidence the options rest on goes in `detail`, above the frame. The button label itself is two or three words — "Size floor", "Leave them", "Ticket it" — never the consequence, the caveat, or "(recommended)". **A question plus a list of option labels is not a decision, and a basis that describes the build ("the fix lands on the pull request") instead of its effect is not a basis.**
