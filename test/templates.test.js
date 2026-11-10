@@ -20,6 +20,11 @@ import { buildPreview } from './preview.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const sample = async (n) => JSON.parse(await readFile(join(HERE, 'samples', `${n}.json`), 'utf8'))
+// A review decision as the template now requires it: the two frame lines and a basis per option.
+const framed = (d) => ({
+  what: 'what a person gets', why_you: 'why the reader decides', ...d,
+  options: d.options.map((o) => (typeof o === 'string' ? { value: o, basis: `what ${o} changes` } : { basis: 'what it changes', ...o })),
+})
 
 const TEMPLATES = [review, evalT, page, answerKey, queue, rulings, compareT, gallery, replay]
 
@@ -329,7 +334,7 @@ describe('review', () => {
       const html = review.render({
         title: 't',
         sections: [sec('intro'), sec('a1', 'A'), sec('a2', 'A'), sec('b1', 'B')],
-        decisions: [{ id: 'final', question: 'ship?', options: ['yes', 'no'] }],
+        decisions: [framed({ id: 'final', question: 'ship?', options: ['yes', 'no'] })],
       })
       const panels = [...html.matchAll(/<div data-tab="([^"]+)">([\s\S]*?)\n<\/div>/g)].map((m) => [m[1], (m[2].match(/<h2>[^<]+/g) || []).length])
       assert.deepEqual(panels, [['A', 2], ['B', 1]])
@@ -380,7 +385,7 @@ describe('review', () => {
       sections: [{
         heading: 'Retry budget',
         body: 'context',
-        decisions: [{ id: 'inline-d', question: 'q', options: ['a', 'b'] }],
+        decisions: [framed({ id: 'inline-d', question: 'q', options: ['a', 'b'] })],
         votes: [{ id: 'inline-v', question: 'ok?', type: 'approve' }],
       }],
     })
@@ -392,21 +397,60 @@ describe('review', () => {
   test('rejects duplicate widget ids between inline and top-level', () => {
     assert.throws(() => review.render({
       title: 't',
-      sections: [{ heading: 'h', decisions: [{ id: 'dup', question: 'q', options: ['a'] }] }],
-      decisions: [{ id: 'dup', question: 'q', options: ['a'] }],
+      sections: [{ heading: 'h', decisions: [framed({ id: 'dup', question: 'q', options: ['a'] })] }],
+      decisions: [framed({ id: 'dup', question: 'q', options: ['a'] })],
     }), TemplateError)
   })
 
   test('rejects duplicate widget ids across decisions and votes', () => {
     assert.throws(() => review.render({
       title: 't',
-      decisions: [{ id: 'dup', question: 'q', options: ['a'] }],
+      decisions: [framed({ id: 'dup', question: 'q', options: ['a'] })],
       votes: [{ id: 'dup', question: 'q', options: ['a'] }],
     }), TemplateError)
   })
 
   test('requires at least one of sections, decisions, or votes', () => {
     assert.throws(() => review.render({ title: 'empty' }), TemplateError)
+  })
+
+  describe('decision frame', () => {
+    const board = (d) => ({ title: 't', sections: [{ heading: 'h', body: 'b', decisions: [d] }] })
+
+    test('renders what and why-you above the question, and the basis per option', () => {
+      const html = review.render(board(framed({ id: 'd', question: 'Which?', options: ['a', 'b'] })))
+      assert.match(html, /<strong>What this is:<\/strong> what a person gets/)
+      assert.match(html, /<strong>Why you decide:<\/strong> why the reader decides/)
+      assert.ok(html.indexOf('sd-widget-frame') < html.indexOf('sd-widget-prompt'), 'the frame precedes the question')
+      assert.match(html, /what a changes/)
+    })
+
+    for (const [name, mutate, message] of [
+      ['what', (d) => { delete d.what }, /sections\[0\]\.decisions\[0\]\.what/],
+      ['why_you', (d) => { delete d.why_you }, /sections\[0\]\.decisions\[0\]\.why_you/],
+      ['an option basis', (d) => { d.options[1] = { value: 'b', label: 'B' } }, /sections\[0\]\.decisions\[0\]\.options\[1\]\.basis/],
+      ['a string option', (d) => { d.options[0] = 'a' }, /options\[0\]\.basis/],
+    ]) {
+      test(`a decision missing ${name} fails with the path`, () => {
+        const d = framed({ id: 'd', question: 'q', options: ['a', 'b'] })
+        mutate(d)
+        assert.throws(() => review.render(board(d)), (err) => err instanceof TemplateError && message.test(err.message))
+      })
+    }
+
+    test('a vote carries no frame and still renders with string options', () => {
+      const html = review.render({ title: 't', votes: [{ id: 'v', question: 'ok?', type: 'approve' }] })
+      assert.match(html, /data-widget="approve"/)
+      assert.doesNotMatch(html, /sd-widget-frame/)
+    })
+
+    test('legacy mode renders a frameless decision as before, and a framed one with its frame', () => {
+      const bare = review.render(board({ id: 'd', question: 'q', options: ['a'] }), { legacy: true })
+      assert.match(bare, /data-widget-id="d"/)
+      assert.doesNotMatch(bare, /sd-widget-frame/)
+      const full = review.render(board(framed({ id: 'd', question: 'q', options: ['a'] })), { legacy: true })
+      assert.match(full, /sd-widget-frame/)
+    })
   })
 
   describe('blocks', () => {
@@ -445,11 +489,23 @@ describe('review', () => {
           heading: 'H',
           body: 'prose',
           blocks: [{ kind: 'callouts', items: [{ title: 'boxed', body: 'b' }] }],
-          decisions: [{ id: 'd', question: 'q', options: ['a'] }],
+          decisions: [framed({ id: 'd', question: 'q', options: ['a'] })],
         }],
       })
       assert.ok(html.indexOf('<p>prose</p>') < html.indexOf('sd-callout'))
       assert.ok(html.indexOf('sd-callout') < html.indexOf('data-widget-id="d"'))
+    })
+
+    test('dense or many boxes stack into one column; two or three short ones sit side by side', () => {
+      const short = (n) => Array.from({ length: n }, (_, i) => ({ title: `c${i}`, body: 'a few words of body' }))
+      assert.match(review.render(board([{ kind: 'cards', items: short(3) }])), /class="sd-grid">/)
+      assert.match(review.render(board([{ kind: 'cards', items: short(4) }])), /class="sd-grid sd-grid-stack">/)
+      const table = { title: 't', body: 'see\n\n| a | b |\n|---|---|\n| 1 | 2 |' }
+      assert.match(review.render(board([{ kind: 'cards', items: [short(1)[0], table] }])), /sd-grid-stack/)
+      const long = { title: 'l', body: 'word '.repeat(91).trim() }
+      assert.match(review.render(board([{ kind: 'cards', items: [short(1)[0], long] }])), /sd-grid-stack/)
+      assert.match(review.render(board([{ kind: 'callouts', items: [{ body: 'x ```\ncode\n```' }, { body: 'y' }] }])), /sd-grid-stack/)
+      assert.doesNotMatch(review.render(board([{ kind: 'callouts', items: [{ body: 'x' }, { body: 'y' }] }])), /sd-grid-stack/)
     })
 
     test('an unknown kind, a bad tone, and an empty items list each throw naming the path', () => {

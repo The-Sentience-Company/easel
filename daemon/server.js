@@ -72,6 +72,7 @@ const MAX_IMAGES = 8
 const IMAGE_EXT = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp' }
 const ATTACHMENTS_DIR = join(DATA_DIR, 'attachments')
 const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery', 'replay'])
+const DAEMON_STARTED_AT = new Date().toISOString()
 
 const store = createStore()
 
@@ -145,7 +146,9 @@ async function renderSource(board) {
   if (board.template) {
     const mod = await loadTemplate(board.template)
     const data = JSON.parse(await readFile(board.data_file, 'utf8'))
-    raw = mod.render(data)
+    // A board opened before this daemon started predates the decision frame;
+    // it publishes as before and the reader checks warn instead.
+    raw = mod.render(data, { legacy: board.created_at < DAEMON_STARTED_AT })
   } else if (/\.md$/i.test(board.file)) {
     raw = markdown(await readFile(board.file, 'utf8'))
   } else {

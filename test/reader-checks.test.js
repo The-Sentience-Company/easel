@@ -18,6 +18,31 @@ describe('wall', () => {
   })
 })
 
+describe('frame', () => {
+  const decision = (inner) => `<div data-widget="decision" data-widget-id="d1">${inner}<div class="sd-widget-options"><button type="button" data-option="a">a</button></div></div>`
+
+  test('a decision without the frame lines is flagged by widget id', () => {
+    const findings = readerChecks(decision('<div class="sd-widget-prompt">q</div>'))
+    assert.equal(findings.filter((f) => f.type === 'frame').length, 1)
+    assert.match(findings.find((f) => f.type === 'frame').sample, /d1/)
+  })
+
+  test('a decision carrying the frame is clean, and a vote needs none', () => {
+    assert.equal(readerChecks(decision('<div class="sd-widget-frame"><p>x</p></div><div class="sd-widget-prompt">q</div>')).filter((f) => f.type === 'frame').length, 0)
+    const vote = '<div data-widget="approve" data-widget-id="v1"><div class="sd-widget-prompt">ok?</div><div class="sd-widget-options"><button type="button" data-option="yes">yes</button></div></div>'
+    assert.equal(readerChecks(vote).filter((f) => f.type === 'frame').length, 0)
+  })
+})
+
+describe('stack', () => {
+  test('a stacked grid is reported once per block; a plain grid is not', () => {
+    const html = '<div class="sd-grid sd-grid-stack"><div class="sd-card">a</div></div><div class="sd-grid"><div class="sd-card">b</div></div>'
+    const f = readerChecks(html).filter((x) => x.type === 'stack')
+    assert.equal(f.length, 1)
+    assert.match(f[0].detail, /1 block/)
+  })
+})
+
 describe('shorthand', () => {
   test('undefined token in prose is flagged', () => {
     const html = '<p>APR-01 shipped last week.</p>'

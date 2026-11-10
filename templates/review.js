@@ -13,6 +13,12 @@ const renderBadges = (badges, path) => requireArray(badges ?? [], path)
     return badge(label, tone, `${path} tone`)
   }).join('')
 
+/** More than three boxes, or any box with a table, a fence or a long body, stack
+    in one column: side by side they clip tables and wrap paragraphs word by word. */
+const DENSE_WORDS = 90
+const isDense = (body) => /\n\s*\|/.test(body) || /```/.test(body) || body.split(/\s+/).filter(Boolean).length > DENSE_WORDS
+const gridClass = (bodies) => (bodies.length > 3 || bodies.some(isDense)) ? 'sd-grid sd-grid-stack' : 'sd-grid'
+
 /** Layout blocks under a section's prose: a cards grid, callouts, or an island. */
 const renderBlocks = (blocks, path) => requireArray(blocks, path).map((b, j) => {
   const p = `${path}[${j}]`
@@ -20,7 +26,7 @@ const renderBlocks = (blocks, path) => requireArray(blocks, path).map((b, j) => 
   if (b.kind === 'cards') {
     const items = requireArray(b.items, `${p}.items`)
     if (items.length === 0) fail(`${p}.items must not be empty`)
-    return `<div class="sd-grid">${items.map((c, k) => {
+    return `<div class="${gridClass(items.map((c) => String(c?.body ?? '')))}">${items.map((c, k) => {
       const cp = `${p}.items[${k}]`
       requireObject(c, cp)
       const badges = renderBadges(c.badges, `${cp}.badges`)
@@ -50,7 +56,7 @@ const renderBlocks = (blocks, path) => requireArray(blocks, path).map((b, j) => 
       ].filter(Boolean).join('')
     })
     // One callout boxes a thing off on its own; two or more sit side by side.
-    return rendered.length === 1 ? rendered[0] : `<div class="sd-grid">${rendered.join('')}</div>`
+    return rendered.length === 1 ? rendered[0] : `<div class="${gridClass(items.map((c) => String(c.body ?? '')))}">${rendered.join('')}</div>`
   }
   if (b.kind === 'island') {
     requireString(b.html, `${p}.html`)
@@ -83,7 +89,9 @@ const groupTabs = (sections, htmls) => {
   ].join('\n')
 }
 
-export function render(data) {
+/** `legacy` is set by the daemon for boards opened before decisions carried a
+    frame, so a running board keeps publishing; a new board is held to it. */
+export function render(data, { legacy = false } = {}) {
   requireObject(data, 'review')
   requireString(data.title, 'review.title')
 
@@ -103,6 +111,17 @@ export function render(data) {
 
   const renderDecision = (d, path) => {
     requireObject(d, path)
+    const options = requireArray(d.options, `${path}.options`)
+    const framed = !legacy || (d.what !== undefined && d.why_you !== undefined)
+    if (framed) {
+      requireString(d.what, `${path}.what (one sentence: what a person gets or sees when this ships)`)
+      requireString(d.why_you, `${path}.why_you (one sentence: why the reader decides this, or what it costs if wrong)`)
+      options.forEach((o, i) => {
+        if (typeof o === 'string' || typeof o.basis !== 'string' || !o.basis.trim()) {
+          fail(`${path}.options[${i}].basis must be a non-empty string: what picking this option changes for a user or the reader`)
+        }
+      })
+    }
     return [
       '<div class="sd-card">',
       d.detail ? `<div class="sd-muted">${markdown(d.detail)}</div>` : '',
@@ -111,7 +130,8 @@ export function render(data) {
         id: uniqueId(d.id, `${path}.id`),
         prompt: requireString(d.question, `${path}.question`),
         help: d.context,
-        options: requireArray(d.options, `${path}.options`),
+        options,
+        frame: framed ? { what: d.what, why_you: d.why_you } : undefined,
       }),
       '</div>',
     ].filter(Boolean).join('\n')

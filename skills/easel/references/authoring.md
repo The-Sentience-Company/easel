@@ -24,9 +24,15 @@ Table, column, service, job, model id, flag, code path, acronym, campaign shorth
 
 Anything quoted or decided on another board, an earlier round, or a prior ruling is restated in full where it is used. "Your round-9 ruling", "Decision 6", "as we discussed on the other board" all fail. A link may accompany the restatement; it never replaces it.
 
-## A decision carries the basis for answering it
+## A decision carries the three facts a cold reader needs
 
-Adjacent to the widget: one line per option saying what it costs or buys, the recommendation and why, and the evidence it rests on. In the data the evidence is the decision's `detail` and the per-option lines are each option's `basis` and `recommended`; the templates render them in that order directly above the buttons, so all of it is in view as the reader answers. A table higher in the section has scrolled away by then. The button label itself is two or three words — "Size floor", "Leave them", "Ticket it" — never the consequence, the caveat, or "(recommended)". A question plus a list of option labels is not a decision — it is a board that comes back unanswered.
+Write every decision for a reader who has not seen the project. Directly above the buttons, in this order:
+
+1. **What this is** (`what`): one sentence on what a person using the product, or the reader as its operator, gets or sees when this ships.
+2. **Why you decide** (`why_you`): one sentence on what the author could not settle alone, or what it costs if the wrong option ships. An earlier ruling it rests on is restated here, never pointed at.
+3. **What each option changes** (`basis`, one per option, `recommended` on the pick): the consequence that person or the reader would notice, with an example where the options give different output.
+
+The review template renders them in that order and refuses a decision that lacks any of them, because a question phrased in the author's terms (a column, a counter, a prompt line) reads as clear and still cannot be answered. An author who cannot write the `why_you` line has found a decision that is the lane's to make, not the reader's. The evidence the options rest on goes in `detail`, above the frame. The button label itself is two or three words — "Size floor", "Leave them", "Ticket it" — never the consequence, the caveat, or "(recommended)". **A question plus a list of option labels is not a decision, and a basis that describes the build ("the fix lands on the pull request") instead of its effect is not a basis.**
 
 When the answer can differ from one item to the next — per row, file, or case — write one decision per item, its `detail` carrying that item's evidence and diff, because the reader judges one item at a time and needs that item's facts at that item's buttons. **Never a table of every item above one decision about the set.**
 
