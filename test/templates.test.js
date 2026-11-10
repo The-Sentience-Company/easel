@@ -80,6 +80,7 @@ describe('escaping', () => {
   test('user data cannot break out into a live element', () => {
     const html = review.render({
       title: '</h1><script>alert(1)</script>',
+      about: 'the work',
       sections: [{ heading: '"><img src=x onerror=alert(1)>', body: 'ok' }],
     })
     // The payload may appear as escaped text; what must not exist is a real tag.
@@ -333,6 +334,7 @@ describe('review', () => {
     test('sections before the first tab stay above it; each tab wraps its run of sections', () => {
       const html = review.render({
         title: 't',
+        about: 'the work',
         sections: [sec('intro'), sec('a1', 'A'), sec('a2', 'A'), sec('b1', 'B')],
         decisions: [framed({ id: 'final', question: 'ship?', options: ['yes', 'no'] })],
       })
@@ -343,11 +345,11 @@ describe('review', () => {
     })
 
     test('a board with no tab field renders exactly as before', () => {
-      assert.doesNotMatch(review.render({ title: 't', sections: [sec('a'), sec('b')] }), /data-tab/)
+      assert.doesNotMatch(review.render({ title: 't', about: 'the work', sections: [sec('a'), sec('b')] }), /data-tab/)
     })
 
     test('labels are escaped into the attribute', () => {
-      const html = review.render({ title: 't', sections: [sec('x', 'R&D "plan"'), sec('y', 'Other')] })
+      const html = review.render({ title: 't', about: 'the work', sections: [sec('x', 'R&D "plan"'), sec('y', 'Other')] })
       assert.match(html, /data-tab="R&amp;D &quot;plan&quot;"/)
     })
 
@@ -357,7 +359,7 @@ describe('review', () => {
       ['a single tab', [sec('a', 'A'), sec('b', 'A')], /at least two different labels/],
     ]) {
       test(`throws on ${name}`, () => {
-        assert.throws(() => review.render({ title: 't', sections }), (err) => err instanceof TemplateError && message.test(err.message))
+        assert.throws(() => review.render({ title: 't', about: 'the work', sections }), (err) => err instanceof TemplateError && message.test(err.message))
       })
     }
   })
@@ -365,6 +367,7 @@ describe('review', () => {
   test('a section never ships pre-closed — an old collapse key is inert, not an error', () => {
     const html = review.render({
       title: 't',
+      about: 'the work',
       sections: [{ heading: 'Background', body: 'the derivation', collapse: 'the full derivation' }],
     })
     assert.doesNotMatch(html, /<details/, 'the author cannot hand the reader a closed section')
@@ -382,6 +385,7 @@ describe('review', () => {
   test('renders section-inline decisions and votes inside the section', () => {
     const html = review.render({
       title: 't',
+      about: 'the work',
       sections: [{
         heading: 'Retry budget',
         body: 'context',
@@ -397,6 +401,7 @@ describe('review', () => {
   test('rejects duplicate widget ids between inline and top-level', () => {
     assert.throws(() => review.render({
       title: 't',
+      about: 'the work',
       sections: [{ heading: 'h', decisions: [framed({ id: 'dup', question: 'q', options: ['a'] })] }],
       decisions: [framed({ id: 'dup', question: 'q', options: ['a'] })],
     }), TemplateError)
@@ -405,6 +410,7 @@ describe('review', () => {
   test('rejects duplicate widget ids across decisions and votes', () => {
     assert.throws(() => review.render({
       title: 't',
+      about: 'the work',
       decisions: [framed({ id: 'dup', question: 'q', options: ['a'] })],
       votes: [{ id: 'dup', question: 'q', options: ['a'] }],
     }), TemplateError)
@@ -415,7 +421,7 @@ describe('review', () => {
   })
 
   describe('decision frame', () => {
-    const board = (d) => ({ title: 't', sections: [{ heading: 'h', body: 'b', decisions: [d] }] })
+    const board = (d) => ({ title: 't', about: 'the work', sections: [{ heading: 'h', body: 'b', decisions: [d] }] })
 
     test('renders what and why-you above the question, and the basis per option', () => {
       const html = review.render(board(framed({ id: 'd', question: 'Which?', options: ['a', 'b'] })))
@@ -439,7 +445,7 @@ describe('review', () => {
     }
 
     test('a vote carries no frame and still renders with string options', () => {
-      const html = review.render({ title: 't', votes: [{ id: 'v', question: 'ok?', type: 'approve' }] })
+      const html = review.render({ title: 't', about: 'the work', votes: [{ id: 'v', question: 'ok?', type: 'approve' }] })
       assert.match(html, /data-widget="approve"/)
       assert.doesNotMatch(html, /sd-widget-frame/)
     })
@@ -453,8 +459,51 @@ describe('review', () => {
     })
   })
 
+  describe('about: what the work is, before any ask', () => {
+    const board = (extra) => ({ title: 't', sections: [{ heading: 'h', body: 'b' }], ...extra })
+
+    test('renders as a "What this is" block between the summary and the first section', () => {
+      const html = review.render(board({ summary: 'Two decisions.', about: 'The chat finds a tool it was not given.\n\nThis round changes how it runs one.' }))
+      const at = html.indexOf('class="sd-about')
+      assert.ok(at > html.indexOf('Two decisions.'), 'after the summary')
+      assert.ok(at < html.indexOf('<section'), 'before the first section')
+      assert.match(html, /<div class="sd-about-title">What this is<\/div><p>The chat finds a tool/)
+    })
+
+    test('a board without it fails with the path', () => {
+      assert.throws(() => review.render(board({})), (err) => err instanceof TemplateError && /review\.about/.test(err.message))
+      assert.throws(() => review.render(board({ about: '  ' })), (err) => err instanceof TemplateError && /review\.about/.test(err.message))
+    })
+
+    test('legacy mode renders without it, and with it when given', () => {
+      assert.doesNotMatch(review.render(board({}), { legacy: true }), /sd-about/)
+      assert.match(review.render(board({ about: 'the work' }), { legacy: true }), /sd-about/)
+    })
+  })
+
+  describe('one "Why you decide" line per decision', () => {
+    const two = (a, b) => ({
+      title: 't', about: 'the work',
+      sections: [{ heading: 'h', body: 'b', decisions: [
+        framed({ id: 'first', question: 'q1', options: ['a'], why_you: a }),
+        framed({ id: 'second', question: 'q2', options: ['a'], why_you: b }),
+      ] }],
+    })
+
+    test('two decisions sharing one line fail naming both paths', () => {
+      const line = 'Every line a model reads is yours to approve before merge.'
+      assert.throws(() => review.render(two(line, ` ${line.toUpperCase()} `)), (err) =>
+        err instanceof TemplateError && /decisions\[1\]\.why_you repeats .*decisions\[0\]\.why_you/.test(err.message))
+    })
+
+    test('two decisions with their own lines render', () => {
+      const html = review.render(two('If the reply shape is wrong the model calls a tool it no longer has.', 'If the key accepts a re-search, a model that forgets the tool passes.'))
+      assert.match(html, /data-widget-id="second"/)
+    })
+  })
+
   describe('blocks', () => {
-    const board = (blocks) => ({ title: 't', sections: [{ heading: 'H', body: 'prose', blocks }] })
+    const board = (blocks) => ({ title: 't', about: 'the work', sections: [{ heading: 'H', body: 'prose', blocks }] })
 
     test('cards render side by side in one grid, each with a title and badges', () => {
       const html = review.render(board([{ kind: 'cards', items: [
@@ -485,6 +534,7 @@ describe('review', () => {
     test('blocks render after the prose and before the inline decisions', () => {
       const html = review.render({
         title: 't',
+        about: 'the work',
         sections: [{
           heading: 'H',
           body: 'prose',

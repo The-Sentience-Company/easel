@@ -25,11 +25,11 @@ After publishing, the chat message is the link, one line on what changed, and wh
 The reader stops and spends a comment when one of these is missing — `references/authoring.md` has the why and the rest.
 
 1. **A term table** before the first section when the board leans on three or more internal names (card ids, callsigns, names this session coined); every other internal name glossed in the sentence that first uses it.
-2. **The three facts above every decision's buttons**: what a person gets when this ships (`what`), why the reader is the one deciding (`why_you`), and one line per option on what picking it changes for them (`basis`), the pick marked; the review template refuses a decision without them. The button is two or three words. A call whose answer can differ per item is one decision per item, never one decision under a table of the whole set.
+2. **The three facts above every decision's buttons**: what a person gets when this ships (`what`), why the reader is the one deciding (`why_you`), and one line per option on what picking it changes for them (`basis`), the pick marked; the review template refuses a decision without them. The `why_you` line names what this one decision settles or what goes wrong if it is wrong, because a sentence true of every decision on the board tells the reader nothing about any of them; the template refuses two decisions carrying the same line. The button is two or three words. A call whose answer can differ per item is one decision per item, never one decision under a table of the whole set.
 3. **Restate, never point**: whatever the reader acts on is on this round, not "see round 9" or a path.
 4. **The artifact, not a description of it**: the diff, the payload, the rendered option, the image; for a behaviour, the worked example, the flow diagram or the state table.
 5. **Every paragraph takes the shape of what it is made of**: options, terms, labeled facts and steps are lists or tables, never one paragraph.
-6. **The first line states the ask**: how many decisions, the first one by name, what blocks.
+6. **The board says what the work is before the ask**, in `about`: what the thing does for a person today, what was wrong, what this round changes and what is left, at the depth the subject needs. Product behaviour the reader has not seen in the code gets a paragraph on each, a term table, and a before-and-after diagram or a worked example; the reader's own tooling (a rule file, a skill, a step of a process they run) gets one or two sentences. The first line of `summary` then states the ask: how many decisions, the first one by name, what blocks. The review template refuses a board without `about`, and the publish check names one that opens on the ask or a status.
 
 ## Publish
 

@@ -16,7 +16,10 @@ const RULES = {
   table: 'One row per thing, not one per pair — a repeating first column is a cross product (authoring.md)',
   frame: 'A decision carries what it builds, why the reader decides it, and what each option changes (authoring.md)',
   stack: 'Cards and callouts hold two or three short parallel things; dense or many boxes were stacked, and read better as prose or a table (review.md)',
+  about: 'The board says what the work is before any ask or status (authoring.md)',
 }
+
+const ASK_OR_STATUS = /^(what i need from you|i need you to|ask:|approve\b|please (approve|review|decide|pick)|pick one|your call|one (decision|check|call|pick|question)\b|\d+ (decisions?|calls?|picks?|questions?)\b|sign off|round \d+\b|status:)/i
 
 const STRUCTURE = /<table|<ul|<ol|<pre|<details|sd-grid|sd-card|sd-callout|data-island/
 const BLOCK = /sd-grid|sd-callout|data-island/
@@ -82,6 +85,19 @@ export function readerChecks(html, { template } = {}) {
   const unframed = [...html.matchAll(/<div data-widget="decision"[^>]*data-widget-id="([^"]*)"[^>]*>([\s\S]*?)<div class="sd-widget-options"/g)]
     .filter((m) => !m[2].includes('sd-widget-frame')).map((m) => m[1])
   if (unframed.length) add('frame', `${unframed.length} decision${unframed.length > 1 ? 's' : ''} without "What this is" and "Why you decide" lines`, unframed.slice(0, 5).join(', '))
+
+  // The "What this is" block: a review board opened before the template required
+  // it has none; one that opens on the ask or a status has it filled with the wrong thing.
+  if (template === 'review') {
+    const at = html.indexOf('class="sd-about')
+    if (at === -1) add('about', 'no "What this is" block before the first section', '')
+    else {
+      const first = html.slice(at).match(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/)
+      const text = first ? strip(first[1]) : ''
+      // A count or ask that goes on to say what the work is in the same paragraph is fine.
+      if (ASK_OR_STATUS.test(text) && words(text).length < 20) add('about', 'the "What this is" block opens on the ask or a status', text.split(' ').slice(0, 8).join(' ') + ' …')
+    }
+  }
 
   // Grids the template stacked because their boxes were dense or too many.
   const stacked = (html.match(/class="sd-grid sd-grid-stack"/g) || []).length

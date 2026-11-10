@@ -24,7 +24,8 @@ const TEMPLATE_RULES = {
     'a queue card is: one question on one line · options as buttons, each with a one-line basis, one recommended\n' +
     '· read_first = the board by the agent that did the work · a body of a few sentences · every card id or callsign glossed where it first appears',
   review:
-    'a review decision is: a question with options as buttons, each with a one-line basis, one recommended\n' +
+    'a review board opens with about: what the work does for a person, what was wrong, what this round changes · the ask comes after it, in summary\n' +
+    '· a review decision is: a question with options as buttons, each with a one-line basis, one recommended · its why_you names what that one decision decides\n' +
     '· evidence goes in the detail field above the options, not on the button · every term glossed where it first appears',
   compare:
     'a compare verdict is: pick the winning arm, or tie, or all-bad · the comparison sits above the verdict, not a pointer elsewhere\n' +

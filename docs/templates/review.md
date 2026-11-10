@@ -11,7 +11,8 @@ easel open --template review --data plan.json --title "Retry budget"
 ```jsonc
 {
   "title": "string",                 // required
-  "summary": "string",               // optional, markdown
+  "about": "string",                 // required, markdown: what the work is, before any ask — what it does for a person, what was wrong, what this round changes (depth rules in authoring.md)
+  "summary": "string",               // optional, markdown: the ask and the status
 
   "metrics": [                       // optional — stat tiles above the first section
     { "label": "string", "value": "string|number", "note": "string" }
@@ -75,7 +76,7 @@ At least one of `sections`, `decisions`, or `votes` must be present. `id` values
 - the thing that changed against its background, or the answer to an annotation → `callouts`; two or more sit side by side, one stands alone
 - a mockup, image comparison, or custom composition → `island` (hand-authored HTML in a sandboxed frame; `height` is the frame's pre-load height in px)
 - numbers → `metrics` or a table in the body
-- a status → the first line of `summary`, replaced each round, never stacked
+- a status → the first line of `summary`, with the ask, replaced each round, never stacked; what the work is stays in `about`
 
 A section over 250 words with no list, table, or block trips the publish check.
 
@@ -99,7 +100,9 @@ Alignment is carried on a class, not a `style` attribute. The publish sanitizer 
 
 ## Behavior
 
-Each decision renders its `what` and `why_you` lines ("What this is", "Why you decide") above the question, then its options' `basis` lines as a list directly above the buttons, the recommended one marked, so a reader with no context has the three facts in view as they answer and the argument for an option never has to live on the button. `detail` renders above all of it, for the evidence the options rest on. A decision missing `what`, `why_you` or an option's `basis` throws with the path; a board opened before decisions carried these fields keeps publishing without them, and the reader checks report the missing frame instead. Votes carry no frame. A widget the reader answered on an earlier round opens with that choice shown pressed and the buttons live — a new click records a new answer.
+`about` renders as a block headed "What this is" between the summary and the first section, so the reader meets the work before the ask; a mermaid fence inside it renders like one in a body. A board missing `about` throws with the path; a board opened before the field existed keeps publishing without it, and the reader checks report the missing block, as they do an `about` that opens on the ask or a status.
+
+Each decision renders its `what` and `why_you` lines ("What this is", "Why you decide") above the question, then its options' `basis` lines as a list directly above the buttons, the recommended one marked, so a reader with no context has the three facts in view as they answer and the argument for an option never has to live on the button. `detail` renders above all of it, for the evidence the options rest on. A decision missing `what`, `why_you` or an option's `basis` throws with the path, and two decisions whose `why_you` lines match word for word throw naming both paths; a board opened before decisions carried these fields keeps publishing without them, and the reader checks report the missing frame instead. Votes carry no frame. A widget the reader answered on an earlier round opens with that choice shown pressed and the buttons live — a new click records a new answer.
 
 Decisions and votes render as widgets. A click queues the choice as a draft on the same queue as annotations — reselecting replaces it — and **Send** delivers everything together; nothing reaches the agent before that.
 

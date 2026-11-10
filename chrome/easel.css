@@ -795,6 +795,20 @@ body.sf-shell {
 .sd-callout-warning { border-top-color: var(--color-warning); }
 .sd-callout-error   { border-top-color: var(--color-error); }
 
+/* The board's "What this is" block: a callout's box, info accent, sat between
+   the summary and the first section so the work is read before any ask. */
+.sd-about {
+  padding: 14px 18px;
+  margin: 0 0 22px;
+  border: var(--rule);
+  border-top: 3px solid var(--color-info);
+  border-radius: var(--radius-sm);
+  background: var(--color-base-100);
+  color: var(--color-body-content);
+}
+.sd-about > :last-child { margin-bottom: 0; }
+.sd-about-title { font-weight: 640; color: var(--color-base-content); margin-bottom: 4px; }
+
 /* An opt-in edge for telling one entry from the next. Colour rides the border
    only — a tinted fill would move every contrast pair inside the card. */
 .sd-accent { border-left: 3px solid var(--color-primary); }

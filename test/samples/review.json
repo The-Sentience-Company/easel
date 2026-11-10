@@ -1,6 +1,7 @@
 {
   "title": "Retry budget: per-agent cursors vs per-call limits",
   "summary": "Round 2. The **cursor** design is settled; what is open is where the retry budget lives and whether `await` should surface partial batches.",
+  "about": "An agent that publishes a board and loses the connection keeps retrying for a while instead of giving up at the first error, so a reader never sees a half-published round. This round settles where the retry count is kept.",
   "sections": [
     {
       "heading": "Where the budget lives",
