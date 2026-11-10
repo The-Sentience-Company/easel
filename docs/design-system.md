@@ -4,7 +4,7 @@ Static precompiled CSS. No build step, no Tailwind runtime, no CDN. Token names 
 
 ## Themes
 
-The shell page sets `data-theme` on the `<html>` element. Three families — default, `lantern`, `fig` — each in a light and a dark mode:
+The shell page sets `data-theme` on the `<html>` element. Four families — default, `lantern`, `fig`, `cursor` — each in a light and a dark mode:
 
 ```html
 <html data-theme="light">          <!-- default family -->
@@ -13,7 +13,7 @@ The shell page sets `data-theme` on the `<html>` element. Three families — def
 <html data-theme="fig-dark">
 ```
 
-The family comes from the topbar picker (localStorage `sf-theme-family`) or a `?theme=<family>` URL pin; the mode from the `[T]heme` cycle. The ⚙ tuner popup layers per-browser inline token overrides (localStorage `sf-tuner-v2`) on top of whichever family is active.
+The family comes from the topbar picker (localStorage `sf-theme-family`) or a `?theme=<family>` URL pin; the mode from the `[T]heme` cycle. Until a browser picks its own, it gets `theme` (`{"family", "mode"}`) from `~/.easel/config.json`, read at daemon start. The ⚙ tuner popup layers per-browser inline token overrides (localStorage `sf-tuner-v2`) on top of whichever family is active.
 
 Both live in the expanded bar. Under 1500px — the width at which the full bar stops fitting one line — the chrome opens collapsed — one row of the controls a reader acts on, with theme, page width, the diff legend and the round note folded away — and the chevron at its right end expands it (localStorage `sf-chrome-compact`).
 

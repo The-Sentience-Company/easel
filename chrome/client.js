@@ -97,6 +97,7 @@ const THEME_FAMILIES = [
   ['', 'Default'],
   ['lantern', 'Lantern'],
   ['fig', 'Fig'],
+  ['cursor', 'Cursor'],
 ]
 
 function themeMode() {
@@ -108,13 +109,16 @@ function themeMode() {
 // still applies within either.
 const pinnedTheme = () => new URLSearchParams(location.search).get('theme')
 
+const defaultTheme = () => window.__sfDefaultTheme || { family: '', mode: '' }
+
+// An empty stored family is an explicit pick of Default; only a missing one falls back.
 function themeFamily() {
-  return pinnedTheme() || localStorage.getItem(FAMILY_STORAGE) || ''
+  const stored = localStorage.getItem(FAMILY_STORAGE)
+  return pinnedTheme() || (stored !== null ? stored : defaultTheme().family)
 }
 
 function setThemeFamily(fam) {
-  if (fam) localStorage.setItem(FAMILY_STORAGE, fam)
-  else localStorage.removeItem(FAMILY_STORAGE)
+  localStorage.setItem(FAMILY_STORAGE, fam)
   syncThemeToggle()
   if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: wbTheme() })
 }
@@ -123,7 +127,9 @@ function syncThemeToggle() {
   const fam = themeFamily()
   const mode = themeMode()
   const effective =
-    mode === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode
+    mode === 'auto'
+      ? defaultTheme().mode || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : mode
   document.documentElement.dataset.theme = fam ? `${fam}-${effective}` : effective
   ui.themeToggle.textContent = `[T]heme: ${mode}`
   for (const btn of ui.themePick?.querySelectorAll('[data-family]') || []) {

@@ -559,12 +559,22 @@ const GATE_SCRIPT =
   `b.__sfGateTimer=setTimeout(function(){reveal("timeout")},${GATE_MAX_HOLD_MS});` +
   `b.querySelector(".sf-gate-show").onclick=function(){reveal("manual")}})()</script>`
 
-const THEME_SCRIPT =
-  `<script>(function(){var p=new URLSearchParams(location.search).get("theme")` +
-  `||localStorage.getItem("sf-theme-family");` +
+// config.json `theme` ({family, mode}) is the default a browser gets until it picks its own.
+function defaultTheme() {
+  const t = configCache.theme || {}
+  return {
+    family: typeof t.family === 'string' ? t.family : '',
+    mode: t.mode === 'light' || t.mode === 'dark' ? t.mode : '',
+  }
+}
+
+const themeScript = () =>
+  `<script>(function(){var d=window.__sfDefaultTheme=${JSON.stringify(defaultTheme()).replace(/</g, '\\u003c')};` +
+  `var f=localStorage.getItem("sf-theme-family");` +
+  `var p=new URLSearchParams(location.search).get("theme")||(f!==null?f:d.family);` +
   `var m=matchMedia("(prefers-color-scheme: dark)");` +
   `function sync(){var o=localStorage.getItem("sf-theme");` +
-  `var mode=o==="light"||o==="dark"?o:m.matches?"dark":"light";` +
+  `var mode=o==="light"||o==="dark"?o:d.mode||(m.matches?"dark":"light");` +
   `document.documentElement.dataset.theme=p?p+"-"+mode:mode}` +
   `sync();m.addEventListener("change",sync);` +
   `var w=localStorage.getItem("sf-width");` +
@@ -577,7 +587,7 @@ function shellPage(board) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(board.title || basename(board.file || '') || board.key)}</title>
-${THEME_SCRIPT}
+${themeScript()}
 <link rel="stylesheet" href="/assets/easel.css">
 ${GATE_NOSCRIPT}
 </head>
@@ -602,7 +612,7 @@ function indexPage() {
   return `<!doctype html>
 <html lang="en" data-theme="light">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>easel sessions</title>${THEME_SCRIPT}
+<title>easel sessions</title>${themeScript()}
 <link id="favicon" rel="icon" href="">
 <style>
 html[data-theme$="light"]{color-scheme:light}html[data-theme$="dark"]{color-scheme:dark}body{margin:0;font:14px/1.5 -apple-system,system-ui,sans-serif;padding:32px 20px;background:Canvas;color:CanvasText}
