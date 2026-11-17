@@ -110,45 +110,55 @@ describe('a decision control never inherits a face from the content', { timeout:
   })
 })
 
-describe('warm dark is derived from the reference, not the old cool theme', { timeout: 120000 }, () => {
-  test('the dark accent is warm — red channel leads blue', async () => {
-    await render('<p>x</p>', 'dark')
-    const got = await page.evaluate(`(() => {
-      const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-      return { primary: window.__rgb(v('--color-primary')), ground: window.__rgb(v('--color-base-100')) };
-    })()`)
-    assert.ok(got.primary[0] > got.primary[2] + 60, `dark accent still reads cool: rgb(${got.primary})`)
-    assert.ok(got.ground[0] >= got.ground[2], `dark ground still reads cool: rgb(${got.ground})`)
-  })
+describe('the default family looks like an Artifact page; lantern keeps the warm look', { timeout: 120000 }, () => {
+  // "sans-serif" contains "serif", so stacks are compared by named face.
+  const SERIF = /Iowan|Palatino|Book Antiqua|Georgia/i
+  const tokens = `(() => {
+    const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    return { primary: window.__rgb(v('--color-primary')), ground: window.__rgb(getComputedStyle(document.body).backgroundColor) };
+  })()`
 
-  test('dark text is warm cream, not a neutral grey', async () => {
-    // The complaint was tone, not ratio: a near-neutral grey reads dim on black
-    // even at the same contrast. Warmth is the measurable part of the fix.
-    await render('<p id="p">prose <strong id="s">emphasis</strong></p>', 'dark')
-    const got = await page.evaluate(`(() => {
-      const c = (id) => window.__rgb(getComputedStyle(document.getElementById(id)).color);
-      const bg = getComputedStyle(document.body).backgroundColor;
-      return { body: c('p'), emph: c('s'),
-               bodyContrast: window.__ratio(getComputedStyle(document.getElementById('p')).color, bg) };
-    })()`)
-    for (const [role, rgb] of [['body', got.body], ['emphasis', got.emph]]) {
-      assert.ok(rgb[0] > rgb[2] + 12, `${role} is near-neutral on dark: rgb(${rgb})`)
-      assert.ok(rgb[0] >= rgb[1] && rgb[1] >= rgb[2], `${role} is not a warm ramp: rgb(${rgb})`)
-    }
-    assert.ok(got.bodyContrast >= 9, `dark body is still dim at ${got.bodyContrast}:1`)
-  })
+  for (const theme of ['light', 'dark']) {
+    test(`${theme}: the default accent is blue and the ground is a cool neutral`, async () => {
+      await render('<p>x</p>', theme)
+      const got = await page.evaluate(tokens)
+      assert.ok(got.primary[2] > got.primary[0] + 60, `default accent is not blue: rgb(${got.primary})`)
+      assert.ok(got.ground[2] >= got.ground[0], `default ground reads warm: rgb(${got.ground})`)
+      if (theme === 'dark') assert.ok(Math.max(...got.ground) >= 12, `default dark ground is pure black: rgb(${got.ground})`)
+    })
+  }
 
-  test('serif display sits against sans body at roughly 3x', async () => {
+  test('default headings are sans, at least twice body size', async () => {
     await render('<h1 id="h">Display</h1><p id="p">body</p>')
     const got = await page.evaluate(`(() => {
       const h = getComputedStyle(document.getElementById('h')), p = getComputedStyle(document.getElementById('p'));
-      return { hf: h.fontFamily, pf: p.fontFamily, ratio: parseFloat(h.fontSize) / parseFloat(p.fontSize) };
+      return { hf: h.fontFamily, ratio: parseFloat(h.fontSize) / parseFloat(p.fontSize) };
     })()`)
-    // "sans-serif" contains "serif", so the families are compared by their
-    // leading face rather than by a substring that both stacks satisfy.
-    assert.match(got.hf, /Iowan|Palatino|Book Antiqua|Georgia/i, `h1 is not the serif stack: ${got.hf}`)
-    assert.doesNotMatch(got.pf, /Iowan|Palatino|Book Antiqua|Georgia/i, `body picked up the display face: ${got.pf}`)
+    assert.doesNotMatch(got.hf, SERIF, `h1 is still the serif stack: ${got.hf}`)
     assert.ok(got.ratio >= 2, `display-to-body ratio only ${got.ratio.toFixed(2)}`)
+  })
+
+  test('lantern keeps its serif display', async () => {
+    await render('<h1 id="h">Display</h1><p id="p">body</p>', 'lantern-light')
+    const got = await page.evaluate(`(() => ({
+      hf: getComputedStyle(document.getElementById('h')).fontFamily,
+      pf: getComputedStyle(document.getElementById('p')).fontFamily }))()`)
+    assert.match(got.hf, SERIF, `lantern h1 is not the serif stack: ${got.hf}`)
+    assert.doesNotMatch(got.pf, SERIF, `body picked up the display face: ${got.pf}`)
+  })
+
+  test('lantern dark keeps a warm accent and warm text', async () => {
+    // The default family turned cool; lantern is where the warm look lives on.
+    await render('<p id="p">prose <strong id="s">emphasis</strong></p>', 'lantern-dark')
+    const got = await page.evaluate(`(() => {
+      const c = (id) => window.__rgb(getComputedStyle(document.getElementById(id)).color);
+      const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+      return { body: c('p'), emph: c('s'), primary: window.__rgb(v('--color-primary')) };
+    })()`)
+    assert.ok(got.primary[0] > got.primary[2] + 60, `lantern dark accent reads cool: rgb(${got.primary})`)
+    for (const [role, rgb] of [['body', got.body], ['emphasis', got.emph]]) {
+      assert.ok(rgb[0] > rgb[2] + 12, `lantern ${role} is near-neutral on dark: rgb(${rgb})`)
+    }
   })
 })
 

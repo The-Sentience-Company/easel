@@ -2290,7 +2290,7 @@ function tunerSave(s) { localStorage.setItem(TUNER_STORAGE, JSON.stringify(s)) }
 function tunerApply(s) {
   for (const [k, v] of Object.entries(s.vars || {})) document.documentElement.style.setProperty(k, v)
   if (s.bodyFont) document.body.style.fontFamily = s.bodyFont
-  if (s.headFont) document.documentElement.style.setProperty('--font-serif', s.headFont)
+  if (s.headFont) document.documentElement.style.setProperty('--font-display', s.headFont)
   if (s.size) document.body.style.fontSize = `${s.size}px`
   if (s.lh) document.body.style.lineHeight = s.lh
 }
@@ -2353,8 +2353,8 @@ function buildTuner() {
   }
   fontRow('Body font', 'bodyFont', (v) => { document.body.style.fontFamily = v })
   fontRow('Heading font', 'headFont', (v) => {
-    if (v) document.documentElement.style.setProperty('--font-serif', v)
-    else document.documentElement.style.removeProperty('--font-serif')
+    if (v) document.documentElement.style.setProperty('--font-display', v)
+    else document.documentElement.style.removeProperty('--font-display')
   })
 
   const rangeRow = (label, key, min, max, step, fallback, apply) => {
