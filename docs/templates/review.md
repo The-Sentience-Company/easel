@@ -74,7 +74,7 @@ At least one of `sections`, `decisions`, or `votes` must be present. `id` values
 
 - two or three parallel things of a few lines each (goal beside non-goals, options) → `cards`, side by side; six paragraph-length parts squeeze into unreadable columns and stay prose with bold leads. The template stacks a cards or callouts block into one column when it has more than three boxes or any box carries a table, a fence or more than about 90 words, and the publish output names it, because side-by-side columns clip a table and wrap a paragraph word by word; two boxes always sit side by side
 - the thing that changed against its background, or the answer to an annotation → `callouts`; two or more sit side by side, one stands alone
-- a mockup, image comparison, or custom composition → `island` (hand-authored HTML in a sandboxed frame; `height` is the frame's pre-load height in px)
+- a mockup, image comparison, or custom composition → `island` (hand-authored HTML in a sandboxed frame; `height` is the frame's pre-load height in px; before writing it, read page.md § "Artifact guidance on easel" and § "Islands")
 - numbers → `metrics` or a table in the body
 - a status → the first line of `summary`, with the ask, replaced each round, never stacked; what the work is stays in `about`
 
