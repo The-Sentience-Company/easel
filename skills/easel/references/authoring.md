@@ -2,6 +2,16 @@
 
 The template decides the shape. These decide whether the reader can act on it. Each one is here because boards kept failing the same way and the reader had to spend a comment asking for it.
 
+## Length first
+
+Every rule below adds words; this one decides how many the reader will take. A research board that followed the other rules to the letter came out about twelve screens long: 2,000 words, 13 sections, 8 decisions, 35 code spans and a `Source:` line under every item. Its first screen was all process: what the round was, and a table of earlier picks. The reader stopped at the title and said he would not read it. So:
+
+- **About two screens.** Over that, cut content; folding it away doesn't make it shorter.
+- **The first screen is the content**: the finding, the comparison, the image. What this round is and what was settled before go one line each, or nowhere.
+- **Evidence goes in one collapse at the end.** The `file:line` and the command stay checkable without sitting under every sentence.
+- **At most three questions per board.** A list of findings is ranked, with your recommendation, and the reader corrects the list; it is not one decision per finding.
+- **Restate an earlier round only where the reader acts on it** ("Restate, never point" below), never as a recap at the top.
+
 ## Ship the artifact, never a description of it
 
 When the board's subject IS a change to something concrete, or to how something behaves, the change is on the board:
