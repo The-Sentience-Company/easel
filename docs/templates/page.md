@@ -150,9 +150,13 @@ Two things worth knowing before styling around it:
 | `sd-claims`, `sd-note`, `sd-evidence`, `sd-evidence-pointer`, `sd-evidence-text` | claim lists and their quoted support |
 | `sd-code-title`, `sd-colophon` | a heading above a code block, and closing small print |
 
+### Local images
+
+`<img src="shots/collapsed-0.png">` — a path relative to the board's html file, an absolute path, or a `file://` url — renders: the file is copied at publish (png, jpeg, gif, webp, svg; 10 MB each) and the round keeps showing it after the original is deleted. A missing file fails the publish naming the path. Do not hand-embed base64.
+
 ### Islands — freeform sections
 
-`<div data-island data-island-title="Diff view" data-island-height="360">…any html + css…</div>` renders its inner content in a sandboxed frame: full CSS freedom (inline `<style>` included), no scripts, no network, `data:` images/fonts only. Use for layouts the `sd-*` system cannot express — image comparisons, custom diffs — and stay in `sd-*` everywhere else: no diff markers inside an island. `data-island-height` is the pre-load height; the frame then self-sizes. In annotate mode a click inside an island drops a **pin** — a point annotation carrying fractional coordinates and the clicked element's text — so individual design elements are commentable with no authoring change; the island as a whole stays annotatable via its placeholder.
+`<div data-island data-island-title="Diff view" data-island-height="360">…any html + css…</div>` renders its inner content in a sandboxed frame: full CSS freedom (inline `<style>` included), no scripts, no network, `data:` images/fonts only (an `<img src>` naming a local file is inlined as `data:` at publish). Use for layouts the `sd-*` system cannot express — image comparisons, custom diffs — and stay in `sd-*` everywhere else: no diff markers inside an island. `data-island-height` is the pre-load height; the frame then self-sizes. In annotate mode a click inside an island drops a **pin** — a point annotation carrying fractional coordinates and the clicked element's text — so individual design elements are commentable with no authoring change; the island as a whole stays annotatable via its placeholder.
 
 ### Callouts, accents and citations
 

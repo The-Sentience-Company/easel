@@ -51,7 +51,7 @@ The section grouping IS the decision structure: sections come in the order of ju
                                         //   key renders one green "key + model aligned" pill, a different
                                         //   one contests the case exactly as `counter` does
           "borderline": true,           // optional — renders a tie-break badge
-          "image": "https://…",         // optional — the judged object, rendered under the title;
+          "image": "https://…",         // optional — the judged object, rendered under the title; http(s) or a local file path;
                                         //   or { "src": "https://…", "px": 44, "round": true }
           "quote": { "text": "…", "source": "table:id" },          // optional evidence block
           "counter": {                                             // optional dissent (e.g. the model's verdict)

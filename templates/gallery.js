@@ -1,7 +1,7 @@
 /* gallery template — image candidates you judge by looking at them.
    No eval mode renders images; a season of design-call boards hand-built this on page. */
 
-import { esc, markdown, widget, badge, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
+import { esc, markdown, widget, badge, makeIdGuard, requireObject, requireArray, requireString, fail, isLocalSrc } from './_html.js'
 
 export const name = 'gallery'
 
@@ -30,7 +30,8 @@ export function render(data) {
       const src = requireString(c.src, `${cp}.src`)
       // The publish sanitizer drops anything else, so a bad src would render an
       // empty card that looks like the candidate failed to generate.
-      if (!HTTP.test(src)) fail(`${cp}.src must be an http(s) URL — ${src.slice(0, 40)} will not survive publish`)
+      if (!HTTP.test(src) && !isLocalSrc(src)) fail(`${cp}.src must be an http(s) URL or a local file path — ${src.slice(0, 40)} will not survive publish`)
+      if (/[\s)]/.test(src)) fail(`${cp}.src must not contain spaces or ")" — percent-encode them (%20, %29)`)
       return label
     })
     if (new Set(labels).size !== labels.length) fail(`${path}.candidates labels must be unique — they are the vote options`)
