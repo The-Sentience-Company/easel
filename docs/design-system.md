@@ -13,6 +13,8 @@ The shell page sets `data-theme` on the `<html>` element. Four families — defa
 <html data-theme="fig-dark">
 ```
 
+The default family follows the look of a Claude Artifact page: a cool grey ground with white panels in light, graphite in dark, one blue accent, and sans type throughout. lantern and fig keep their own palettes and the serif display face. Shapes are shared by all three: heading sizes, option buttons, badges and code blocks look the same in every family; only colour and type face differ.
+
 The family comes from the topbar picker (localStorage `sf-theme-family`) or a `?theme=<family>` URL pin; the mode from the `[T]heme` cycle. Until a browser picks its own, it gets `theme` (`{"family", "mode"}`) from `~/.easel/config.json`, read at daemon start. The ⚙ tuner popup layers per-browser inline token overrides (localStorage `sf-tuner-v2`) on top of whichever family is active.
 
 Both live in the expanded bar. Under 1500px — the width at which the full bar stops fitting one line — the chrome opens collapsed — one row of the controls a reader acts on, with theme, page width, the diff legend and the round note folded away — and the chevron at its right end expands it (localStorage `sf-chrome-compact`).
@@ -23,17 +25,15 @@ Both live in the expanded bar. Under 1500px — the width at which the full bar 
 
 Three, ordered by contrast, and the ordering is the point:
 
-| Token | Used for | Measured on the page ground |
+| Token | Used for | Measured on the default family's page ground |
 |---|---|---|
-| `--color-base-content` | headings, `<strong>`, table cells, controls | 15.3:1 light · 17.9:1 dark |
-| `--color-body-content` | prose (`p`, `li`), inline `code` | 7.7:1 light · 11.3:1 dark |
-| `--color-muted-content` | secondary text, `sd-muted` | 6.1:1 light · 7.4:1 dark |
+| `--color-base-content` | headings, `<strong>`, table cells, controls | 16.2:1 light · 16.2:1 dark |
+| `--color-body-content` | prose (`p`, `li`), inline `code` | 10.1:1 light · 11.5:1 dark |
+| `--color-muted-content` | secondary text, `sd-muted` | 6.3:1 light · 7.5:1 dark |
 
 Inline `code` **pins** the body tier rather than inheriting it. Inheriting put muted text on the raised code ground at 4.27:1 — each token fine alone, the stack below AA.
 
-**On dark the tiers are warm cream, not neutral grey**, sampled from the reference's own `#ece7db` ink. Tone is what reads as dim on a black ground, not the ratio: a near-neutral grey at the same contrast still looks washed out, so the dark tiers carry real chroma (~0.034–0.038 at hue 88) and sit brighter than their light-theme counterparts. Dropping that chroma is a regression even if the contrast number holds.
-
-The dark page ground is **pure black**; `--color-base-100` and `--color-base-300` step *up* from it, so panels lift off the page. In light they recede, which is why the two themes order those tokens differently.
+In the default dark the page ground is graphite, not black, and `--color-base-100` and `--color-base-300` step *up* from it, so panels lift off the page. In light the panels are white on a grey ground. The default's tiers lean slightly cool (hue 262–265) to match the ground; lantern's dark keeps its warm candlelit tiers.
 
 `--border-subtle` is lighter than `--border`: internal table rules use it so the outer edge stays the stronger line.
 
@@ -43,7 +43,7 @@ The dark page ground is **pure black**; `--color-base-100` and `--color-base-300
 
 ## Fonts
 
-`--font-serif` carries display type, `--font-sans` body, `--font-mono` labels and code. Every face is a system face, so nothing is fetched and the publish path stays same-origin.
+`--font-display` carries headings, ledes and entry names: `--font-sans` in the default family, `--font-serif` in lantern and fig. `--font-sans` sets body, `--font-mono` labels and code. The ⚙ tuner's heading font overrides `--font-display`. Every face is a system face, so nothing is fetched and the publish path stays same-origin.
 
 `[data-option]` pins `font-family` rather than relying on `font: inherit` alone: a control inside a monospace ancestor otherwise renders as what looks like a code sample.
 

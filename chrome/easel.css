@@ -4,7 +4,10 @@
 /* ---------------------------------------------------------------- tokens -- */
 
 /* Three FAMILIES — default, lantern, fig — picked in the topbar or pinned via
-   ?theme=<family>; each has -light and -dark modes and T flips within one. */
+   ?theme=<family>; each has -light and -dark modes and T flips within one.
+   These two shared blocks hold the warm surfaces lantern and fig build on, and
+   the status, marker, diff and chart tokens every family uses. The default
+   family replaces the surfaces and accent further down. */
 html[data-theme="light"],
 html[data-theme="lantern-light"],
 html[data-theme="fig-light"] {
@@ -61,9 +64,8 @@ html[data-theme="fig-light"] {
 }
 
 /* Warm dark, derived from the lavish reference: ground #16150f, accent #e0824b.
-   Hue 85 throughout replaces the previous cool 265, which read the accent blue. */
-/* base-200 is the page ground and is pure black; 100 and 300 step UP from it, so
-   panels lift off the page rather than recessing into it as they do in light. */
+   In dark, base-200 is the page ground; 100 and 300 step UP from it, so panels
+   lift off the page rather than recessing into it as they do in light. */
 html[data-theme="dark"],
 html[data-theme="lantern-dark"],
 html[data-theme="fig-dark"] {
@@ -212,12 +214,50 @@ html[data-theme="cursor-dark"] {
   --border-subtle: #1f1f1f;
 }
 
+/* default: the look of a Claude Artifact page, after the Decision Desk board.
+   A cool grey ground with white cards in light; graphite with lifted panels in
+   dark; one blue accent; sans type throughout. The warm cream, serif and
+   terracotta it replaces live on in lantern, which shares the blocks above. */
+html[data-theme="light"] {
+  --color-base-100: oklch(1 0 0);
+  --color-base-200: oklch(0.973 0.003 265);
+  --color-base-300: oklch(0.942 0.005 265);
+  --color-base-content: oklch(0.215 0.016 265);
+  --color-body-content: oklch(0.36 0.018 265);
+  --color-muted-content: oklch(0.47 0.020 262);
+  --color-primary: oklch(0.51 0.19 266);
+  --color-accent-2: oklch(0.52 0.09 190);
+  --border: oklch(0.905 0.008 265);
+  --border-subtle: oklch(0.945 0.005 265);
+  --shadow-card: 0 1px 2px oklch(0.2 0.02 265 / 0.05);
+}
+html[data-theme="dark"] {
+  --color-base-100: oklch(0.215 0.012 265);
+  --color-base-200: oklch(0.175 0.010 265);
+  --color-base-300: oklch(0.265 0.014 265);
+  --color-base-content: oklch(0.945 0.006 265);
+  --color-body-content: oklch(0.835 0.012 265);
+  --color-muted-content: oklch(0.715 0.018 262);
+  --color-primary: oklch(0.74 0.13 268);
+  --color-primary-content: oklch(0.18 0.03 268);
+  --color-status-content: oklch(0.18 0.012 265);
+  --marker-content: oklch(0.18 0.012 265);
+  --color-accent-2: oklch(0.78 0.09 190);
+  --border: oklch(0.31 0.014 265);
+  --border-subtle: oklch(0.255 0.012 265);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.25);
+}
+/* lantern and fig keep their serif display face; the default sets everything in sans. */
+html[data-theme^="lantern"], html[data-theme^="fig"] { --font-display: var(--font-serif); }
+
 :root {
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   /* All system faces — nothing here is fetched, so the sanitizer has no @font-face
      to strip and the publish path stays same-origin. */
   --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  /* Headings, ledes and entry names. Sans by default; lantern and fig set the serif. */
+  --font-display: var(--font-sans);
   --radius: 10px;
   --radius-sm: 6px;
   --space: 16px;
@@ -273,18 +313,19 @@ body.sf-shell {
   overflow-wrap: break-word;
 }
 
-/* Serif display against sans body, ~3x display-to-body, matching the reference. */
+/* Display face against body, a bit over 2x at h1. Sans in the default family,
+   serif in lantern and fig (--font-display). */
 #sf-content h1, #sf-content h2, #sf-content h3, #sf-content h4 {
-  font-family: var(--font-serif);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 650;
   line-height: 1.2;
   margin: 0 0 0.5em;
   color: var(--color-base-content);
   text-wrap: balance;
 }
-#sf-content h1 { font-size: clamp(32px, 5.2vw, 46px); line-height: 1.08; letter-spacing: -0.015em; }
-#sf-content h2 { font-size: clamp(23px, 3.4vw, 30px); line-height: 1.18; letter-spacing: -0.01em; margin-top: 1.4em; }
-#sf-content h3 { font-size: 1.22rem; margin-top: 1.4em; }
+#sf-content h1 { font-size: clamp(28px, 4.2vw, 34px); line-height: 1.15; letter-spacing: -0.015em; }
+#sf-content h2 { font-size: clamp(20px, 2.6vw, 23px); line-height: 1.25; letter-spacing: -0.01em; margin-top: 1.4em; }
+#sf-content h3 { font-size: 1.12rem; margin-top: 1.4em; }
 #sf-content h4 { font-size: 1.02rem; margin-top: 1.2em; }
 /* The two tiers: prose recedes, emphasis is the only near-full-contrast text. */
 #sf-content p, #sf-content li { color: var(--color-body-content); }
@@ -329,7 +370,7 @@ body.sf-shell {
   line-height: 1.55;
   background: var(--color-base-200);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 14px 16px;
   overflow-x: auto;
   margin: 0 0 1em;
@@ -538,7 +579,7 @@ body.sf-shell {
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.4;
-  border: 1px solid var(--color-base-content);
+  border: 1px solid var(--border);
   background: var(--color-base-100);
   color: var(--color-base-content);
   /* A label is one token. Wrapping split words mid-character ("Vacuou s
@@ -600,7 +641,7 @@ body.sf-shell {
    An .sd-intro block gets it on its first paragraph without the author asking. */
 .sd-lede,
 .sd-intro > p:first-child {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(17px, 2.4vw, 20px);
   line-height: 1.5;
   color: var(--color-base-content);
@@ -764,7 +805,7 @@ body.sf-shell {
   box-shadow: none;
   min-width: 0;
 }
-.sd-entry-name { font-family: var(--font-serif); font-size: 1.28rem; line-height: 1.25; color: var(--color-base-content); }
+.sd-entry-name { font-family: var(--font-display); font-size: 1.28rem; line-height: 1.25; color: var(--color-base-content); }
 .sd-entry-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; margin: 4px 0 18px; min-width: 0; }
 .sd-entry-meta > * { min-width: 0; }
 
@@ -1091,12 +1132,9 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   font-weight: 500;
   padding: 3px 10px;
   min-height: 1.5rem;
-  border-width: 1px;
-  border-color: var(--color-muted-content);
   color: var(--color-muted-content);
   background: none;
 }
-.sd-widget-compact [data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); }
 .sd-widget-compact.sf-recorded [data-option][aria-pressed="true"],
 .sd-widget-compact.sf-recorded [data-option].sf-chosen { color: inherit; }
 
@@ -1108,16 +1146,22 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 8px 16px;
+  padding: 8px 14px;
   min-height: 2.25rem;
-  border-radius: 4px;
-  border: 1.5px solid var(--color-base-content);
-  background: var(--color-base-200);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--color-base-100);
   color: var(--color-base-content);
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-[data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
+/* Accent outline and a faint accent wash, as on an Artifact page's option cards. */
+/* Not on a disabled option: an ended board's controls must not look clickable. */
+[data-option]:hover:not([disabled]) {
+  border-color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 9%, var(--color-base-100));
+  color: var(--color-base-content);
+}
 [data-option]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 /* Recorded state: the widget holds a queued (or sent) value. */
