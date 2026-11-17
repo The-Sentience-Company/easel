@@ -673,7 +673,7 @@ body.sf-shell {
    pick 9): labels run as text separated by a middle dot, a status keeps its
    colour only as a dot before its word, and a two-part "pane | reviewer" pill
    reads as "pane reviewer". Status cells in tables keep their pills. */
-div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content); }
+div.sd-meta { gap: 2px 0; margin-bottom: var(--space-3); font-size: 0.86rem; color: var(--color-muted-content); }
 /* The separator rides on the next label: first in its flex order, so a status
    dot lands after it; inline-block, so a link's underline skips it. */
 .sd-meta > * + *::before {
@@ -1189,7 +1189,7 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   border-radius: 0;
   background: none;
   padding: 0;
-  margin: var(--space-6) 0 var(--space-1);
+  margin: var(--space-6) 0 var(--space-4);
   min-width: 0;
 }
 .sd-widget-prompt {
