@@ -229,7 +229,10 @@ html[data-theme="light"] {
   --color-accent-2: oklch(0.52 0.09 190);
   --border: oklch(0.905 0.008 265);
   --border-subtle: oklch(0.945 0.005 265);
-  --shadow-card: 0 1px 2px oklch(0.2 0.02 265 / 0.05);
+  /* Two parts: a soft wide one for the lift, a tight one for the contact edge.
+     A white card on the grey ground needs no outline as well. */
+  --shadow-card: 0 1px 3px oklch(0.2 0.02 265 / 0.08), 0 1px 2px oklch(0.2 0.02 265 / 0.05);
+  --card-edge: transparent;
 }
 html[data-theme="dark"] {
   --color-base-100: oklch(0.215 0.012 265);
@@ -246,6 +249,8 @@ html[data-theme="dark"] {
   --border: oklch(0.31 0.014 265);
   --border-subtle: oklch(0.255 0.012 265);
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.25);
+  /* Shadows barely read on dark, so a faint edge and the lighter surface carry the lift. */
+  --card-edge: var(--border-subtle);
 }
 /* lantern and fig keep their serif display face; the default sets everything in sans. */
 html[data-theme^="lantern"], html[data-theme^="fig"] { --font-display: var(--font-serif); }
@@ -278,6 +283,8 @@ html[data-theme^="lantern"], html[data-theme^="fig"] { --font-display: var(--fon
   --space-8: 32px;
   --space-12: 48px;
   --rule: 1px solid var(--border);
+  /* A raised box's outline; the default family lifts with shadow instead. */
+  --card-edge: var(--border);
   --content-max: 1040px;
   --chrome-z: 2147480000;
 }
@@ -574,7 +581,7 @@ body.sf-shell {
 
 .sd-card {
   background: var(--color-base-100);
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-edge);
   border-radius: var(--radius);
   padding: 18px 20px;
   box-shadow: var(--shadow-card);
@@ -705,8 +712,9 @@ div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content);
 .sd-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
 .sd-metric {
   background: var(--color-base-100);
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-edge);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   padding: 14px 16px;
   min-width: 0;
 }
@@ -863,7 +871,7 @@ div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content);
 .sd-rules { display: grid; gap: 34px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); margin: 0 0 28px; }
 .sd-rule > p:last-child { margin-bottom: 0; }
 
-.sd-focus { background: var(--color-base-100); border: var(--rule); border-radius: var(--radius); padding: 22px 26px; }
+.sd-focus { background: var(--color-base-100); border: 1px solid var(--card-edge); box-shadow: var(--shadow-card); border-radius: var(--radius); padding: 22px 26px; }
 #sf-content .sd-focus-list { list-style: none; padding: 0; margin: 0; }
 .sd-focus-list li { padding: 9px 0; border-top: var(--rule); }
 .sd-focus-list li:first-child { border-top: 0; padding-top: 0; }
@@ -879,10 +887,10 @@ div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content);
 .sd-entries > * { min-width: 0; }
 .sd-entry {
   background: var(--color-base-100);
-  border: var(--rule);
-  border-radius: 8px;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
   padding: 24px 26px 20px;
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
   min-width: 0;
 }
 .sd-entry-name { font-family: var(--font-display); font-size: 1.28rem; line-height: 1.25; color: var(--color-base-content); }
@@ -1160,15 +1168,14 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 /* Markup is emitted by templates; behavior and sf-recorded come from
    client.js. Options must be native <button> to stay clickable in-session. */
 
-/* Flattened to a rule: the box is gone, so the controls carry the contrast it
-   was spending. .sf-recorded still colours the remaining top border. */
+/* No box and no rule: space sets a widget apart, and its option cards carry
+   their own edges. A recorded answer shows on the chosen option itself. */
 [data-widget] {
   border: 0;
-  border-top: var(--rule);
   border-radius: 0;
   background: none;
-  padding: 14px 0 0;
-  margin: 20px 0 4px;
+  padding: 0;
+  margin: var(--space-6) 0 var(--space-1);
   min-width: 0;
 }
 .sd-widget-prompt {
@@ -1252,7 +1259,6 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 [data-option]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 /* Recorded state: the widget holds a queued (or sent) value. */
-[data-widget].sf-recorded { border-color: var(--color-primary); }
 [data-widget].sf-recorded [data-option] { opacity: 1; }
 [data-widget].sf-recorded [data-option][aria-pressed="true"],
 [data-widget].sf-recorded [data-option].sf-chosen {
