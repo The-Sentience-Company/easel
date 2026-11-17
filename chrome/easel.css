@@ -1473,8 +1473,9 @@ button.sf-marker:hover { filter: brightness(1.12); }
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  background: var(--color-warning);
-  color: var(--color-status-content);
+  /* The status-pill treatment: a tint of the colour, the word in its deep shade. */
+  background: color-mix(in oklab, var(--color-warning) 16%, var(--color-base-100));
+  color: color-mix(in oklab, var(--color-warning) 72%, var(--color-base-content));
 }
 
 .sf-agent { display: inline-flex; align-items: center; gap: 7px; flex: none; color: var(--color-muted-content); font-size: 0.85rem; }
@@ -1492,15 +1493,15 @@ button.sf-marker:hover { filter: brightness(1.12); }
   .sf-agent.sf-agent-waiting::before { animation-duration: 3s; }
 }
 button.sf-cancel-wait {
-  border: 1px solid var(--border);
-  background: var(--color-base-200);
-  color: var(--color-base-content);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-muted-content);
   border-radius: var(--radius-sm);
   padding: 3px 9px;
   min-height: 1.75rem;
   font-size: 0.8rem;
 }
-button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--color-error); }
+button.sf-cancel-wait:hover { background: var(--color-base-200); color: var(--color-error); }
 
 .sf-status { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: 0.82rem; color: var(--color-muted-content); }
 .sf-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-muted-content); flex: none; }
@@ -1805,8 +1806,10 @@ button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
 }
 .sf-queue-list { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
+/* No outline: the ground sets an item apart, and the left edge carries its
+   state. A linked item still gains a coloured outline. */
 .sf-queue-item {
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 9px 11px;
   background: var(--color-base-200);
@@ -1815,13 +1818,13 @@ button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
 }
 /* Border-left carries state, background carries kind — a widget row has both
    classes, so sharing one property would hide draft-vs-sent on widgets. */
-.sf-item-draft     { border-left: 3px solid var(--color-warning); padding-right: 42px; }
-.sf-item-submitted { border-left: 3px solid var(--color-success); }
+.sf-item-draft     { border-left: 2px solid var(--color-warning); padding-right: 42px; }
+.sf-item-submitted { border-left: 2px solid var(--color-success); }
 .sf-item-widget    { background: var(--color-base-300); }
 .sf-item-excerpt {
   font-size: 0.8rem;
   color: var(--color-muted-content);
-  font-family: var(--font-mono);
+  /* Page prose, quoted: the body face, not a code face. */
   /* excerpts are arbitrary page text — clamp instead of letting them run */
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1830,7 +1833,7 @@ button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
   overflow-wrap: anywhere;
 }
 .sf-item-comment { margin-top: 5px; overflow-wrap: anywhere; }
-.sf-item-round { font-size: 0.72rem; font-weight: 700; color: var(--color-muted-content); text-transform: uppercase; }
+.sf-item-round { font-size: 0.72rem; font-weight: 500; color: var(--color-muted-content); }
 /* Reads as a button, not a glyph: the bare × was mistaken for decoration and
    left users believing queued feedback could not be removed. */
 button.sf-item-remove, button.sf-draft-remove {
@@ -1889,7 +1892,7 @@ button.sf-queue-send:disabled { opacity: 0.5; cursor: not-allowed; }
   flex: none;
 }
 button.sf-chat-cancel {
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: none;
   color: var(--color-muted-content);
   border-radius: var(--radius-sm);
@@ -1897,7 +1900,7 @@ button.sf-chat-cancel {
   min-height: 1.7rem;
   font-size: 0.8rem;
 }
-button.sf-chat-cancel:hover { color: var(--color-error); border-color: var(--color-error); }
+button.sf-chat-cancel:hover { color: var(--color-error); background: var(--color-base-200); }
 
 .sf-chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); min-width: 0; }
 .sf-chat-input {
