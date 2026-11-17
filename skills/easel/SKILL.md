@@ -51,7 +51,7 @@ easel open <file.html|file.md>                                                  
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | a layout the other templates cannot give: side-by-side comparisons, mockups, custom composition — hand-authored HTML through the same chrome and annotation layer |
 
-**Before hand-writing any HTML** (a `page` board, a review `island` block), load the `artifact-design` skill if it is listed, and follow it; where it and easel differ, `references/templates/page.md` § "Artifact guidance on easel" says which wins. If it is not listed, the template's authoring doc is the whole guidance.
+**Before hand-writing any HTML** (a `page` board, a review `island` block), load the `artifact-design` skill if it is listed and use it for design only (the board still goes out through `easel`, never the Artifact tool); where it and easel differ, `references/templates/page.md` § "Artifact guidance on easel" says which wins. If it is not listed, the template's authoring doc is the whole guidance.
 
 **A long board whose content falls into groups the reader jumps between** (phases, areas, chapters) can split into tabs instead of one long scroll — `review` and `page` only, not the default; read `references/templates/tabs.md` before adding them.
 
