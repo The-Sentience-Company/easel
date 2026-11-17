@@ -107,6 +107,26 @@ test('a pointer passing over blocks lights none of them; resting on one lights i
   await page.close()
 })
 
+test('moving within one block keeps its highlight steady', async () => {
+  const page = await browser.newPage()
+  await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+  await page.evaluate(() => {
+    const p = document.createElement('p')
+    p.id = 'inline-probe'
+    p.dataset.sid = 's-probe'
+    p.innerHTML = 'plain text <strong>bold</strong> more text'
+    document.getElementById('sf-content').prepend(p)
+  })
+  const box = await (await page.$('#inline-probe')).boundingBox()
+  await page.mouse.move(box.x + 4, box.y + box.height / 2)
+  await new Promise((r) => setTimeout(r, 250))
+  const strong = await (await page.$('#inline-probe strong')).boundingBox()
+  await page.mouse.move(strong.x + 2, strong.y + strong.height / 2)
+  assert.equal(await page.evaluate(`document.getElementById('inline-probe').classList.contains('sf-hover')`), true,
+    'crossing onto a bold word inside the block dropped its highlight')
+  await page.close()
+})
+
 test('a tbody row header hovers itself as a cell, never a column', async () => {
   const page = await browser.newPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })

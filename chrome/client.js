@@ -1149,19 +1149,26 @@ const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-tab
 // it lit every block a mouse crossed on its way somewhere else.
 const HOVER_DWELL_MS = 150
 let hoverTimer = null
+let hoverTarget = null
 
 function clearHover() {
   clearTimeout(hoverTimer)
+  hoverTarget = null
   CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
 }
 
 CONTENT.addEventListener('mouseover', (e) => {
-  clearHover()
-  if (!state.annotating || popover) return
-  const target = e.target.closest(CHROME_CONTROLS) ? null : e.target.closest('[data-sid]')
+  let target = null
+  if (state.annotating && !popover && !e.target.closest(CHROME_CONTROLS)) target = e.target.closest('[data-sid]')
   // Hover previews only the anchor itself; the column echo appears on the
   // saved mark (sf-annotated-col), not while merely pointing at a header.
-  if (!target || target.closest('[data-option]')) return
+  if (target?.closest('[data-option]')) target = null
+  // mouseover fires again at every inline child (a link, a bold word); within
+  // the same block the highlight, or its pending timer, stays as it is.
+  if (target === hoverTarget) return
+  clearHover()
+  if (!target) return
+  hoverTarget = target
   hoverTimer = setTimeout(() => target.classList.add('sf-hover'), HOVER_DWELL_MS)
 })
 CONTENT.addEventListener('mouseleave', clearHover)
