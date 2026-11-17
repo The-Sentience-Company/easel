@@ -15,6 +15,7 @@ import { anchorForSid, annotateAndDiff, blankBakedDiagrams, extractIslands } fro
 import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 import { readerChecks, sinceLast } from './reader-checks.js'
+import { hostLocalImages, saveAttachment, IMAGE_KINDS, FILE_NAME, FILE_TYPES } from './images.js'
 import { sendHeartbeat } from './telemetry.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
@@ -69,7 +70,6 @@ const MAX_SCENE_BYTES = 32 * 1024 * 1024
 // Pasted screenshots ride a comment as base64; a retina capture is several MB.
 const MAX_COMMENT_BYTES = 32 * 1024 * 1024
 const MAX_IMAGES = 8
-const IMAGE_EXT = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp' }
 const ATTACHMENTS_DIR = join(DATA_DIR, 'attachments')
 const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery', 'replay'])
 const DAEMON_STARTED_AT = new Date().toISOString()
@@ -137,9 +137,10 @@ function extractBody(raw) {
 // pre-render source.
 /* The author of a bad data file usually never loaded the skill, so the error is
    the only place the schema doc can reach them. */
+// An image error is about a file path, not the data shape, so it skips the schema hint.
 const renderFailed = (board, err) =>
   `render failed: ${err.message}` +
-  (board.template ? ` (schema: docs/templates/${board.template}.md)` : '')
+  (board.template && !err.imagePath ? ` (schema: docs/templates/${board.template}.md)` : '')
 
 async function renderSource(board) {
   let raw
@@ -159,7 +160,12 @@ async function renderSource(board) {
     raw = extractBody(await readFile(board.file, 'utf8'))
   }
   const rendered = await mermaidRender(raw)
-  return { ...rendered, html: await chartRender(await diffRender(rendered.html)), raw }
+  const html = await hostLocalImages(await chartRender(await diffRender(rendered.html)), {
+    key: board.key,
+    baseDir: dirname(board.data_file ?? board.file),
+    attachmentsDir: ATTACHMENTS_DIR,
+  })
+  return { ...rendered, html, raw }
 }
 
 // Advisory-only static checks; the headless-render audit can extend this later.
@@ -987,6 +993,9 @@ const handlers = {
     if (board) html(res, 200, shellPage(board))
   },
 
+  // Every valid name is hex plus an extension, so nothing needs decoding.
+  boardFile: (req, res, match) => serveBoardFile(res, match[1], match[2]),
+
   sse(req, res, match) {
     const board = requireBoard(match[1], res)
     if (!board) return
@@ -1085,7 +1094,13 @@ const handlers = {
       return json(res, 400, { error: 'clientId, anchor.sid, and a comment or image required' })
     }
     if (pasted.length > MAX_IMAGES) return json(res, 400, { error: `at most ${MAX_IMAGES} images per comment` })
-    const images = pasted.map((url) => /^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(url))
+    // The bytes decide the kind, not the declared type, since the file is served back.
+    const images = pasted.map((url) => {
+      const bytes = /^data:image\/[a-z+.-]+;base64,([A-Za-z0-9+/=]+)$/.exec(url)?.[1]
+      const buf = bytes && Buffer.from(bytes, 'base64')
+      const kind = buf && IMAGE_KINDS.find((k) => k.test(buf))
+      return kind ? { buf, ext: kind.ext } : null
+    })
     if (images.some((m) => !m)) return json(res, 400, { error: 'images must be png, jpeg, gif or webp data urls' })
     const roundRow = round != null ? store.round(board.key, round) : store.lastRound(board.key)
     if (!roundRow) return json(res, 404, { error: `no such round: ${round}` })
@@ -1107,17 +1122,10 @@ const handlers = {
     // Files, not base64 in the row: the agent opens a path, and await stays small.
     const imagePaths = []
     if (images.length) {
-      const dir = join(ATTACHMENTS_DIR, board.key)
-      await mkdir(dir, { recursive: true })
-      for (const [, type, b64] of images) {
+      for (const { buf, ext } of images) {
         // Named by content, so a repeated note's images compare equal by path.
-        const bytes = Buffer.from(b64, 'base64')
-        const path = join(dir, `${createHash('sha256').update(bytes).digest('hex')}.${IMAGE_EXT[type]}`)
-        // An existing file already holds these bytes and may be open by a reader.
-        await writeFile(path, bytes, { flag: 'wx' }).catch((err) => {
-          if (err.code !== 'EEXIST') throw err
-        })
-        imagePaths.push(path)
+        const name = await saveAttachment(ATTACHMENTS_DIR, board.key, buf, ext)
+        imagePaths.push(join(ATTACHMENTS_DIR, board.key, name))
       }
     }
     const fields = {
@@ -1564,6 +1572,23 @@ ${island.html}
     // The send wrote the scene too, so the tab is told where the version got to.
     json(res, 200, { ...item, whiteboardVersion: saved.version })
   },
+}
+
+// An image a round shows from the publishing agent's disk (daemon/images.js).
+// Content-named, so the bytes behind a name never change; readable on ended boards.
+async function serveBoardFile(res, key, name) {
+  if (!store.board(key) || !FILE_NAME.test(name)) return json(res, 404, { error: 'no such file' })
+  // Read whole (images are capped at 15 MB) so a failed read is a 404, never a
+  // stream error after the headers went out.
+  const bytes = await readFile(join(ATTACHMENTS_DIR, key, name)).catch(() => null)
+  if (!bytes) return json(res, 404, { error: 'no such file' })
+  res.writeHead(200, {
+    'Content-Type': FILE_TYPES[name.split('.').pop()],
+    'Content-Length': bytes.length,
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'public, max-age=31536000, immutable',
+  })
+  res.end(bytes)
 }
 
 const ASSET_TYPES = {

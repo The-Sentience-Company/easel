@@ -167,16 +167,25 @@ const alignments = (line) => splitRow(line).map((c) => {
 })
 
 export function inline(text) {
-  let s = esc(text)
-  s = s.replace(/`([^`]+)`/g, (_, c) => `<code>${c}</code>`)
+  // Code spans are set aside first, so nothing quoted in one (image syntax in
+  // a how-to) becomes a link, an image, or a file the daemon goes looking for.
+  const codes = []
+  let s = esc(text).replace(/`([^`]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`)
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   s = s.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
-  // Only http(s) and mailto survive — no javascript: or data: URLs.
+  // Links: only http(s) and mailto. An image src passes through: the publish
+  // sanitizer drops javascript: and data:, and a file path is copied into the
+  // board by the daemon at render (daemon/images.js). A target with spaces (a
+  // macOS screenshot name) goes in angle brackets.
   // Obsidian-style size hint: ![alt|96](url) pins the rendered width in px.
-  s = s.replace(/!\[([^\]|]*)(?:\|(\d{1,4}))?\]\((https?:[^)\s]+)\)/g, (_, alt, w, src) =>
-    `<img class="sd-md-img" src="${src}" alt="${alt}"${w ? ` width="${w}"` : ''} loading="lazy">`)
+  // A labelled image without a size hint is a figure, its label above it.
+  s = s.replace(/!\[([^\]|]*)(?:\|(\d{1,4}))?\]\((?:&lt;(.+?)&gt;|([^)\s]+))\)/g, (_, alt, w, spaced, plain) => {
+    const figure = alt && !w
+    const img = `<img class="sd-md-img${figure ? ' sd-figure-img' : ''}" src="${spaced ?? plain}" alt="${alt}"${w ? ` width="${w}"` : ''} loading="lazy">`
+    return figure ? `<span class="sd-figure"><span class="sd-figure-label">${alt}</span>${img}</span>` : img
+  })
   s = s.replace(/\[([^\]]+)\]\(((?:https?:|mailto:)[^)\s]+)\)/g, '<a href="$2">$1</a>')
-  return s
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`)
 }
 
 /** Guards widget-id uniqueness per render: two widgets sharing an id would

@@ -21,7 +21,7 @@ easel open --template gallery --data concepts.json --title "Life Threads UI — 
     "badges": ["label", { "label": "string", "tone": "success|warning|error|info" }],
     "candidates": [{                 // required, non-empty
       "label": "string",             // required, unique in the group — the card title AND the vote option
-      "src": "https://…",            // required, http(s) only
+      "src": "https://…",            // required: an http(s) URL or an image file path
       "width": 154,                  // optional px — pin it to the size the image actually ships at
       "note": "string"               // optional markdown under the image
     }],
@@ -37,7 +37,7 @@ easel open --template gallery --data concepts.json --title "Life Threads UI — 
 
 - Each group is a section: heading, badges, context, then an `sd-grid` of `sd-card`s — one card per candidate, label as the card title, image, optional note — then one vote widget for the whole group.
 - **Pin `width` to the size the design actually ships at.** A concept judged at full bleed and shipped at 154px is a different design; images without a width render bounded at 340px tall, which flatters everything equally.
-- `src` must be `http(s):` — anything else is dropped by the publish sanitizer, and a dropped image renders an empty card that reads as a failed generation rather than an authoring bug, so it throws instead.
+- `src` is an `http(s):` URL or a path ending in `.png`, `.jpg`, `.jpeg`, `.gif` or `.webp` (absolute, `~/`, or relative to the data file); easel copies the file into the board at publish. Any other scheme is dropped by the publish sanitizer, and a dropped image renders an empty card that reads as a failed generation rather than an authoring bug, so it throws instead.
 - Labels are reviewer-facing: they are the card titles *and* the vote options, so name them for what the reader sees (`orbs`, `ribbon`) rather than run ids or filenames.
 - Keep options identical across candidates in a group so votes aggregate; override the whole option list with `options` when the choice is not simply "pick one" (`["peek", "stack", "neither — try again"]`).
 

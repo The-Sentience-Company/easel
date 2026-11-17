@@ -6,6 +6,7 @@ export const ROUTES = [
   { method: 'GET', pattern: /^\/assets\/([\w.-]+)$/, handler: 'asset', write: false },
   { method: 'GET', pattern: /^\/$/, handler: 'index', write: false },
   { method: 'GET', pattern: /^\/b\/([^/]+)$/, handler: 'boardPage', write: false },
+  { method: 'GET', pattern: /^\/b\/([^/]+)\/files\/([^/]+)$/, handler: 'boardFile', write: false },
   { method: 'GET', pattern: /^\/events$/, handler: 'sseGlobal', write: false },
   { method: 'GET', pattern: /^\/b\/([^/]+)\/events$/, handler: 'sse', write: false },
   { method: 'GET', pattern: /^\/api\/b\/([^/]+)\/state$/, handler: 'state', write: false },
