@@ -272,6 +272,10 @@ body.sf-shell {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The agent asks for a wide page with "width": "wide" in the board's data; the
+   daemon leaves a hidden .sd-width-wide marker for this to find. */
+#sf-content:has(.sd-width-wide) { --content-max: 1400px; }
+
 #sf-content {
   max-width: var(--content-max);
   margin: 0 auto;
@@ -1409,7 +1413,6 @@ button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--col
 
 /* The panel launchers shipped unstyled and rendered as native buttons next to
    themed ones; they take the same treatment. */
-button.sf-theme-toggle,
 button.sf-annotate-toggle,
 button.sf-queue-toggle,
 button.sf-chat-toggle {
@@ -1440,78 +1443,6 @@ button.sf-queue-toggle.sf-empty .sf-queue-count {
   border: 1px solid var(--border);
   font-weight: 600;
 }
-/* Page-width control: slider drives --content-max live, E/R nudge it,
-   double-click resets. */
-.sf-width { display: inline-flex; align-items: center; gap: 5px; flex: none; }
-input.sf-width-slider { flex: none; width: 90px; accent-color: var(--color-primary); cursor: ew-resize; }
-.sf-width-keys {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-muted-content);
-  cursor: default;
-}
-
-/* Theme picker: family buttons at the left end of the topbar; the gear opens
-   the tuner popup. */
-.sf-theme-pick { display: inline-flex; align-items: center; gap: 2px; flex: none; }
-button.sf-theme-pick-btn, button.sf-tuner-toggle {
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-muted-content);
-  border-radius: var(--radius-sm);
-  padding: 3px 8px;
-  font-size: 12px;
-  cursor: pointer;
-}
-button.sf-theme-pick-btn:hover, button.sf-tuner-toggle:hover { color: var(--color-base-content); }
-button.sf-theme-pick-btn.sf-on {
-  border-color: var(--border);
-  background: var(--color-base-100);
-  color: var(--color-base-content);
-}
-button.sf-tuner-toggle { padding: 3px 6px; }
-button.sf-tuner-toggle.sf-on { color: var(--color-primary); }
-
-/* Theme tuner popup (gear button, or ?tuner=1 to open on load). */
-.sf-tuner {
-  display: none;
-  position: fixed;
-  top: 70px;
-  right: 14px;
-  z-index: var(--chrome-z);
-  width: 210px;
-  padding: 12px 14px;
-  background: var(--color-base-100);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-  font-size: 12.5px;
-  color: var(--color-base-content);
-}
-.sf-tuner.sf-open { display: block; }
-.sf-tuner-title { font-weight: 650; margin-bottom: 8px; }
-.sf-tuner-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 5px 0;
-  color: var(--color-body-content);
-}
-input.sf-tuner-color { width: 34px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 4px; background: none; flex: none; }
-select.sf-tuner-select { max-width: 118px; font-size: 11.5px; }
-input.sf-tuner-range { width: 110px; accent-color: var(--color-primary); }
-.sf-tuner-actions { display: flex; gap: 8px; margin-top: 10px; }
-button.sf-tuner-send, button.sf-tuner-reset {
-  flex: 1;
-  border: 1px solid var(--border);
-  background: var(--color-base-200);
-  color: var(--color-base-content);
-  border-radius: var(--radius-sm);
-  padding: 5px 8px;
-}
-button.sf-tuner-send { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
-
 /* Drafts are only sendable from inside the panel, which is closed by default —
    this surfaces the action in the topbar whenever drafts exist. */
 button.sf-send-now {
@@ -1666,9 +1597,6 @@ button.sf-round-pill.sf-round-active { background: var(--color-primary); color: 
 .sf-compact .sf-chrome-toggle { order: 11; }
 
 /* !important because show() writes an inline display on several of these. */
-.sf-compact .sf-theme-pick,
-.sf-compact .sf-theme-toggle,
-.sf-compact .sf-width,
 .sf-compact .sf-end-session,
 .sf-compact .sf-round-keys,
 .sf-compact .sf-rounds-expand,

@@ -246,14 +246,12 @@ body.sf-shell
 │                                        .sf-compact folds both bars onto a single row
 │   ├── .sf-topbar
 │   │   ├── a.sf-brand                   links to "/"
-│   │   ├── .sf-theme-pick               family picker: button.sf-theme-pick-btn per family (data-family="" | "lantern" | "fig", .sf-on on the active one; choice in localStorage sf-theme-family) + button.sf-tuner-toggle (⚙, opens the tuner popup)
 │   │   ├── .sf-title
 │   │   ├── .sf-wip-marker               visible only with unpublished changes ("unpublished changes")
 │   │   ├── .sf-agent                    agent presence; has .sf-agent-waiting while an await blocks
 │   │   │   └── button.sf-cancel-wait    visible only while waiting
 │   │   ├── .sf-status                   SSE connection state
 │   │   │   └── .sf-status-dot           .sf-connected | .sf-reconnecting
-│   │   ├── button.sf-theme-toggle       cycles auto → light → dark ("[T]heme: {mode}"); override in localStorage sf-theme; hotkey "t"
 │   │   ├── button.sf-annotate-toggle    .sf-on when annotate mode active (on at load); hotkey "a"
 │   │   ├── button.sf-send-now           "Send N" — visible only while drafts exist; hotkey Cmd+Shift+S (Ctrl+Shift+S) sends from anywhere on the board, even while typing; a note open in the comment pop-up is queued first. Not inside the whiteboard or an island frame
 │   │   ├── button.sf-queue-toggle       opens/closes the queue panel (.sf-on while open); contains .sf-queue-count, and .sf-empty while no draft is queued; hotkey "f"
