@@ -730,6 +730,14 @@ div.sd-meta { gap: 2px 0; margin-bottom: var(--space-3); font-size: 0.86rem; col
 .sd-section { margin: 0 0 var(--space-8); }
 #sf-content .sd-section:first-of-type > h2 { margin-top: var(--space-6); }
 .sd-count { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 26px; }
+/* In a fold's label the count reads as part of it ("Answered 1"): on the label's
+   line and in its face, not lifted by a margin as a small mono superscript. */
+details.sd-collapse > summary .sd-count {
+  margin: 0;
+  font: inherit;
+  letter-spacing: 0;
+  color: var(--color-muted-content);
+}
 
 /* Section number, mono accent — sits with the heading, carries no link. */
 .sd-secnum {
