@@ -261,6 +261,22 @@ html[data-theme^="lantern"], html[data-theme^="fig"] { --font-display: var(--fon
   --radius: 10px;
   --radius-sm: 6px;
   --space: 16px;
+  /* One type scale and one spacing scale, hand-picked rather than linear: small
+     steps at the bottom, big ones at the top. New rules pick from these. */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
   --rule: 1px solid var(--border);
   --content-max: 1040px;
   --chrome-z: 2147480000;
@@ -296,8 +312,9 @@ html:is([data-theme^="lantern"], [data-theme^="fig"]) #sf-content tbody tr:hover
 body.sf-shell {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.68;
+  font-size: var(--text-base);
+  /* Prose runs loose; headings below run tight. Line height falls as size rises. */
+  line-height: 1.6;
   /* explicit, not inherited: table cells do not pick up p/li color rules */
   color: var(--color-base-content);
   background: var(--color-base-200);
@@ -318,20 +335,25 @@ body.sf-shell {
   overflow-wrap: break-word;
 }
 
-/* Display face against body, a bit over 2x at h1. Sans in the default family,
-   serif in lantern and fig (--font-display). */
+/* Headings are sized for what they do, not for their tag: the page title leads,
+   and a section heading mostly labels the content under it, so it stays modest
+   and lets weight do the work. Each sits closer to what follows it than to what
+   came before, so it reads as that content's heading. Sans in the default
+   family, serif in lantern and fig (--font-display). */
 #sf-content h1, #sf-content h2, #sf-content h3, #sf-content h4 {
   font-family: var(--font-display);
   font-weight: 650;
-  line-height: 1.2;
-  margin: 0 0 0.5em;
+  line-height: 1.25;
+  margin: 0 0 var(--space-2);
   color: var(--color-base-content);
   text-wrap: balance;
 }
-#sf-content h1 { font-size: clamp(28px, 4.2vw, 34px); line-height: 1.15; letter-spacing: -0.015em; }
-#sf-content h2 { font-size: clamp(20px, 2.6vw, 23px); line-height: 1.25; letter-spacing: -0.01em; margin-top: 1.4em; }
-#sf-content h3 { font-size: 1.12rem; margin-top: 1.4em; }
-#sf-content h4 { font-size: 1.02rem; margin-top: 1.2em; }
+#sf-content h1 { font-size: var(--text-2xl); line-height: 1.2; letter-spacing: -0.02em; margin-bottom: var(--space-3); }
+#sf-content h2 { font-size: var(--text-lg); letter-spacing: -0.01em; margin-top: var(--space-12); }
+#sf-content h3 { font-size: var(--text-md); margin-top: var(--space-8); }
+#sf-content h4 { font-size: var(--text-base); margin-top: var(--space-6); }
+/* Running text stops near 72 characters a line, however wide the column. */
+#sf-content :is(p, li) { max-width: 72ch; }
 /* The two tiers: prose recedes, emphasis is the only near-full-contrast text. */
 #sf-content p, #sf-content li { color: var(--color-body-content); }
 #sf-content strong, #sf-content b { color: var(--color-base-content); font-weight: 650; }
@@ -706,9 +728,9 @@ div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content);
 }
 .sd-intro { font-size: 1.04rem; }
 
-.sd-section { margin: 0 0 52px; }
-.sd-section > h2 { padding-top: 40px; border-top: var(--rule); }
-.sd-section:first-of-type > h2 { padding-top: 0; border-top: 0; }
+/* Sections part by space, not by a rule line; the first heading needs no gap above. */
+.sd-section { margin: 0 0 var(--space-8); }
+#sf-content .sd-section:first-of-type > h2 { margin-top: var(--space-6); }
 .sd-count { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 26px; }
 
 /* Section number, mono accent — sits with the heading, carries no link. */
@@ -1015,7 +1037,6 @@ details.sd-collapse > summary::before {
 details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 .sd-collapse-body { padding: 0 16px 16px; border-top: 1px solid var(--border); padding-top: 14px; }
 
-.sd-section { margin: 0 0 28px; }
 
 /* ---------------------------------------------------------- diagram/svg --- */
 
