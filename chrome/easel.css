@@ -1335,29 +1335,29 @@ button.sf-marker:hover { filter: brightness(1.12); }
 /* Widget rows anchor to a sid but carry no marker hue, so these fall back. */
 #sf-content .sf-linked { background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent); }
 .sf-queue-item.sf-linked { border-color: var(--marker-color, var(--color-primary)); }
-/* What changed since the last round: a soft wash of the change's colour behind
-   the block, reaching a little past its edges, as a highlighter would. It
-   replaced a 3px bar per block, which on a changed card stacked into a column of
-   short bars. An overlay child, not a background, so a block that paints its own
-   (a card) keeps it; isolation puts the wash behind the block's text, not over it. */
+/* What changed since the last round: one small dot in the left margin, in the
+   change's colour, beside the block. It covers nothing: a wash behind changed
+   blocks tinted whole cards and framed the option cards, which made a busy
+   board unreadable, and the 3px bar before it stacked into a column of bars. */
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed) {
   position: relative;
-  isolation: isolate;
 }
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
   content: "";
   position: absolute;
-  inset: -3px -8px;
-  border-radius: 6px;
-  background: color-mix(in oklab, var(--diff-edge) 10%, transparent);
+  left: -14px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--diff-edge);
   pointer-events: none;
-  z-index: -1;
+  z-index: 1;
 }
-/* An overflow wrapper would clip a wash that reaches past it; cells carry their
-   own padding, so inside one the wash fills the cell exactly. */
+/* An overflow wrapper would clip a margin dot, so inside one it sits in the
+   cell's own padding. */
 #sf-content .sd-tablewrap :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
-  inset: 0;
-  border-radius: 0;
+  left: 4px;
 }
 #sf-content :is(.sf-diff-added, .sf-tab[data-sf-diff="added"]) { --diff-edge: var(--color-success); }
 /* Modified, the commonest mark, takes the accent: an amber wash read as a muddy
@@ -1379,7 +1379,9 @@ button.sf-marker:hover { filter: brightness(1.12); }
   content: "";
   position: absolute;
   inset: 0;
-  width: auto; /* or the diff bar's 3px would survive and tint a strip, not the block */
+  /* auto, or a diff dot's 6px size would survive and tint a speck, not the block */
+  width: auto;
+  height: auto;
   pointer-events: none;
   border-radius: 3px;
   background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent);
