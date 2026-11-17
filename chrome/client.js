@@ -114,7 +114,9 @@ function buildChrome() {
   show(ui.wipMarker, false)
   ui.agent = el('div', 'sf-agent')
   ui.agentLabel = el('span', 'sf-agent-label', '')
-  ui.cancelWait = el('button', 'sf-cancel-wait', 'Cancel')
+  // It ends the agent's wait, so a later Send reaches no one; "Cancel" beside
+  // "Send 2" read as discarding the drafts.
+  ui.cancelWait = el('button', 'sf-cancel-wait', 'Stop waiting')
   ui.cancelWait.type = 'button'
   ui.cancelWait.title = 'Stop the agent waiting on this board'
   show(ui.cancelWait, false)
@@ -185,7 +187,7 @@ function buildChrome() {
   ui.chatLog = el('div', 'sf-chat-log')
   ui.chatWorking = el('div', 'sf-chat-working')
   ui.chatWorking.append(el('span', 'sf-spinner'), el('span', null, 'Working…'))
-  ui.chatCancel = el('button', 'sf-chat-cancel', 'Cancel')
+  ui.chatCancel = el('button', 'sf-chat-cancel', 'Stop waiting')
   ui.chatCancel.type = 'button'
   ui.chatCancel.onclick = () => api.send('POST', `/api/b/${KEY}/cancel-waiting`).catch(() => {})
   ui.chatWorking.appendChild(ui.chatCancel)
@@ -591,8 +593,9 @@ function markPriorVerdicts(d) {
     if (!widget) continue
     const tag = document.createElement('span')
     tag.className = 'sf-prior'
-    tag.textContent = `r${item.round}: ${item.value}`
-    tag.title = `your verdict on round ${item.round}`
+    const picked = [...widget.querySelectorAll('[data-option]')].find((o) => o.dataset.option === item.value)
+    tag.textContent = `Round ${item.round}: ${picked ? optionLabel(picked) : item.value}`
+    tag.title = `your answer on round ${item.round}`
     widget.querySelector('.sd-widget-options')?.appendChild(tag)
     // The earlier choice also shows as the pressed button; the buttons stay
     // live, so a click on this round records a new answer.
@@ -1579,6 +1582,10 @@ function enqueueMutation(fn) {
   return next
 }
 
+// What a reader sees on an option: its card label, or the button's own text.
+const optionLabel = (option) =>
+  (option.querySelector('.sd-option-label')?.firstChild?.textContent ?? option.textContent).trim()
+
 async function recordWidget(widget, option) {
   const widgetId = widget.dataset.widgetId
   const value = option.dataset.option
@@ -1603,7 +1610,7 @@ async function recordWidget(widget, option) {
     sync()
     return
   }
-  toast(`Queued ${widgetId}: ${item.value} — Send delivers`)
+  toast(`Queued '${optionLabel(option)}'. Send delivers it.`)
   sync()
 }
 
