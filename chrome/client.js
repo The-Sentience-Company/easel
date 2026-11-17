@@ -762,7 +762,8 @@ function renderRounds(d) {
   if (showPills) renderRoundsToggle(strip, activePill, d.rounds.length)
   const legend = el('div', 'sf-diff-legend')
   if (showPills) {
-    for (const k of ['added', 'removed', 'modified', 'moved']) legend.appendChild(el('span', `sf-legend-${k}`, k))
+    // Removed blocks are not drawn on the page, so the legend does not promise them.
+    for (const [k, label] of [['added', 'added'], ['modified', 'changed'], ['moved', 'moved']]) legend.appendChild(el('span', `sf-legend-${k}`, label))
   }
   if (annotated) {
     const entry = el('span', 'sf-legend-annotated')
