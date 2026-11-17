@@ -316,10 +316,10 @@ body.sf-shell
 |---|---|---|
 | `sf-annotating` | `body` | Annotate mode active (hover/click targeting live). On at load; Escape exits. |
 | `sf-hover` | any node | Current annotation hover target. |
-| `sf-annotated` | node with `data-sid` | Has at least one queued/submitted annotation. Hosts a `button.sf-marker` — a gutter badge carrying a 2-char id (`A1`, `A2`, …) and a cycling hue from `data-marker-hue`, matching its feedback row. Deliberately not a left bar: that shape belongs to the diff marks. Scroll containers (`pre`, `.sd-diagram`, `.sd-tablewrap`) clip a gutter badge, so they tuck it inside and add a dashed outline; table rows host it in their first cell, since a button is not valid content for a `<tr>`. |
+| `sf-annotated` | node with `data-sid` | Has at least one queued/submitted annotation. Hosts a `button.sf-marker` — a gutter badge carrying a 2-char id (`A1`, `A2`, …) and a cycling hue from `data-marker-hue`, matching its feedback row. Deliberately not a wash: that belongs to the diff marks. Scroll containers (`pre`, `.sd-diagram`, `.sd-tablewrap`) clip a gutter badge, so they tuck it inside and add a hairline outline; table rows host it in their first cell, since a button is not valid content for a `<tr>`. |
 | `sf-linked` | anchored node or `.sf-queue-item` | Hover on either side of an annotation↔row pair highlights the other. |
 | `sf-flash` | node with `data-sid` | Transient, ~1.2s: a feedback row was clicked and scrolled its anchor into view. |
-| `sf-diff-added` / `sf-diff-modified` / `sf-diff-moved` | node with `data-sid` | Viewing a round with the diff view on. |
+| `sf-diff-added` / `sf-diff-modified` / `sf-diff-moved` | node with `data-sid` | Viewing a round with the diff view on. Drawn as a soft wash of the change's colour behind the block (added green, modified the accent, moved teal). |
 | `sf-recorded` | `[data-widget]` node | Widget holds a queued (or sent) value; the queue panel's Remove drops a queued one. |
 | `sf-prior-answered` | `[data-widget]` node | The reader answered this widget on a prior round; the matching `[data-option]` carries `aria-pressed="true"` and renders pressed. Buttons stay live — a click records a new answer for the current round. |
 | `sf-diagram-look` | `button` appended to `.sd-diagram-dual` | Dual-baked diagrams only: flips every diagram between the plain mermaid look (default) and the sketch look by toggling `data-diagram-look="sketch"` on `<html>`; preference persists in localStorage `sf-diagram-look`. Older rounds baked with one look carry no button. |

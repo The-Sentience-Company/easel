@@ -1275,33 +1275,34 @@ button.sf-marker:hover { filter: brightness(1.12); }
 /* Widget rows anchor to a sid but carry no marker hue, so these fall back. */
 #sf-content .sf-linked { background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent); }
 .sf-queue-item.sf-linked { border-color: var(--marker-color, var(--color-primary)); }
-/* An overlay child, not an inset box-shadow: a marked block whose child paints
-   its own background (a card in a grid) covers anything drawn inside it. */
+/* What changed since the last round: a soft wash of the change's colour behind
+   the block, reaching a little past its edges, as a highlighter would. It
+   replaced a 3px bar per block, which on a changed card stacked into a column of
+   short bars. An overlay child, not a background, so a block that paints its own
+   (a card) keeps it; isolation puts the wash behind the block's text, not over it. */
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed) {
   position: relative;
+  isolation: isolate;
 }
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
   content: "";
   position: absolute;
-  /* In the gutter, not at left 0: a bare p or heading starts its text at the
-     content edge, and a bar drawn there slices the first glyph. */
-  left: -10px;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--diff-edge);
+  inset: -3px -8px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--diff-edge) 10%, transparent);
   pointer-events: none;
-  /* Above a positioned child — an annotated card, a diagram — that paints its own. */
-  z-index: 1;
+  z-index: -1;
 }
-/* An overflow wrapper would clip a gutter bar to nothing; cells carry their own
-   padding, so inside one the bar hugs the edge without touching a glyph. */
+/* An overflow wrapper would clip a wash that reaches past it; cells carry their
+   own padding, so inside one the wash fills the cell exactly. */
 #sf-content .sd-tablewrap :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
-  left: 0;
+  inset: 0;
+  border-radius: 0;
 }
 #sf-content :is(.sf-diff-added, .sf-tab[data-sf-diff="added"]) { --diff-edge: var(--color-success); }
-#sf-content :is(.sf-diff-modified, .sf-tab[data-sf-diff="modified"]) { --diff-edge: var(--color-warning); }
+/* Modified, the commonest mark, takes the accent: an amber wash read as a muddy
+   tan on dark. */
+#sf-content :is(.sf-diff-modified, .sf-tab[data-sf-diff="modified"]) { --diff-edge: var(--color-primary); }
 #sf-content :is(.sf-diff-moved, .sf-tab[data-sf-diff="moved"]) { --diff-edge: var(--color-info); }
 #sf-content .sf-diff-removed  { --diff-edge: var(--color-error); }
 
@@ -1555,7 +1556,7 @@ button.sf-round-pill.sf-round-active { background: var(--color-primary); color: 
 .sf-diff-legend > *::before { content: ""; width: 9px; height: 9px; border-radius: 2px; flex: none; }
 .sf-legend-added::before    { background: var(--color-success); }
 .sf-legend-removed::before  { background: var(--color-error); }
-.sf-legend-modified::before { background: var(--color-warning); }
+.sf-legend-modified::before { background: var(--color-primary); }
 .sf-legend-moved::before    { background: var(--color-info); }
 /* Shows a real badge instead of a swatch: the colour cycles per annotation, so a
    single swatch would name a colour that no particular mark has. */
