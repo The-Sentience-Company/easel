@@ -55,7 +55,7 @@ function validateEntry(e, i) {
       const label = typeof o === 'string' ? o : (o?.label ?? o?.value)
       const n = typeof label === 'string' ? label.trim().split(/\s+/).length : 0
       if (n > LABEL_MAX_WORDS) {
-        fail(`${path}.options[${j}].label is ${n} words — the button is the two or three words the reader picks; the consequence goes in "basis", which renders above the buttons`)
+        fail(`${path}.options[${j}].label is ${n} words — the button is the two or three words the reader picks; the consequence goes in "basis", which renders under the label on the option's card`)
       }
     }
   }

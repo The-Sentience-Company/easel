@@ -95,8 +95,7 @@ function chromeFixture(title) {
     <button class="sf-rounds-expand">[⌄] All 2</button>
     <div class="sf-diff-legend">
       <span class="sf-legend-added">added</span>
-      <span class="sf-legend-removed">removed</span>
-      <span class="sf-legend-modified">modified</span>
+      <span class="sf-legend-modified">changed</span>
       <span class="sf-legend-moved">moved</span>
       <span class="sf-legend-annotated"><span class="sf-item-marker">A1</span>annotated — matches its feedback row</span>
     </div>

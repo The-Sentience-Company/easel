@@ -328,7 +328,8 @@ body.sf-shell {
 #sf-content h3 { font-size: var(--text-md); margin-top: var(--space-8); }
 #sf-content h4 { font-size: var(--text-base); margin-top: var(--space-6); }
 /* Running text stops near 72 characters a line, however wide the column. */
-#sf-content :is(p, li) { max-width: 72ch; }
+#sf-content p,
+#sf-content :is(ul, ol):not([class]):not(.sd-claims ul) > li { max-width: 72ch; }
 /* The two tiers: prose recedes, emphasis is the only near-full-contrast text. */
 #sf-content p, #sf-content li { color: var(--color-body-content); }
 #sf-content strong, #sf-content b { color: var(--color-base-content); font-weight: 650; }
@@ -666,6 +667,7 @@ div.sd-meta { gap: 2px 0; margin-bottom: var(--space-3); font-size: 0.86rem; col
 .sd-meta .sd-badge[class*="sd-badge-"] { color: var(--color-base-content); }
 .sd-meta .sd-badge[class*="sd-badge-"]::after {
   content: "";
+  flex: none;
   order: -1;
   width: 7px;
   height: 7px;
@@ -948,7 +950,9 @@ div.sd-meta { gap: 2px 0; margin-bottom: var(--space-3); font-size: 0.86rem; col
 .sd-callout-warning { border-top-color: var(--color-warning); }
 .sd-callout-error   { border-top-color: var(--color-error); }
 
-/* What the work is: plain opening prose under the title, no box and no label. */
+/* What the work is: plain opening prose under the title, no box and no label.
+   Rounds published before this stored a "What this is" heading; hide it. */
+.sd-about-title { display: none; }
 .sd-about { margin: 0 0 var(--space-8); color: var(--color-body-content); }
 .sd-about > :last-child { margin-bottom: 0; }
 
@@ -1171,6 +1175,7 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 /* Option cards: stacked full width, the label over a muted line saying what
    picking it changes, the recommended one marked with a small chip. */
 .sd-widget-cards { flex-direction: column; align-items: stretch; }
+.sd-widget-cards .sf-prior { align-self: flex-start; }
 .sd-widget-cards [data-option] {
   display: flex;
   flex-direction: column;
@@ -1239,6 +1244,8 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   color: var(--color-base-content);
 }
 [data-option]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+/* On a chosen option the fill is the accent, so the ring takes the ink to show. */
+[data-option][aria-pressed="true"]:focus-visible { outline-color: var(--color-base-content); }
 
 /* Recorded state: the widget holds a queued (or sent) value. */
 [data-widget].sf-recorded [data-option] { opacity: 1; }
@@ -1376,29 +1383,40 @@ button.sf-marker:hover { filter: brightness(1.12); }
 /* Widget rows anchor to a sid but carry no marker hue, so these fall back. */
 #sf-content .sf-linked { background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent); }
 .sf-queue-item.sf-linked { border-color: var(--marker-color, var(--color-primary)); }
-/* What changed since the last round: one small dot in the left margin, in the
-   change's colour, beside the block. It covers nothing: a wash behind changed
-   blocks tinted whole cards and framed the option cards, which made a busy
-   board unreadable, and the 3px bar before it stacked into a column of bars. */
+/* What changed since the last round: one small hollow ring in the left margin,
+   in the change's colour. It covers nothing (a wash behind changed blocks made
+   a busy board unreadable) and is hollow so it never reads as a status dot. */
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed) {
   position: relative;
 }
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
   content: "";
   position: absolute;
-  left: -14px;
-  top: 0.55em;
-  width: 6px;
-  height: 6px;
+  left: -16px;
+  top: 0.5em;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--diff-edge);
+  border: 2px solid var(--diff-edge);
   pointer-events: none;
   z-index: 1;
 }
-/* An overflow wrapper would clip a margin dot, so inside one it sits in the
-   cell's own padding. */
+/* A list bullet owns the near gutter, and an annotation badge the gutter just
+   outside the text; the ring sits clear of both. */
+#sf-content li:is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after { left: calc(-1.4em - 14px); }
+#sf-content .sf-annotated:is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after { left: -38px; }
+#sf-content li.sf-annotated:is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after { left: -58px; }
+/* A block that scrolls itself would clip a margin ring, so the ring sits inside
+   its bottom-left corner (top-left holds an annotation badge, top-right the
+   wrap chip). A cell inside a table wrapper keeps it at its right edge. */
+#sf-content :is(pre, .sd-tablewrap, .sd-diagram, .sd-chartrow):is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
+  left: 6px;
+  top: auto;
+  bottom: 6px;
+}
 #sf-content .sd-tablewrap :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
-  left: 4px;
+  left: auto;
+  right: 6px;
 }
 #sf-content :is(.sf-diff-added, .sf-tab[data-sf-diff="added"]) { --diff-edge: var(--color-success); }
 /* Modified, the commonest mark, takes the accent: an amber wash read as a muddy
@@ -1650,11 +1668,11 @@ button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--col
 
 .sf-diff-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 0.78rem; color: var(--color-muted-content); min-width: 0; }
 .sf-diff-legend > * { display: inline-flex; align-items: center; gap: 5px; }
-.sf-diff-legend > *::before { content: ""; width: 9px; height: 9px; border-radius: 2px; flex: none; }
-.sf-legend-added::before    { background: var(--color-success); }
-.sf-legend-removed::before  { background: var(--color-error); }
-.sf-legend-modified::before { background: var(--color-primary); }
-.sf-legend-moved::before    { background: var(--color-info); }
+/* Swatches are the page's hollow rings, so the legend matches what it explains. */
+.sf-diff-legend > *::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 2px solid; background: none !important; flex: none; }
+.sf-legend-added::before    { border-color: var(--color-success); }
+.sf-legend-modified::before { border-color: var(--color-primary); }
+.sf-legend-moved::before    { border-color: var(--color-info); }
 /* Shows a real badge instead of a swatch: the colour cycles per annotation, so a
    single swatch would name a colour that no particular mark has. */
 .sf-legend-annotated::before { display: none; }
@@ -1698,9 +1716,10 @@ button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--col
 .sf-compact .sf-end-session,
 .sf-compact .sf-round-keys,
 .sf-compact .sf-rounds-expand,
-.sf-compact .sf-diff-legend,
 .sf-compact .sf-round-note,
-.sf-compact .sf-status-label { display: none !important; }
+.sf-compact .sf-status-label,
+/* The change legend stays even collapsed: the rings mean nothing without it. */
+.sf-compact .sf-legend-annotated { display: none !important; }
 
 /* The marker keeps its warning colour but spends a dot's worth of room; the
    full wording stays on its tooltip. */
@@ -2417,10 +2436,12 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 
 /* Prior-round verdict, carried onto the current round's widget: the tag names
    the round, and the button you chose then renders pressed. */
-[data-widget].sf-prior-answered [data-option][aria-pressed="true"] {
-  background: var(--color-primary);
-  color: var(--color-primary-content);
-  border-color: transparent;
+/* A pick from an earlier round is a dashed tint, not the solid fill of this
+   round's answer, so an unanswered round never looks answered. */
+[data-widget].sf-prior-answered:not(.sf-recorded) [data-option][aria-pressed="true"] {
+  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
+  color: var(--color-base-content);
+  border: 1px dashed var(--color-primary);
 }
 .sf-prior {
   align-self: center;
