@@ -225,23 +225,21 @@ export function widget({ type, id, prompt, help, options, compact }) {
   })
   if (normalized.filter((o) => o.recommended).length > 1) fail(`widget[${id}]: only one option can be recommended`)
 
+  // An option with something to say beyond its label is a card: the label, the
+  // pick marked, and what choosing it changes in a muted line under it, all on
+  // the thing you click. Bare options (pass / needs-work) stay small buttons.
+  const cards = normalized.some((o) => o.basis || o.recommended)
   const buttons = normalized
-    .map((o) => `<button type="button" data-option="${attr(o.value)}">${esc(o.label)}</button>`)
+    .map((o) => cards
+      ? `<button type="button" data-option="${attr(o.value)}"><span class="sd-option-label">${esc(o.label)}${o.recommended ? '<span class="sd-widget-pick">Recommended</span>' : ''}</span>${o.basis ? `<span class="sd-option-basis">${esc(o.basis)}</span>` : ''}</button>`
+      : `<button type="button" data-option="${attr(o.value)}">${esc(o.label)}</button>`)
     .join('')
-  // The argument for each option lives here, above the buttons, so the label
-  // never has to carry it.
-  const basis = normalized.some((o) => o.basis || o.recommended)
-    ? `<ul class="sd-widget-basis">${normalized.map((o) =>
-        `<li><strong>${esc(o.label)}</strong>${o.recommended ? ' <span class="sd-widget-pick">recommended</span>' : ''}${o.basis ? `: ${esc(o.basis)}` : ''}</li>`,
-      ).join('')}</ul>`
-    : ''
 
   return [
     `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}"${compact ? ' class="sd-widget-compact"' : ''}>`,
     prompt ? `<div class="sd-widget-prompt">${esc(prompt)}</div>` : '',
     help ? `<div class="sd-widget-help">${markdown(help)}</div>` : '',
-    basis,
-    `<div class="sd-widget-options">${buttons}</div>`,
+    `<div class="sd-widget-options${cards ? ' sd-widget-cards' : ''}">${buttons}</div>`,
     '</div>',
   ].filter(Boolean).join('')
 }

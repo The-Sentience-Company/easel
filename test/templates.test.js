@@ -298,18 +298,15 @@ describe('widgets', () => {
     assert.throws(() => widget({ type: 'vote', id: 'w', prompt: 'p', options: [] }), TemplateError)
   })
 
-  test('option objects render the basis list above the buttons', () => {
+  test('option objects render as cards: label, the pick marked, the basis under it, all inside the button', () => {
     const html = widget({ type: 'decision', id: 'w1', prompt: 'Retry?', options: [
       { value: 'yes', label: 'Do it', basis: 'Adds 50ms per call', recommended: true },
       { value: 'no', label: 'Skip it', basis: 'Saves the latency' },
     ] })
-    const basisIdx = html.indexOf('sd-widget-basis')
-    const optionsIdx = html.indexOf('sd-widget-options')
-    assert.ok(basisIdx !== -1, 'no sd-widget-basis list')
-    assert.ok(optionsIdx !== -1, 'no sd-widget-options')
-    assert.ok(basisIdx < optionsIdx, 'basis list must appear before the buttons')
-    assert.match(html, /sd-widget-pick/)
-    assert.match(html, /recommended/)
+    assert.match(html, /class="sd-widget-options sd-widget-cards"/)
+    assert.match(html, /<button type="button" data-option="yes"><span class="sd-option-label">Do it<span class="sd-widget-pick">Recommended<\/span><\/span><span class="sd-option-basis">Adds 50ms per call<\/span><\/button>/)
+    assert.match(html, /<button type="button" data-option="no"><span class="sd-option-label">Skip it<\/span><span class="sd-option-basis">Saves the latency<\/span><\/button>/)
+    assert.doesNotMatch(html, /sd-widget-basis/, 'the separate list above the buttons is gone')
   })
 
   test('two recommended options throw', () => {
@@ -321,7 +318,7 @@ describe('widgets', () => {
 
   test('plain string options render without a basis list, same shape as before', () => {
     const html = widget({ type: 'vote', id: 'w1', prompt: 'Ship?', options: ['yes', 'no'] })
-    assert.doesNotMatch(html, /sd-widget-basis/)
+    assert.doesNotMatch(html, /sd-widget-cards/)
     assert.match(html, /<button type="button" data-option="yes">yes<\/button>/)
     assert.match(html, /<button type="button" data-option="no">no<\/button>/)
   })
@@ -1330,7 +1327,7 @@ describe('queue', () => {
     assert.ok(html2.includes('data-option="no"'))
   })
 
-  test('option objects with basis and recommended render the basis list above the buttons', async () => {
+  test('option objects with basis and recommended render as option cards', async () => {
     const data = await base()
     data.entries[0].options = [
       { value: 'approve', label: 'Approve', basis: 'Ships the design as-is.', recommended: true },
@@ -1338,13 +1335,10 @@ describe('queue', () => {
     ]
     const html = queue.render(data)
     const card = html.slice(html.indexOf('design-note-extraction-table') - 500, html.indexOf('design-note-extraction-table') + 3000)
-    assert.match(card, /class="sd-widget-basis"/)
-    assert.match(card, /Ships the design as-is\./)
-    assert.match(card, /Blocks the PR until revised\./)
-    assert.match(card, /class="sd-widget-pick">recommended</)
-    const basisPos = card.indexOf('sd-widget-basis')
-    const buttonsPos = card.indexOf('sd-widget-options')
-    assert.ok(basisPos < buttonsPos, 'basis list must appear above the buttons')
+    assert.match(card, /class="sd-widget-options sd-widget-cards"/)
+    assert.match(card, /<span class="sd-option-basis">Ships the design as-is\.<\/span>/)
+    assert.match(card, /<span class="sd-option-basis">Blocks the PR until revised\.<\/span>/)
+    assert.match(card, /class="sd-widget-pick">Recommended</)
   })
 })
 
