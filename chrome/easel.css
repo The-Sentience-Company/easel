@@ -1704,6 +1704,9 @@ button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--col
    strip keeps at least the pill it scrolled the active round to. */
 .sf-compact .sf-round-strip { order: 3; flex: 0 0 auto; max-width: 32%; }
 .sf-compact .sf-wip-marker { order: 4; }
+/* After the round pills it explains; no auto margin, which in the one-row bar
+   would push it away from them. */
+.sf-compact .sf-diff-legend { order: 4; flex: none; margin-left: 0; gap: 10px; }
 .sf-compact .sf-agent { order: 5; }
 .sf-compact .sf-status { order: 6; }
 .sf-compact .sf-send-now { order: 7; }
