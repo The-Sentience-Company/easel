@@ -1,6 +1,6 @@
 # review template
 
-Plans, designs, comparisons, proposals — prose the human reads plus the decisions you need answered.
+A board that is mostly decisions you need answered, with the plan or design behind them as prose.
 
 ```
 easel open --template review --data plan.json --title "Retry budget"

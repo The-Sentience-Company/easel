@@ -1,6 +1,6 @@
 # page template
 
-Hand-authored HTML through the same shell, chrome, annotation layer, and design system. Choose it when the composed layout is the point — side-by-side comparisons, mockups, custom composition — not as the fallback when nothing else fits; a plan or design with parallel parts is a `review` with `blocks`.
+Hand-authored HTML through the same shell, chrome, annotation layer, and design system. The easel skill's template table says when it is the right board; write it for its subject.
 
 ```
 easel open --template page --data page.json --title "..."
@@ -44,7 +44,7 @@ your bug as a fact about the data.
 
 ## Compose, don't transcribe
 
-A `page` is a layout, not a document. Content drafted as markdown and wrapped in a card arrives as headings and paragraphs — the only structure markdown can say — so the design system is out of the game before a single class is chosen. Author the HTML directly, and pick structure from the shape of the content:
+Compose a `page`; don't transcribe it. Content drafted as markdown and wrapped in a card arrives as headings and paragraphs — the only structure markdown can say — so the design system is out of the game before a single class is chosen. Author the HTML directly, and pick structure from the shape of the content:
 
 | The content is | Structure it as |
 |---|---|

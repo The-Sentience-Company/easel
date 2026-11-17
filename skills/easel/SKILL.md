@@ -42,14 +42,14 @@ easel open <file.html|file.md>                                                  
 
 | Template | The work is |
 |---|---|
-| `review` | a plan, design, or proposal plus decisions; sections carry prose and, where content is parallel or boxed, `blocks` (cards, callouts, an island) |
+| `review` | a board that is mostly decisions, with the plan or design behind them in sections; where content is parallel or boxed, `blocks` (cards, callouts, an island) |
 | `eval` | eval output — dossiers, a *blind* 2-arm compare, or an item matrix; the data shape picks the mode |
 | `compare` | 2–6 *named* arms side by side — before/after, variants, shipped vs certified — one verdict per case |
 | `replay` | conversation exchanges replayed through 2–4 named arms — same message, one reply per arm, judge's call to check, one verdict per exchange |
 | `gallery` | image candidates judged by looking — design concepts, generated imagery, UI states |
 | `rulings` | labeled cases adjudicated one by one — an answer key, goldens, triage list, or model-vs-key disagreements |
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
-| `page` | a layout the other templates cannot give: side-by-side comparisons, mockups, custom composition — hand-authored HTML through the same chrome and annotation layer |
+| `page` | **the default for what the reader reads** (findings, a report, a plan, an explainer, a comparison, a mockup), unless a row above fits because its structure is the work itself. Hand-written HTML designed for its subject, through the same chrome and annotation layer |
 
 **Before hand-writing any HTML** (a `page` board, a review `island` block), load the `artifact-design` skill if it is listed and use it for design only (the board still goes out through `easel`, never the Artifact tool); where it and easel differ, `references/templates/page.md` § "Artifact guidance on easel" says which wins. If it is not listed, the template's authoring doc is the whole guidance.
 
@@ -57,7 +57,7 @@ easel open <file.html|file.md>                                                  
 
 **Then Read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file; never write the JSON from memory of the schema.** Memory silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its schema and the rules that only matter inside that flow, so this file doesn't repeat them and they can't drift.
 
-**The template decides the shape; `references/authoring.md` decides whether the reader can act on it** — glossing internal names, shipping the diff rather than describing the edit, giving a decision the basis for answering it, sourcing claims, the run manifest behind any model output, and the shape of every paragraph — a run of terms, options, labels, or steps is a table or list in any template's prose field, never one paragraph. Read it before authoring any board, not only ones carrying decisions.
+**The template decides the shape; `references/authoring.md` decides whether the reader can act on it** — glossing internal names, shipping the diff rather than describing the edit, giving a decision the basis for answering it, sourcing claims with links, the run manifest behind any model output, and the shape of every paragraph — a run of terms, options, labels, or steps is a table or list in any template's prose field, never one paragraph. Read it before authoring any board, not only ones carrying decisions.
 
 Two rules hold across every template: decision UI is the widget protocol (`data-widget` / `data-widget-id` / `data-option` on plain divs/buttons — the daemon binds it and queues clicks as drafts), never form elements; and a ```` ```mermaid ```` fence in any prose field renders to inline SVG at publish time — **before writing any fence, read `references/templates/mermaid.md`**: an unstyled diagram renders every node one uniform colour, and its authoring section carries the palette that paints node kinds apart.
 
