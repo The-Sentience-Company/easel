@@ -25,6 +25,15 @@ Input is rejected with a `TemplateError` if it contains:
 - `data-sid` — the daemon assigns stable node ids at publish, and annotations anchor to them.
 - any `sf-` class — that prefix belongs to the chrome.
 
+## Artifact guidance on easel
+
+Load the `artifact-design` skill before writing the HTML, if it is listed, and follow it for the treatment, layout, copy and structure. It is written for a standalone Artifact page; on easel the chrome is that page, so where they differ, easel wins:
+
+- **No page-level CSS outside an island.** No `<style>`, and no `:root`, `html` or `body` rules: they reach the chrome. The `sd-` classes below are the existing design system its "respect what already exists" rule means.
+- **The title is `--title`**, not a `<title>` tag.
+- **Theme:** outside an island the chrome's theme already covers light and dark. Inside an island, write its token pattern, but only the `prefers-color-scheme` blocks take effect: no `data-theme` reaches the frame, so an island follows the reader's system setting even when they flip the board's theme.
+- **Fonts, libraries and images** follow the island limits below, not its CDN allowlist.
+
 ## Pages a script builds
 
 Grep the built HTML for a string you know belongs in it before publishing. A generator bug lands on

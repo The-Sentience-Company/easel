@@ -51,6 +51,8 @@ easel open <file.html|file.md>                                                  
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | a layout the other templates cannot give: side-by-side comparisons, mockups, custom composition — hand-authored HTML through the same chrome and annotation layer |
 
+**Before hand-writing any HTML** (a `page` board, a review `island` block), load the `artifact-design` skill if it is listed, and follow it; where it and easel differ, `references/templates/page.md` § "Artifact guidance on easel" says which wins. If it is not listed, the template's authoring doc is the whole guidance.
+
 **A long board whose content falls into groups the reader jumps between** (phases, areas, chapters) can split into tabs instead of one long scroll — `review` and `page` only, not the default; read `references/templates/tabs.md` before adding them.
 
 **Then Read that template's authoring doc — `references/templates/<template>.md` under this skill's base directory — before writing the data file; never write the JSON from memory of the schema.** Memory silently produces boards the template accepts but renders wrong (top-level `decisions` renders as one pile at the bottom instead of inline under each section — this shipped a real mis-authored board). Each doc carries its schema and the rules that only matter inside that flow, so this file doesn't repeat them and they can't drift.
