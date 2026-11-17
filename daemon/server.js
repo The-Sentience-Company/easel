@@ -1384,6 +1384,9 @@ const handlers = {
     const island = islands?.find((i) => i.index === index)
     if (!island) return json(res, 404, { error: `no island ${index}` })
     const nonce = randomBytes(16).toString('base64')
+    // The board's mode, so island CSS keyed on data-theme (the Artifact
+    // pattern) follows the board rather than the OS. Absent means unknown.
+    const mode = { light: 'light', dark: 'dark' }[url.searchParams.get('mode')]
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       // Island html is author-verbatim: full CSS freedom, zero script (only the
@@ -1394,7 +1397,7 @@ const handlers = {
       'Cache-Control': 'no-store',
     })
     res.end(`<!doctype html>
-<html lang="en">
+<html lang="en"${mode ? ` data-theme="${mode}"` : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1421,6 +1424,7 @@ ${island.html}
     if (m.easelIslandMode !== true) return
     annotating = Boolean(m.annotating)
     document.documentElement.classList.toggle('easel-annotating', annotating)
+    if (m.theme === 'light' || m.theme === 'dark') document.documentElement.setAttribute('data-theme', m.theme)
   })
   // The clicked leaf is often an icon; the nearest ancestor with text names it.
   function labelFor(el){

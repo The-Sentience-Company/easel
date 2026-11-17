@@ -122,6 +122,32 @@ test('island-frame serves the verbatim content under a no-network, no-script-exc
   assert.match(body, /click:\s*\{/)
 })
 
+test('island-frame carries the board mode from the url, and nothing it does not recognise', async () => {
+  const htmlTag = async (q) => (await (await fetch(`${BASE}/island-frame?key=${key}&index=0&round=1${q}`)).text()).match(/<html[^>]*>/)[0]
+  assert.match(await htmlTag('&mode=dark'), /data-theme="dark"/)
+  assert.match(await htmlTag('&mode=light'), /data-theme="light"/)
+  // Absent or unknown means the frame keeps the old OS-following behaviour.
+  assert.doesNotMatch(await htmlTag(''), /data-theme/)
+  assert.doesNotMatch(await htmlTag('&mode=%22%3E%3Cscript%3E'), /data-theme/)
+})
+
+test('a mode message flips the island to the board mode, so a toggle reaches it live', { timeout: 60000 }, async () => {
+  const puppeteer = (await import('puppeteer')).default
+  const browser = await puppeteer.launch({ headless: 'new' })
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${BASE}/island-frame?key=${key}&index=0&round=1&mode=light`)
+    // A listener added after the frame's own runs after it, so it reads the result.
+    const after = await page.evaluate(() => new Promise((done) => {
+      addEventListener('message', () => done(document.documentElement.getAttribute('data-theme')))
+      postMessage({ easelIslandMode: true, annotating: false, theme: 'dark' }, '*')
+    }))
+    assert.equal(after, 'dark')
+  } finally {
+    await browser.close()
+  }
+})
+
 test('an unknown island index is a 404, not an empty page', async () => {
   const res = await fetch(`${BASE}/island-frame?key=${key}&index=7&round=1`)
   assert.equal(res.status, 404)
