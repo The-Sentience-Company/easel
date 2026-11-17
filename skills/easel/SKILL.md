@@ -20,6 +20,10 @@ After publishing, the chat message is the link, one line on what changed, and wh
 
 **A subagent has the Artifact tool and does not have this skill.** When you delegate work that ends in something the user reviews, say in the prompt that the deliverable is an easel board and hand over the key — otherwise it publishes an Artifact the user cannot annotate.
 
+## A board the reader won't read has failed
+
+Before anything else, the board must be short enough to read: about two screens. The first screen carries the content itself, not the process behind it. Everything below serves that, and gives way to it. Evidence goes in a collapse at the end, not under every claim. A board asks at most three questions; a research result is a ranked list with your recommendation, not one decision per finding. Restate earlier rounds only where the reader acts on them, never as a table at the top. Over two screens, cut; don't fold. `references/authoring.md` § "Length first" has the case that taught this.
+
 ## Six things every board carries
 
 The reader stops and spends a comment when one of these is missing — `references/authoring.md` has the why and the rest.
@@ -51,7 +55,7 @@ easel open <file.html|file.md>                                                  
 | `queue` | a campaign's open decisions on one board, orchestrator-owned |
 | `page` | **the default for what the reader reads** (findings, a report, a plan, an explainer, a comparison, a mockup), unless a row above fits because its structure is the work itself. Hand-written HTML designed for its subject, through the same chrome and annotation layer |
 
-**Before hand-writing any HTML** (a `page` board, a review `island` block), load the `artifact-design` skill if it is listed and use it for design only (the board still goes out through `easel`, never the Artifact tool); where it and easel differ, `references/templates/page.md` § "Artifact guidance on easel" says which wins. If it is not listed, the template's authoring doc is the whole guidance.
+**Before hand-writing any HTML** (a `page` board, a review `island` block), load the `artifact-design` skill if it is listed and use it for design only (the board still goes out through `easel`, never the Artifact tool); then follow the design rules in `references/templates/page.md`. If it is not listed, the template's authoring doc is the whole guidance.
 
 **A long board whose content falls into groups the reader jumps between** (phases, areas, chapters) can split into tabs instead of one long scroll — `review` and `page` only, not the default; read `references/templates/tabs.md` before adding them.
 

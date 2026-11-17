@@ -32,7 +32,30 @@ Load the `artifact-design` skill before writing the HTML, if it is listed, and u
 - **Outside an island, the daemon silently strips CSS and scripts at publish:** every `<style>`, `<script>`, `<link>` and `style=""` attribute. Its token plan, gutter and font loading have nowhere to go there: style with the `sd-` classes below (the existing design system its "respect what already exists" rule means), and put anything they cannot express in an island.
 - **The title is `--title`**, not a `<title>` tag.
 - **Theme:** outside an island the chrome's theme already covers light and dark. Inside an island, write its token pattern; only the `prefers-color-scheme` blocks take effect, because no `data-theme` reaches the frame. The frame follows the computer's light or dark setting, which is what the board follows too.
-- **Images:** outside an island, `data:` URLs are stripped, so use an `https://` or relative URL. Inside an island it is the reverse: no network, so images and fonts go in as `data:` URIs.
+- **Images:** outside an island, `data:` URLs are stripped, so use an `https://` or relative URL. Inside an island it is the reverse: no network, so images go in as `data:` URIs.
+
+## Design rules for a hand-written page
+
+These come from the interface-design book Ahmet chose for easel, restated as rules. They win over `artifact-design` where the two differ; easel's limits above win over both.
+
+Anywhere on the page, through what you write and which classes you pick:
+
+1. **Pick the one thing the reader must leave with, then quiet everything else** (muted text, a collapse; see "Two text tiers") instead of making that one thing louder. A side risk gets a muted line or a warning badge, never an error callout.
+2. **Lead with the answer** in one plain paragraph under the title, no box. No preamble, and no section for work that isn't done yet. A correction to an earlier round comes first; what is still unproven comes last, under its own heading.
+3. **Let a value explain itself**: "3 tests fail on CI", not "Failures: 3". Keep label and value pairs for stat tiles, with the label the quieter of the two.
+4. **Colour never carries a verdict alone**: every coloured badge or callout also says it in words.
+5. **One meaning per colour and one component per kind of thing**, across the whole page.
+6. **Fewer boxes.** Separate groups with headings and more space between groups than inside them; a card goes only around something that is its own object.
+7. **A grid only for things that are truly parallel**, like options side by side. Prose stays in one column even when there is room.
+8. **Tables carry their own hierarchy**: a strong first line and a muted second line in a cell beats two columns. Numbers share units and precision.
+9. **Quiet links.** Long source lists go in a collapse or muted text; only the main path gets a prominent link.
+10. **Say where each part stands** in an `sd-eyebrow` above its heading ("Done", "Waiting on you", "Later"), so status shows part by part, not only at the top.
+11. **Show a sequence as a sequence**: what happened over time is an `sd-stepper`, and a before/after is two callouts side by side, not prose.
+12. **Open each list item with its claim in bold** and let the rest stay in body colour, so skimming the bold reads as a summary.
+13. **Something the reader must do is a warning callout** whose title is the action ("Reconnect PostHog, one minute").
+14. **An empty result is content**: say it plainly with the next step ("no regressions found; nothing to do").
+
+The rules for writing CSS inside an island are under Islands below.
 
 ## Pages a script builds
 
@@ -48,8 +71,8 @@ Compose a `page`; don't transcribe it. Content drafted as markdown and wrapped i
 
 | The content is | Structure it as |
 |---|---|
-| the 3–5 facts that frame everything else — where it runs, what it costs, what it may do, what failure looks like | an `sd-metrics` row, first thing on the page |
-| a mechanism with 2–4 separable parts | an `sd-grid` of `sd-card`s, one part per card, named by its `sd-card-title`; decisive tokens in `<strong>`, identifiers in `<code>` |
+| the 3–5 facts that frame everything else — where it runs, what it costs, what it may do, what failure looks like | an `sd-metrics` row, right under the opening answer |
+| a mechanism with 2–4 parts | parts that run in order: an `sd-steps` list in one column; parts that are truly independent: an `sd-grid` of `sd-card`s, one per part. Decisive tokens in `<strong>`, identifiers in `<code>` |
 | behavior with an accept path and a reject path | one worked example each way, side by side in an `sd-grid`: `sd-callout-success` beside `sd-callout-error` |
 | edge cases, states, failure modes | a table in `sd-tablewrap` with a status column — `sd-badge-success` handled, `sd-badge-info` by design, `sd-badge-warning` known gap |
 | a flow with branches | `<pre class="mermaid">` |
@@ -162,6 +185,14 @@ Two things worth knowing before styling around it:
 ### Islands — freeform sections
 
 `<div data-island data-island-title="Diff view" data-island-height="360">…any html + css…</div>` renders its inner content in a sandboxed frame: full CSS freedom (inline `<style>` included), no scripts, no network, `data:` images/fonts only. Use for layouts the `sd-*` system cannot express — image comparisons, custom diffs — and stay in `sd-*` everywhere else: no diff markers inside an island. `data-island-height` is the pre-load height; the frame then self-sizes. In annotate mode a click inside an island drops a **pin** — a point annotation carrying fractional coordinates and the clicked element's text — so individual design elements are commentable with no authoring change; the island as a whole stays annotatable via its placeholder.
+
+When you write an island's CSS:
+
+1. Use one type scale (14, 16, 20, 28px) and one spacing scale (4, 8, 16, 32px), and no other sizes.
+2. Keep lines of prose to 45 to 75 characters; give small text more line-height and big headings less.
+3. Set `font-family: system-ui, sans-serif`, never a display face, so the island blends into the board.
+4. On a coloured ground, secondary text is a tone of that colour, never grey; keep 4.5:1 contrast (3:1 for large text).
+5. No decoration for its own sake: no gradients, patterns, coloured edge stripes or stacked shadows.
 
 ### Callouts, accents and citations
 
