@@ -465,22 +465,18 @@ describe('review', () => {
   describe('about: what the work is, before any ask', () => {
     const board = (extra) => ({ title: 't', sections: [{ heading: 'h', body: 'b' }], ...extra })
 
-    test('renders as a "What this is" block between the summary and the first section', () => {
+    test('renders as plain opening prose between the summary and the first section, with no label', () => {
       const html = review.render(board({ summary: 'Two decisions.', about: 'The chat finds a tool it was not given.\n\nThis round changes how it runs one.' }))
       const at = html.indexOf('class="sd-about')
       assert.ok(at > html.indexOf('Two decisions.'), 'after the summary')
       assert.ok(at < html.indexOf('<section'), 'before the first section')
-      assert.match(html, /<div class="sd-about-title">What this is<\/div><p>The chat finds a tool/)
+      assert.match(html, /<div class="sd-about"><p>The chat finds a tool/)
+      assert.doesNotMatch(html, /What this is/)
     })
 
-    test('a board without it fails with the path', () => {
-      assert.throws(() => review.render(board({})), (err) => err instanceof TemplateError && /review\.about/.test(err.message))
+    test('a board without it renders; a blank one still fails with the path', () => {
+      assert.match(review.render(board({})), /<section/)
       assert.throws(() => review.render(board({ about: '  ' })), (err) => err instanceof TemplateError && /review\.about/.test(err.message))
-    })
-
-    test('legacy mode renders without it, and with it when given', () => {
-      assert.doesNotMatch(review.render(board({}), { legacy: true }), /sd-about/)
-      assert.match(review.render(board({ about: 'the work' }), { legacy: true }), /sd-about/)
     })
   })
 

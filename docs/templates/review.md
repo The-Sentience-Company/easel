@@ -11,7 +11,7 @@ easel open --template review --data plan.json --title "Retry budget"
 ```jsonc
 {
   "title": "string",                 // required
-  "about": "string",                 // required, markdown: what the work is, before any ask — what it does for a person, what was wrong, what this round changes (depth rules in authoring.md)
+  "about": "string",                 // optional, markdown: what the work is, before any ask — what it does for a person, what was wrong, what this round changes (depth rules in authoring.md)
   "summary": "string",               // optional, markdown: the ask and the status
 
   "metrics": [                       // optional — stat tiles above the first section
@@ -100,7 +100,7 @@ Alignment is carried on a class, not a `style` attribute. The publish sanitizer 
 
 ## Behavior
 
-`about` renders as a block headed "What this is" between the summary and the first section, so the reader meets the work before the ask; a mermaid fence inside it renders like one in a body. A board missing `about` throws with the path; a board opened before the field existed keeps publishing without it, and the reader checks report the missing block, as they do an `about` that opens on the ask or a status.
+`about` renders as plain opening prose between the summary and the first section, with no box and no label, so the reader meets the work before the ask; a mermaid fence inside it renders like one in a body. It is optional; when present, the reader checks report one that opens on the ask or a status.
 
 Each decision renders as its question, then one card per option: the option's label, the recommended one marked, and its `basis` line under it, so the consequence of each choice is on the thing you click. `detail` renders above, for the evidence the options rest on. A decision missing an option's `basis` throws with the path; a board opened before decisions carried basis lines keeps publishing without them. `what` and `why_you` are still accepted, so data written for the old "What this is" / "Why you decide" lines publishes unchanged, but they are no longer shown or required. Votes carry no basis. A widget the reader answered on an earlier round opens with that choice shown pressed and the buttons live — a new click records a new answer.
 

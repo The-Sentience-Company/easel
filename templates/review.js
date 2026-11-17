@@ -94,7 +94,9 @@ const groupTabs = (sections, htmls) => {
 export function render(data, { legacy = false } = {}) {
   requireObject(data, 'review')
   requireString(data.title, 'review.title')
-  if (!legacy || data.about !== undefined) {
+  // Optional now, and shown as a plain opening paragraph: the labelled "What
+  // this is" box read as filler to Ahmet ("slop").
+  if (data.about !== undefined) {
     requireString(data.about, 'review.about (what the work is, before any ask: what it does for a person, what was wrong, what this round changes)')
   }
 
@@ -154,7 +156,7 @@ export function render(data, { legacy = false } = {}) {
   const head = [
     `<h1>${esc(data.title)}</h1>`,
     data.summary ? `<div class="sd-muted">${markdown(data.summary)}</div>` : '',
-    data.about ? `<div class="sd-about"><div class="sd-about-title">What this is</div>${markdown(data.about)}</div>` : '',
+    data.about ? `<div class="sd-about">${markdown(data.about)}</div>` : '',
   ].filter(Boolean).join('\n')
 
   const metricsHtml = metrics.length
