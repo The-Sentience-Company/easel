@@ -4,7 +4,7 @@
 import { createServer } from 'node:http'
 import { spawn, execFileSync } from 'node:child_process'
 import { readFile, writeFile, appendFile, mkdir, stat, truncate, rm, readdir } from 'node:fs/promises'
-import { watch, createReadStream } from 'node:fs'
+import { watch } from 'node:fs'
 import { createHash, randomBytes } from 'node:crypto'
 import { join, dirname, basename, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -137,9 +137,10 @@ function extractBody(raw) {
 // pre-render source.
 /* The author of a bad data file usually never loaded the skill, so the error is
    the only place the schema doc can reach them. */
+// An image error is about a file path, not the data shape, so it skips the schema hint.
 const renderFailed = (board, err) =>
   `render failed: ${err.message}` +
-  (board.template ? ` (schema: docs/templates/${board.template}.md)` : '')
+  (board.template && !err.imagePath ? ` (schema: docs/templates/${board.template}.md)` : '')
 
 async function renderSource(board) {
   let raw
@@ -990,7 +991,8 @@ const handlers = {
     if (board) html(res, 200, shellPage(board))
   },
 
-  boardFile: (req, res, match) => serveBoardFile(res, match[1], decodeURIComponent(match[2])),
+  // Every valid name is hex plus an extension, so nothing needs decoding.
+  boardFile: (req, res, match) => serveBoardFile(res, match[1], match[2]),
 
   sse(req, res, match) {
     const board = requireBoard(match[1], res)
@@ -1090,7 +1092,13 @@ const handlers = {
       return json(res, 400, { error: 'clientId, anchor.sid, and a comment or image required' })
     }
     if (pasted.length > MAX_IMAGES) return json(res, 400, { error: `at most ${MAX_IMAGES} images per comment` })
-    const images = pasted.map((url) => /^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(url))
+    // The bytes decide the kind, not the declared type, since the file is served back.
+    const images = pasted.map((url) => {
+      const bytes = /^data:image\/[a-z+.-]+;base64,([A-Za-z0-9+/=]+)$/.exec(url)?.[1]
+      const buf = bytes && Buffer.from(bytes, 'base64')
+      const kind = buf && IMAGE_KINDS.find((k) => k.test(buf))
+      return kind ? { buf, ext: kind.ext } : null
+    })
     if (images.some((m) => !m)) return json(res, 400, { error: 'images must be png, jpeg, gif or webp data urls' })
     const roundRow = round != null ? store.round(board.key, round) : store.lastRound(board.key)
     if (!roundRow) return json(res, 404, { error: `no such round: ${round}` })
@@ -1112,10 +1120,9 @@ const handlers = {
     // Files, not base64 in the row: the agent opens a path, and await stays small.
     const imagePaths = []
     if (images.length) {
-      for (const [, type, b64] of images) {
+      for (const { buf, ext } of images) {
         // Named by content, so a repeated note's images compare equal by path.
-        const { ext } = IMAGE_KINDS.find((k) => k.mime === `image/${type}`)
-        const name = await saveAttachment(ATTACHMENTS_DIR, board.key, Buffer.from(b64, 'base64'), ext)
+        const name = await saveAttachment(ATTACHMENTS_DIR, board.key, buf, ext)
         imagePaths.push(join(ATTACHMENTS_DIR, board.key, name))
       }
     }
@@ -1569,10 +1576,17 @@ ${island.html}
 // Content-named, so the bytes behind a name never change; readable on ended boards.
 async function serveBoardFile(res, key, name) {
   if (!store.board(key) || !FILE_NAME.test(name)) return json(res, 404, { error: 'no such file' })
-  const path = join(ATTACHMENTS_DIR, key, name)
-  if (!(await stat(path).catch(() => null))?.isFile()) return json(res, 404, { error: 'no such file' })
-  res.writeHead(200, { 'Content-Type': FILE_TYPES[name.split('.').pop()], 'Cache-Control': 'public, max-age=31536000, immutable' })
-  createReadStream(path).pipe(res)
+  // Read whole (images are capped at 15 MB) so a failed read is a 404, never a
+  // stream error after the headers went out.
+  const bytes = await readFile(join(ATTACHMENTS_DIR, key, name)).catch(() => null)
+  if (!bytes) return json(res, 404, { error: 'no such file' })
+  res.writeHead(200, {
+    'Content-Type': FILE_TYPES[name.split('.').pop()],
+    'Content-Length': bytes.length,
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'public, max-age=31536000, immutable',
+  })
+  res.end(bytes)
 }
 
 const ASSET_TYPES = {

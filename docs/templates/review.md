@@ -88,7 +88,7 @@ A section over 250 words with no list, table, or block trips the publish check.
 
 Markdown is the only structure a prose field has, so `authoring.md`'s paragraph rule applies to `summary`, `body`, and `detail` alike: terms, options, labeled facts, and steps are a table or list, not a paragraph.
 
-Headings, ordered and unordered lists, blockquotes, fenced code, ` ```mermaid ` fences, tables, inline `` `code` ``, `**bold**`, `*italic*`, `[links](https://example.com)`, and `![images](https://example.com/x.jpg)` (rendered bounded — max-height 340px; pin a width in px with `![alt|96](url)`). Only `http(s):` and `mailto:` URLs survive; anything else is dropped; image `src` is `http(s):` only.
+Headings, ordered and unordered lists, blockquotes, fenced code, ` ```mermaid ` fences, tables, inline `` `code` ``, `**bold**`, `*italic*`, `[links](https://example.com)`, and images. `![alt](src)` takes an `http(s):` URL or a path to an image file (absolute, `~/`, or relative to the data file; a name with spaces in `<…>`), which easel copies into the board at publish. An image with alt text and no size hint is a figure: the alt shown above it as its label, up to the column's width with no height cap. `![alt|96](src)` pins a width in px and stays a plain image, capped at 340px tall. Links take only `http(s):` and `mailto:`; anything else is dropped.
 
 ### Tables
 

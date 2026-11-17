@@ -949,11 +949,12 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 
 /* Markdown images: bounded so a full-size asset can't swallow the column. */
 .sd-md-img { display: block; max-width: 100%; max-height: 340px; height: auto; border-radius: var(--radius); margin: 0.5em 0; }
-/* A labelled image is a figure: full width, no height cap, the label under it.
-   Screenshots are read, so they are not shrunk to fit a line of prose. */
+/* A labelled image is a figure: up to the column's width, no height cap, its
+   label above it so a tall screenshot is named before the reader scrolls it.
+   max-width, not width, so a small image is never stretched. */
 .sd-figure { display: block; margin: 1em 0; }
-.sd-figure-img { width: 100%; max-height: none; margin: 0; border: 1px solid var(--color-base-300); }
-.sd-figure-label { display: block; margin-top: 6px; font-size: 13px; color: var(--color-muted-content); }
+.sd-figure-img { max-width: 100%; max-height: none; margin: 0; border: 1px solid var(--color-base-300); }
+.sd-figure-label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--color-muted-content); }
 
 /* Diagrams bake one SVG per theme at publish; CSS picks the visible one. */
 .sd-diagram-sketch .sd-svg-dark,

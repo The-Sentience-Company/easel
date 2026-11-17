@@ -5,6 +5,7 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startDaemon, waitHealthy, makeApi, portFor } from './harness.js'
@@ -23,6 +24,7 @@ before(async () => {
   writeFileSync(join(SRC, 'shots', 'before.png'), PNG)
   writeFileSync(join(SRC, 'notes.png'), 'not really an image')
   writeFileSync(join(SRC, 'shots', 'Screenshot 2026-11-17 at 10.02.png'), PNG)
+  execFileSync('mkfifo', [join(SRC, 'shots', 'pipe.png')])
   daemon = startDaemon(PORT, DATA_DIR)
   await waitHealthy(BASE)
 })
@@ -41,7 +43,8 @@ test('a labelled image from disk is copied into the board and served from it', a
   const { html } = (await api('GET', `/api/b/${opened.data.key}/state`)).data.currentRound
   const src = html.match(/<img[^>]*class="sd-md-img sd-figure-img"[^>]*src="([^"]+)"/)?.[1]
   assert.match(src, new RegExp(`^/b/${opened.data.key}/files/[0-9a-f]{64}\\.png$`))
-  assert.match(html, /sd-figure-label[^>]*>Before the fix</)
+  // The label comes first, so a tall screenshot is named before it scrolls.
+  assert.match(html, /sd-figure-label[^>]*>Before the fix<\/span><img/)
   const res = await fetch(BASE + src)
   assert.equal(res.status, 200)
   assert.equal(res.headers.get('content-type'), 'image/png')
@@ -75,7 +78,40 @@ test('a web image is left as it was', async () => {
 
 test('the file route serves nothing outside a board\'s own content-named files', async () => {
   const opened = await openMd('route', 'text\n')
-  for (const path of [`/b/${opened.data.key}/files/..%2F..%2Feasel.db`, `/b/${opened.data.key}/files/x.png`, `/b/nokey/files/${'a'.repeat(64)}.png`]) {
+  for (const path of [`/b/${opened.data.key}/files/%E0%A4%A.png`, `/b/${opened.data.key}/files/..%2F..%2Feasel.db`, `/b/${opened.data.key}/files/x.png`, `/b/nokey/files/${'a'.repeat(64)}.png`]) {
     assert.equal((await fetch(BASE + path)).status, 404, path)
   }
+})
+
+async function openPage(name, html) {
+  const file = join(SRC, `${name}.html`)
+  writeFileSync(file, html)
+  return api('POST', '/api/open', { file, title: name })
+}
+
+test('text that only mentions an image never makes easel look for a file', async () => {
+  const md = await openMd('quoted', 'Write `![After](./shots/after.png)` to add one.\n')
+  assert.equal(md.status, 200, 'image syntax inside a code span stays text')
+  const page = await openPage('mentions', [
+    '<p>page</p>',
+    '<!-- <img src="./shots/old.png"> -->',
+    '<img data-src="./shots/lazy.png" src="https://example.com/a.png" alt="">',
+    '<img src="/favicon.ico" alt="">',
+    '<div data-island><script>el.innerHTML = \'<img src="\' + u + \'.png">\'</script><img src="./shots/in-island.png"></div>',
+  ].join('\n'))
+  assert.equal(page.status, 200, page.data?.error)
+})
+
+test('a named pipe is refused at once instead of hanging the publish', async () => {
+  const opened = await openMd('pipe', '![Pipe](./shots/pipe.png)\n')
+  assert.equal(opened.status, 422)
+  assert.match(opened.data.error, /not an image: \.\/shots\/pipe\.png is not a file/)
+})
+
+test('an image error on a template board does not point at the schema', async () => {
+  const data = join(SRC, 'board.json')
+  writeFileSync(data, JSON.stringify({ title: 't', about: 'a', sections: [{ heading: 'h', body: '![Gone](./shots/gone.png)' }] }))
+  const opened = await api('POST', '/api/open', { template: 'review', data, title: 'schema hint' })
+  assert.equal(opened.status, 422)
+  assert.doesNotMatch(opened.data.error, /schema:/)
 })
