@@ -149,10 +149,10 @@ async function renderSource(board) {
     // A board opened before this daemon started predates the decision frame;
     // it publishes as before and the reader checks warn instead.
     raw = mod.render(data, { legacy: board.created_at < DAEMON_STARTED_AT })
-    // The agent picks the page width, not the reader. A hidden marker, so the
-    // choice rides with the round and needs no store column; easel.css widens
-    // the column when it sees one.
-    if (data?.width === 'wide') raw = '<div class="sd-width-wide" hidden></div>' + raw
+    // The agent picks the page width, not the reader. An empty marker div, so
+    // the choice rides with the round and needs no store column; easel.css
+    // widens the column when it sees one.
+    if (data?.width === 'wide') raw = '<div class="sd-width-wide"></div>' + raw
   } else if (/\.md$/i.test(board.file)) {
     raw = markdown(await readFile(board.file, 'utf8'))
   } else {

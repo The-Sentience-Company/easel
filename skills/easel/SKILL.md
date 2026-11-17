@@ -65,7 +65,7 @@ A ```` ```chart ```` fence renders a small themed bar/hbar/line chart at publish
 
 **Always pass `--title`: 4–6 words naming the work, not the document.** It is the only handle on the dashboard, where boards outlive the session that made them. "Extractor arms — 2.5-flash vs 3.5-flash-lite", not "Eval results".
 
-**A wide board sets `"width": "wide"` at the top level of its data file** (any template): a table with many columns, three or more arms side by side, a wide mockup. It widens the page from 1040px to 1400px. Leave it out otherwise; the reader has no width control, so the choice is yours.
+**A wide board sets `"width": "wide"` at the top level of its data file** (any template): a table with many columns, three or more arms side by side, a wide mockup. It widens the page from 1040px to 1400px. A board published from an `.html` file gets the same by starting with `<div class="sd-width-wide"></div>`. Leave it out otherwise; the reader has no width control, so the choice is yours.
 
 **Sources need a durable home:** the daemon re-reads the source on every publish, and `/tmp`/scratchpad paths die on reboot. Put sources in `~/.easel/sources/<key-or-name>.json`, never a session scratchpad.
 

@@ -304,8 +304,9 @@ body.sf-shell {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The agent asks for a wide page with "width": "wide" in the board's data; the
-   daemon leaves a hidden .sd-width-wide marker for this to find. */
+/* The agent asks for a wide page: "width": "wide" in a template's data makes the
+   daemon add an empty .sd-width-wide div, and a hand-written HTML board can
+   carry one itself. */
 #sf-content:has(.sd-width-wide) { --content-max: 1400px; }
 
 #sf-content {
@@ -1190,13 +1191,14 @@ body.sf-annotating #sf-content summary[data-sid] { cursor: pointer; }
 body.sf-annotating #sf-content a[href] { cursor: pointer; }
 /* A faint wash and a hairline, as an Artifact page marks what you are about to
    comment on. Annotate mode is on by default, so this shows on every pointer
-   move; a solid accent box there read as an alarm. The wash is an inset shadow,
-   not a background, so a card keeps its own fill. */
+   move; a solid accent box there read as an alarm. The wash is a background
+   image: it layers over a card's own fill and leaves its drop shadow alone,
+   where an inset box-shadow replaced it. */
 #sf-content .sf-hover {
   outline: 1px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
   outline-offset: 2px;
   border-radius: 4px;
-  box-shadow: inset 0 0 0 100vmax color-mix(in oklch, var(--color-primary) 6%, transparent);
+  background-image: linear-gradient(color-mix(in oklab, var(--color-primary) 6%, transparent), color-mix(in oklab, var(--color-primary) 6%, transparent));
 }
 /* Inside the scrollable table wrapper an outward outline clips at the wrapper
    edge (sides always, top/bottom on the first/last row) — draw it inward. */
@@ -1250,7 +1252,7 @@ button.sf-marker:hover { filter: brightness(1.12); }
   padding: 0 4px;
 }
 /* A scroll container clips a gutter marker, so its badge tucks inside and a
-   dashed outline carries the mark; nested anchors nest their outlines. */
+   hairline outline carries the mark; nested anchors nest their outlines. */
 #sf-content pre.sf-annotated,
 #sf-content .sd-diagram.sf-annotated,
 #sf-content .sd-tablewrap.sf-annotated,
