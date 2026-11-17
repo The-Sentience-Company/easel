@@ -4,7 +4,7 @@ Static precompiled CSS. No build step, no Tailwind runtime, no CDN. Token names 
 
 ## Themes
 
-The shell page sets `data-theme` on the `<html>` element. Four families — default, `lantern`, `fig`, `cursor` — each in a light and a dark mode:
+The shell page sets `data-theme` on the `<html>` element. Three families — default, `lantern`, `fig` — each in a light and a dark mode:
 
 ```html
 <html data-theme="light">          <!-- default family -->
@@ -15,9 +15,9 @@ The shell page sets `data-theme` on the `<html>` element. Four families — defa
 
 The default family follows the look of a Claude Artifact page: a cool grey ground with white panels in light, graphite in dark, one blue accent, and sans type throughout. lantern and fig keep their own palettes and the serif display face. Shapes are shared by all three: heading sizes, option buttons, badges and code blocks look the same in every family; only colour and type face differ.
 
-The family comes from the topbar picker (localStorage `sf-theme-family`) or a `?theme=<family>` URL pin; the mode from the `[T]heme` cycle. Until a browser picks its own, it gets `theme` (`{"family", "mode"}`) from `~/.easel/config.json`, read at daemon start. The ⚙ tuner popup layers per-browser inline token overrides (localStorage `sf-tuner-v2`) on top of whichever family is active.
+Light or dark always follows the computer's setting, live. The default family is what every board shows; lantern and fig are reached only by a `?theme=<family>` link. The shell's inline script sets `data-theme` before first paint and on every OS change. The bar has no theme, tuner or width controls: page width is the board's, set by the agent with `"width": "wide"` in the data (1400px instead of 1040px).
 
-Both live in the expanded bar. Under 1500px — the width at which the full bar stops fitting one line — the chrome opens collapsed — one row of the controls a reader acts on, with theme, page width, the diff legend and the round note folded away — and the chevron at its right end expands it (localStorage `sf-chrome-compact`).
+Under 1500px the chrome opens collapsed: one row of the controls a reader acts on, with the diff legend and the round note folded away. The chevron at its right end expands it (localStorage `sf-chrome-compact`).
 
 **It has to be `<html>`, not a wrapper div.** A wrapper resolves the base rules against `:root`'s light defaults, so dark tables render dark-on-dark. This bit once and the rule is pinned in the contract between the daemon and the chrome.
 
@@ -43,7 +43,7 @@ In the default dark the page ground is graphite, not black, and `--color-base-10
 
 ## Fonts
 
-`--font-display` carries headings, ledes and entry names: `--font-sans` in the default family, `--font-serif` in lantern and fig. `--font-sans` sets body, `--font-mono` labels and code. The ⚙ tuner's heading font overrides `--font-display`. Every face is a system face, so nothing is fetched and the publish path stays same-origin.
+`--font-display` carries headings, ledes and entry names: `--font-sans` in the default family, `--font-serif` in lantern and fig. `--font-sans` sets body, `--font-mono` labels and code. Every face is a system face, so nothing is fetched and the publish path stays same-origin.
 
 `[data-option]` pins `font-family` rather than relying on `font: inherit` alone: a control inside a monospace ancestor otherwise renders as what looks like a code sample.
 

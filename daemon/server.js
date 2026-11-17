@@ -149,6 +149,10 @@ async function renderSource(board) {
     // A board opened before this daemon started predates the decision frame;
     // it publishes as before and the reader checks warn instead.
     raw = mod.render(data, { legacy: board.created_at < DAEMON_STARTED_AT })
+    // The agent picks the page width, not the reader. A hidden marker, so the
+    // choice rides with the round and needs no store column; easel.css widens
+    // the column when it sees one.
+    if (data?.width === 'wide') raw = '<div class="sd-width-wide" hidden></div>' + raw
   } else if (/\.md$/i.test(board.file)) {
     raw = markdown(await readFile(board.file, 'utf8'))
   } else {
@@ -559,26 +563,14 @@ const GATE_SCRIPT =
   `b.__sfGateTimer=setTimeout(function(){reveal("timeout")},${GATE_MAX_HOLD_MS});` +
   `b.querySelector(".sf-gate-show").onclick=function(){reveal("manual")}})()</script>`
 
-// config.json `theme` ({family, mode}) is the default a browser gets until it picks its own.
-function defaultTheme() {
-  const t = configCache.theme || {}
-  return {
-    family: typeof t.family === 'string' ? t.family : '',
-    mode: t.mode === 'light' || t.mode === 'dark' ? t.mode : '',
-  }
-}
-
-const themeScript = () =>
-  `<script>(function(){var d=window.__sfDefaultTheme=${JSON.stringify(defaultTheme()).replace(/</g, '\\u003c')};` +
-  `var f=localStorage.getItem("sf-theme-family");` +
-  `var p=new URLSearchParams(location.search).get("theme")||(f!==null?f:d.family);` +
+// Light or dark follows the computer, live; a ?theme=<family> link picks a
+// family. Runs before first paint, so the board never flashes the wrong mode.
+const THEME_SCRIPT =
+  `<script>(function(){var p=new URLSearchParams(location.search).get("theme");` +
   `var m=matchMedia("(prefers-color-scheme: dark)");` +
-  `function sync(){var o=localStorage.getItem("sf-theme");` +
-  `var mode=o==="light"||o==="dark"?o:d.mode||(m.matches?"dark":"light");` +
+  `function sync(){var mode=m.matches?"dark":"light";` +
   `document.documentElement.dataset.theme=p?p+"-"+mode:mode}` +
-  `sync();m.addEventListener("change",sync);` +
-  `var w=localStorage.getItem("sf-width");` +
-  `if(w)document.documentElement.style.setProperty("--content-max",w+"px")})()</script>`
+  `sync();m.addEventListener("change",sync)})()</script>`
 
 function shellPage(board) {
   return `<!doctype html>
@@ -587,7 +579,7 @@ function shellPage(board) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(board.title || basename(board.file || '') || board.key)}</title>
-${themeScript()}
+${THEME_SCRIPT}
 <link rel="stylesheet" href="/assets/easel.css">
 ${GATE_NOSCRIPT}
 </head>
@@ -612,7 +604,7 @@ function indexPage() {
   return `<!doctype html>
 <html lang="en" data-theme="light">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>easel sessions</title>${themeScript()}
+<title>easel sessions</title>${THEME_SCRIPT}
 <link id="favicon" rel="icon" href="">
 <style>
 html[data-theme$="light"]{color-scheme:light}html[data-theme$="dark"]{color-scheme:dark}body{margin:0;font:14px/1.5 -apple-system,system-ui,sans-serif;padding:32px 20px;background:Canvas;color:CanvasText}
