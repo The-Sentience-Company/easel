@@ -1508,31 +1508,33 @@ button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--col
 .sf-status-dot.sf-reconnecting { background: var(--color-warning); animation: sf-pulse 1.2s ease-in-out infinite; }
 @keyframes sf-pulse { 50% { opacity: 0.3; } }
 
-/* The panel launchers shipped unstyled and rendered as native buttons next to
-   themed ones; they take the same treatment. */
+/* One primary action in the bar, Send, is the only solid button. The panel
+   launchers and End are quiet: no outline, a light ground on hover, a soft
+   accent tint while on. */
 button.sf-annotate-toggle,
 button.sf-queue-toggle,
-button.sf-chat-toggle {
+button.sf-chat-toggle,
+button.sf-end-session {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border: 1px solid var(--border);
-  background: var(--color-base-200);
-  color: var(--color-base-content);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-body-content);
   border-radius: var(--radius-sm);
-  padding: 5px 12px;
+  padding: 5px 10px;
   min-height: 2rem;
   font-weight: 560;
 }
-/* On by default, so it is tinted rather than filled: a solid accent there sat
-   beside Send and competed with it for every glance. */
-button.sf-annotate-toggle.sf-on {
+:is(button.sf-annotate-toggle, button.sf-queue-toggle, button.sf-chat-toggle, button.sf-end-session):hover {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+}
+:is(button.sf-annotate-toggle, button.sf-queue-toggle, button.sf-chat-toggle).sf-on {
   background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100));
   color: var(--color-primary);
-  border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
 }
-button.sf-queue-toggle.sf-on, button.sf-chat-toggle.sf-on { border-color: var(--color-primary); color: var(--color-primary); }
 /* An empty queue's badge competed with the live controls for attention. */
 button.sf-queue-toggle.sf-empty .sf-queue-count {
   background: none;
@@ -1557,17 +1559,8 @@ button.sf-send-now {
 }
 button.sf-send-now:hover { filter: brightness(1.06); }
 
-button.sf-end-session {
-  flex: none;
-  border: 1px solid var(--border);
-  background: var(--color-base-200);
-  color: var(--color-muted-content);
-  border-radius: var(--radius-sm);
-  padding: 5px 12px;
-  min-height: 2rem;
-  font-weight: 560;
-}
-button.sf-end-session:hover { border-color: var(--color-error); color: var(--color-error); }
+button.sf-end-session { color: var(--color-muted-content); }
+button.sf-end-session:hover { color: var(--color-error); }
 
 /* rounds ---------------------------------------------------------------- */
 
@@ -1645,7 +1638,7 @@ button.sf-round-pill {
   flex: none;
 }
 button.sf-round-pill.sf-round-current { border-color: var(--color-primary); }
-button.sf-round-pill.sf-round-active { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)); color: var(--color-primary); border-color: transparent; }
 
 .sf-diff-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 0.78rem; color: var(--color-muted-content); min-width: 0; }
 .sf-diff-legend > * { display: inline-flex; align-items: center; gap: 5px; }
@@ -1735,11 +1728,11 @@ button.sf-chrome-toggle {
   width: 1.9rem;
   height: 1.9rem;
   padding: 0;
-  border: 1px solid var(--border);
-  background: var(--color-base-200);
+  border: 0;
+  background: none;
   color: var(--color-muted-content);
   border-radius: 999px;
-  transition: transform 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition: transform 160ms ease, color 160ms ease, background 160ms ease;
 }
 /* Drawn, not typed: the chevron glyphs sit off-centre and hairline-thin at this
    size in most of the theme fonts. */
@@ -1752,7 +1745,7 @@ button.sf-chrome-toggle::before {
   border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg);
 }
-button.sf-chrome-toggle:hover { color: var(--color-base-content); border-color: var(--color-primary); }
+button.sf-chrome-toggle:hover { color: var(--color-base-content); background: var(--color-base-200); }
 /* One glyph, two states: sf-on marks the expanded bar, where the affordance
    points back up at the row it collapses into. */
 button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
