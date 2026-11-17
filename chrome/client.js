@@ -1139,20 +1139,32 @@ function closePopover() {
   if (popover) popover.remove()
   popover = null
   queueOpenPopover = null
-  CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
+  clearHover()
 }
 
 // Chrome-injected controls inside content act, never annotate.
 const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-tabs, .sf-tab-pager'
 
+// The highlight waits for the pointer to settle on one block. Shown at once,
+// it lit every block a mouse crossed on its way somewhere else.
+const HOVER_DWELL_MS = 150
+let hoverTimer = null
+
+function clearHover() {
+  clearTimeout(hoverTimer)
+  CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
+}
+
 CONTENT.addEventListener('mouseover', (e) => {
+  clearHover()
   if (!state.annotating || popover) return
   const target = e.target.closest(CHROME_CONTROLS) ? null : e.target.closest('[data-sid]')
-  CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
   // Hover previews only the anchor itself; the column echo appears on the
   // saved mark (sf-annotated-col), not while merely pointing at a header.
-  if (target && !target.closest('[data-option]')) target.classList.add('sf-hover')
+  if (!target || target.closest('[data-option]')) return
+  hoverTimer = setTimeout(() => target.classList.add('sf-hover'), HOVER_DWELL_MS)
 })
+CONTENT.addEventListener('mouseleave', clearHover)
 
 // Boards link to the daemon as 127.0.0.1. Opened through a tunnel such as Tailscale Serve,
 // point those links at the address this page came from, in the DOM itself so every way of
