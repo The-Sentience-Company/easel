@@ -59,11 +59,15 @@ test('an annotation on a th echoes down its column cells', async () => {
 test('hovering a th highlights only the th; a body cell hovers the cell itself', async () => {
   const page = await browser.newPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+  // The highlight waits for the pointer to settle (HOVER_DWELL_MS in client.js).
+  const settle = () => new Promise((r) => setTimeout(r, 250))
   await page.hover('thead th:nth-child(2)')
+  await settle()
   let got = await page.evaluate(`[...document.querySelectorAll('.sf-hover')].map((n) => n.tagName)`)
   assert.deepEqual(got, ['TH'], `th hover must not spill into the column, got: ${got}`)
 
   await page.hover('tbody td')
+  await settle()
   got = await page.evaluate(`[...document.querySelectorAll('.sf-hover')].map((n) => [n.tagName, n.textContent.trim()])`)
   assert.deepEqual(got, [['TD', 'alpha']], `a body cell must hover itself — row × column select, got: ${got}`)
   await page.close()
@@ -91,10 +95,23 @@ test('colspan headers map to logical columns; a spanning widget row stays out', 
   await page.close()
 })
 
+test('a pointer passing over blocks lights none of them; resting on one lights it', async () => {
+  const page = await browser.newPage()
+  await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+  const lit = () => page.evaluate(`document.querySelectorAll('.sf-hover').length`)
+  await page.hover('thead th:nth-child(2)')
+  await page.hover('tbody td')
+  assert.equal(await lit(), 0, 'a block lit up while the pointer was only passing over it')
+  await new Promise((r) => setTimeout(r, 250))
+  assert.equal(await lit(), 1, 'resting on a block did not light it')
+  await page.close()
+})
+
 test('a tbody row header hovers itself as a cell, never a column', async () => {
   const page = await browser.newPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
   await page.hover('#rowhead th')
+  await new Promise((r) => setTimeout(r, 250)) // the highlight waits for the pointer to settle
   const got = await page.evaluate(`[...document.querySelectorAll('#rowhead .sf-hover')].map((n) => n.tagName)`)
   assert.deepEqual(got, ['TH'], `row-header hover must select the cell, got: ${got}`)
   const echoed = await page.evaluate(`document.querySelectorAll('#rowhead .sf-annotated-col').length`)
