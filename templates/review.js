@@ -111,20 +111,15 @@ export function render(data, { legacy = false } = {}) {
   }
 
   const uniqueId = makeIdGuard('review')
-  // One "Why you decide" line per decision: a sentence true of every decision
-  // on the board names none of them.
-  const whyYouSeen = new Map()
 
   const renderDecision = (d, path) => {
     requireObject(d, path)
     const options = requireArray(d.options, `${path}.options`)
-    const framed = !legacy || (d.what !== undefined && d.why_you !== undefined)
-    if (framed) {
-      requireString(d.what, `${path}.what (one sentence: what a person gets or sees when this ships)`)
-      requireString(d.why_you, `${path}.why_you (one sentence: why the reader decides this, or what it costs if wrong)`)
-      const line = d.why_you.trim().toLowerCase()
-      if (whyYouSeen.has(line)) fail(`${path}.why_you repeats ${whyYouSeen.get(line)}.why_you word for word — each decision's line names what that decision alone decides, or what goes wrong if it is wrong`)
-      whyYouSeen.set(line, path)
+    // `what` and `why_you` are still accepted, so data written for the old
+    // "What this is" / "Why you decide" lines publishes unchanged, but they are
+    // neither shown nor required: Ahmet called them unnecessary. Each option's
+    // basis stays required; it is the consequence line on the option's card.
+    if (!legacy) {
       options.forEach((o, i) => {
         if (typeof o === 'string' || typeof o.basis !== 'string' || !o.basis.trim()) {
           fail(`${path}.options[${i}].basis must be a non-empty string: what picking this option changes for a user or the reader`)
@@ -140,7 +135,6 @@ export function render(data, { legacy = false } = {}) {
         prompt: requireString(d.question, `${path}.question`),
         help: d.context,
         options,
-        frame: framed ? { what: d.what, why_you: d.why_you } : undefined,
       }),
       '</div>',
     ].filter(Boolean).join('\n')

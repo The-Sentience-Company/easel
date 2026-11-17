@@ -423,17 +423,32 @@ describe('review', () => {
   describe('decision frame', () => {
     const board = (d) => ({ title: 't', about: 'the work', sections: [{ heading: 'h', body: 'b', decisions: [d] }] })
 
-    test('renders what and why-you above the question, and the basis per option', () => {
+    // Ahmet: "this is unnecessary what this is and why you decide". The fields
+    // are still accepted, so data written to the old rule publishes unchanged.
+    test('what and why_you are accepted but not shown; the basis per option is', () => {
       const html = review.render(board(framed({ id: 'd', question: 'Which?', options: ['a', 'b'] })))
-      assert.match(html, /<strong>What this is:<\/strong> what a person gets/)
-      assert.match(html, /<strong>Why you decide:<\/strong> why the reader decides/)
-      assert.ok(html.indexOf('sd-widget-frame') < html.indexOf('sd-widget-prompt'), 'the frame precedes the question')
+      assert.doesNotMatch(html, /What this is:|Why you decide:|sd-widget-frame/)
+      assert.doesNotMatch(html, /why the reader decides/)
       assert.match(html, /what a changes/)
     })
 
+    test('a decision without what or why_you renders', () => {
+      const d = framed({ id: 'd', question: 'q', options: ['a', 'b'] })
+      delete d.what
+      delete d.why_you
+      assert.match(review.render(board(d)), /data-widget-id="d"/)
+    })
+
+    test('two decisions with the same why_you render', () => {
+      const line = 'Every line a model reads is yours to approve before merge.'
+      const html = review.render({ title: 't', about: 'the work', sections: [{ heading: 'h', body: 'b', decisions: [
+        framed({ id: 'first', question: 'q1', options: ['a'], why_you: line }),
+        framed({ id: 'second', question: 'q2', options: ['a'], why_you: line }),
+      ] }] })
+      assert.match(html, /data-widget-id="second"/)
+    })
+
     for (const [name, mutate, message] of [
-      ['what', (d) => { delete d.what }, /sections\[0\]\.decisions\[0\]\.what/],
-      ['why_you', (d) => { delete d.why_you }, /sections\[0\]\.decisions\[0\]\.why_you/],
       ['an option basis', (d) => { d.options[1] = { value: 'b', label: 'B' } }, /sections\[0\]\.decisions\[0\]\.options\[1\]\.basis/],
       ['a string option', (d) => { d.options[0] = 'a' }, /options\[0\]\.basis/],
     ]) {
@@ -444,18 +459,9 @@ describe('review', () => {
       })
     }
 
-    test('a vote carries no frame and still renders with string options', () => {
-      const html = review.render({ title: 't', about: 'the work', votes: [{ id: 'v', question: 'ok?', type: 'approve' }] })
-      assert.match(html, /data-widget="approve"/)
-      assert.doesNotMatch(html, /sd-widget-frame/)
-    })
-
-    test('legacy mode renders a frameless decision as before, and a framed one with its frame', () => {
+    test('legacy mode renders a decision without basis lines as before', () => {
       const bare = review.render(board({ id: 'd', question: 'q', options: ['a'] }), { legacy: true })
       assert.match(bare, /data-widget-id="d"/)
-      assert.doesNotMatch(bare, /sd-widget-frame/)
-      const full = review.render(board(framed({ id: 'd', question: 'q', options: ['a'] })), { legacy: true })
-      assert.match(full, /sd-widget-frame/)
     })
   })
 
@@ -478,27 +484,6 @@ describe('review', () => {
     test('legacy mode renders without it, and with it when given', () => {
       assert.doesNotMatch(review.render(board({}), { legacy: true }), /sd-about/)
       assert.match(review.render(board({ about: 'the work' }), { legacy: true }), /sd-about/)
-    })
-  })
-
-  describe('one "Why you decide" line per decision', () => {
-    const two = (a, b) => ({
-      title: 't', about: 'the work',
-      sections: [{ heading: 'h', body: 'b', decisions: [
-        framed({ id: 'first', question: 'q1', options: ['a'], why_you: a }),
-        framed({ id: 'second', question: 'q2', options: ['a'], why_you: b }),
-      ] }],
-    })
-
-    test('two decisions sharing one line fail naming both paths', () => {
-      const line = 'Every line a model reads is yours to approve before merge.'
-      assert.throws(() => review.render(two(line, ` ${line.toUpperCase()} `)), (err) =>
-        err instanceof TemplateError && /decisions\[1\]\.why_you repeats .*decisions\[0\]\.why_you/.test(err.message))
-    })
-
-    test('two decisions with their own lines render', () => {
-      const html = review.render(two('If the reply shape is wrong the model calls a tool it no longer has.', 'If the key accepts a re-search, a model that forgets the tool passes.'))
-      assert.match(html, /data-widget-id="second"/)
     })
   })
 

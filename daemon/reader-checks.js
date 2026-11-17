@@ -80,12 +80,6 @@ export function readerChecks(html, { template } = {}) {
   const pointers = [...strip(prose).matchAll(POINTERS)].map((m) => m[0])
   if (pointers.length) add('pointer', `${pointers.length} pointer${pointers.length > 1 ? 's' : ''} to content not on this round`, [...new Set(pointers)].slice(0, 5).join(' · '))
 
-  // Decisions published without the frame: boards opened before the review
-  // template required it, and other templates' decision widgets.
-  const unframed = [...html.matchAll(/<div data-widget="decision"[^>]*data-widget-id="([^"]*)"[^>]*>([\s\S]*?)<div class="sd-widget-options"/g)]
-    .filter((m) => !m[2].includes('sd-widget-frame')).map((m) => m[1])
-  if (unframed.length) add('frame', `${unframed.length} decision${unframed.length > 1 ? 's' : ''} without "What this is" and "Why you decide" lines`, unframed.slice(0, 5).join(', '))
-
   // The "What this is" block: a review board opened before the template required
   // it has none; one that opens on the ask or a status has it filled with the wrong thing.
   if (template === 'review') {
