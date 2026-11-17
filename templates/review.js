@@ -33,7 +33,7 @@ const renderBlocks = (blocks, path) => requireArray(blocks, path).map((b, j) => 
       return [
         '<div class="sd-card">',
         `<div class="sd-card-title">${esc(requireString(c.title, `${cp}.title`))}</div>`,
-        badges ? `<div class="sd-row">${badges}</div>` : '',
+        badges ? `<div class="sd-row sd-meta">${badges}</div>` : '',
         markdown(c.body ?? ''),
         '</div>',
       ].filter(Boolean).join('')
@@ -187,7 +187,7 @@ export function render(data, { legacy = false } = {}) {
     return [
       '<section class="sd-section">',
       `<h2>${esc(s.heading)}</h2>`,
-      badges ? `<div class="sd-row">${badges}</div>` : '',
+      badges ? `<div class="sd-row sd-meta">${badges}</div>` : '',
       body,
       blocks,
       inlineDecisions,

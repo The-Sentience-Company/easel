@@ -630,6 +630,56 @@ body.sf-shell {
 .sd-badge-error   .sd-badge-key { background: var(--color-error);   color: var(--color-status-content); }
 .sd-badge-info    .sd-badge-key { background: var(--color-info);    color: var(--color-status-content); }
 
+/* Who and what state, as one muted line rather than a row of pills (Ahmet's
+   pick 9): labels run as text separated by a middle dot, a status keeps its
+   colour only as a dot before its word, and a two-part "pane | reviewer" pill
+   reads as "pane reviewer". Status cells in tables keep their pills. */
+div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content); }
+/* The separator rides on the next label: first in its flex order, so a status
+   dot lands after it; inline-block, so a link's underline skips it. */
+.sd-meta > * + *::before {
+  content: "·";
+  order: -2;
+  display: inline-block;
+  margin: 0 8px;
+  color: var(--color-muted-content);
+  font-weight: 400;
+}
+.sd-meta .sd-badge,
+.sd-meta .sd-badge:has(.sd-badge-key) {
+  border: 0;
+  background: none;
+  padding: 0;
+  gap: 6px;
+  overflow: visible;
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--color-muted-content);
+}
+.sd-meta .sd-badge[class*="sd-badge-"] { color: var(--color-base-content); }
+.sd-meta .sd-badge[class*="sd-badge-"]::after {
+  content: "";
+  order: -1;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--meta-tone);
+}
+.sd-meta .sd-badge-success { --meta-tone: var(--color-success); }
+.sd-meta .sd-badge-warning { --meta-tone: var(--color-warning); }
+.sd-meta .sd-badge-error   { --meta-tone: var(--color-error); }
+.sd-meta .sd-badge-info    { --meta-tone: var(--color-info); }
+.sd-meta .sd-badge-key,
+.sd-meta :is(.sd-badge-success, .sd-badge-warning, .sd-badge-error, .sd-badge-info) .sd-badge-key {
+  background: none;
+  color: var(--color-muted-content);
+  padding: 0;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.sd-meta .sd-badge-value { padding: 0; color: var(--color-base-content); }
+
 .sd-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
 .sd-metric {
   background: var(--color-base-100);
@@ -1108,20 +1158,32 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 }
 .sd-widget-help { font-size: 0.85rem; color: var(--color-muted-content); margin-bottom: 10px; }
 .sd-widget-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
-/* One line per option, above the buttons: what picking it causes, and which
-   one is recommended — so the label itself can stay two or three words. */
-.sd-widget-basis { margin: 0 0 10px; padding-left: 1.2em; font-size: 0.88rem; color: var(--color-body-content); }
-.sd-widget-basis li { margin: 2px 0; }
-.sd-widget-basis strong { color: var(--color-base-content); }
+/* Option cards: stacked full width, the label over a muted line saying what
+   picking it changes, the recommended one marked with a small chip. */
+.sd-widget-cards { flex-direction: column; align-items: stretch; }
+.sd-widget-cards [data-option] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+}
+.sd-option-label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sd-option-basis { font-size: 0.86rem; font-weight: 400; color: var(--color-muted-content); }
 .sd-widget-pick {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--color-primary);
-  color: var(--color-primary-content);
-  vertical-align: 1px;
+  color: var(--color-success);
+  background: color-mix(in oklab, var(--color-success) 14%, var(--color-base-100));
 }
+/* On the chosen card the fill is the accent, so its lines take the card's ink. */
+[data-option][aria-pressed="true"] .sd-option-basis,
+[data-option].sf-chosen .sd-option-basis { color: inherit; opacity: 0.85; }
 .sd-read-first { font-size: 0.88rem; margin: 6px 0 8px; }
 /* Inside a table the row separator already rules the line — a second rule
    from the widget reads as a double border. */
