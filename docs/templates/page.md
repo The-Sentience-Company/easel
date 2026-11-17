@@ -31,7 +31,7 @@ Load the `artifact-design` skill before writing the HTML, if it is listed, and u
 
 - **Outside an island, the daemon silently strips CSS and scripts at publish:** every `<style>`, `<script>`, `<link>` and `style=""` attribute. Its token plan, gutter and font loading have nowhere to go there: style with the `sd-` classes below (the existing design system its "respect what already exists" rule means), and put anything they cannot express in an island.
 - **The title is `--title`**, not a `<title>` tag.
-- **Theme:** outside an island the chrome's theme already covers light and dark. Inside an island, write its token pattern, but only the `prefers-color-scheme` blocks take effect: no `data-theme` reaches the frame, so an island follows the reader's system setting even when they flip the board's theme.
+- **Theme:** outside an island the chrome's theme already covers light and dark. Inside an island, write its token pattern; only the `prefers-color-scheme` blocks take effect, because no `data-theme` reaches the frame. The frame follows the computer's light or dark setting, which is what the board follows too.
 - **Images:** outside an island, `data:` URLs are stripped, so use an `https://` or relative URL. Inside an island it is the reverse: no network, so images and fonts go in as `data:` URIs.
 
 ## Pages a script builds
