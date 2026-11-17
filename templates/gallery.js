@@ -31,7 +31,7 @@ export function render(data) {
       // The publish sanitizer drops any other scheme, so a bad src would render an
       // empty card that looks like the candidate failed to generate. A file path is
       // fine: the daemon copies the image into the board (daemon/images.js).
-      if (/^[a-z][a-z0-9+.-]*:/i.test(src) && !HTTP.test(src)) fail(`${cp}.src must be an http(s) URL or an image file path — ${src.slice(0, 40)} will not survive publish`)
+      if (!HTTP.test(src) && (/^[a-z][a-z0-9+.-]*:/i.test(src) || !/\.(png|jpe?g|gif|webp)$/i.test(src))) fail(`${cp}.src must be an http(s) URL or a path ending in .png, .jpg, .jpeg, .gif or .webp — ${src.slice(0, 40)} would render an empty card`)
       return label
     })
     if (new Set(labels).size !== labels.length) fail(`${path}.candidates labels must be unique — they are the vote options`)
