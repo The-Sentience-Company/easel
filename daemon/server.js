@@ -4,7 +4,7 @@
 import { createServer } from 'node:http'
 import { spawn, execFileSync } from 'node:child_process'
 import { readFile, writeFile, appendFile, mkdir, stat, truncate, rm, readdir } from 'node:fs/promises'
-import { watch } from 'node:fs'
+import { watch, createReadStream } from 'node:fs'
 import { createHash, randomBytes } from 'node:crypto'
 import { join, dirname, basename, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,6 +15,7 @@ import { anchorForSid, annotateAndDiff, blankBakedDiagrams, extractIslands } fro
 import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 import { readerChecks, sinceLast } from './reader-checks.js'
+import { hostLocalImages, saveAttachment, IMAGE_KINDS, FILE_NAME, FILE_TYPES } from './images.js'
 import { sendHeartbeat } from './telemetry.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
@@ -69,7 +70,6 @@ const MAX_SCENE_BYTES = 32 * 1024 * 1024
 // Pasted screenshots ride a comment as base64; a retina capture is several MB.
 const MAX_COMMENT_BYTES = 32 * 1024 * 1024
 const MAX_IMAGES = 8
-const IMAGE_EXT = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp' }
 const ATTACHMENTS_DIR = join(DATA_DIR, 'attachments')
 const TEMPLATES = new Set(['review', 'eval', 'page', 'answer-key', 'queue', 'rulings', 'compare', 'gallery', 'replay'])
 const DAEMON_STARTED_AT = new Date().toISOString()
@@ -155,7 +155,12 @@ async function renderSource(board) {
     raw = extractBody(await readFile(board.file, 'utf8'))
   }
   const rendered = await mermaidRender(raw)
-  return { ...rendered, html: await chartRender(await diffRender(rendered.html)), raw }
+  const html = await hostLocalImages(await chartRender(await diffRender(rendered.html)), {
+    key: board.key,
+    baseDir: dirname(board.data_file ?? board.file),
+    attachmentsDir: ATTACHMENTS_DIR,
+  })
+  return { ...rendered, html, raw }
 }
 
 // Advisory-only static checks; the headless-render audit can extend this later.
@@ -985,6 +990,8 @@ const handlers = {
     if (board) html(res, 200, shellPage(board))
   },
 
+  boardFile: (req, res, match) => serveBoardFile(res, match[1], decodeURIComponent(match[2])),
+
   sse(req, res, match) {
     const board = requireBoard(match[1], res)
     if (!board) return
@@ -1105,17 +1112,11 @@ const handlers = {
     // Files, not base64 in the row: the agent opens a path, and await stays small.
     const imagePaths = []
     if (images.length) {
-      const dir = join(ATTACHMENTS_DIR, board.key)
-      await mkdir(dir, { recursive: true })
       for (const [, type, b64] of images) {
         // Named by content, so a repeated note's images compare equal by path.
-        const bytes = Buffer.from(b64, 'base64')
-        const path = join(dir, `${createHash('sha256').update(bytes).digest('hex')}.${IMAGE_EXT[type]}`)
-        // An existing file already holds these bytes and may be open by a reader.
-        await writeFile(path, bytes, { flag: 'wx' }).catch((err) => {
-          if (err.code !== 'EEXIST') throw err
-        })
-        imagePaths.push(path)
+        const { ext } = IMAGE_KINDS.find((k) => k.mime === `image/${type}`)
+        const name = await saveAttachment(ATTACHMENTS_DIR, board.key, Buffer.from(b64, 'base64'), ext)
+        imagePaths.push(join(ATTACHMENTS_DIR, board.key, name))
       }
     }
     const fields = {
@@ -1562,6 +1563,16 @@ ${island.html}
     // The send wrote the scene too, so the tab is told where the version got to.
     json(res, 200, { ...item, whiteboardVersion: saved.version })
   },
+}
+
+// An image a round shows from the publishing agent's disk (daemon/images.js).
+// Content-named, so the bytes behind a name never change; readable on ended boards.
+async function serveBoardFile(res, key, name) {
+  if (!store.board(key) || !FILE_NAME.test(name)) return json(res, 404, { error: 'no such file' })
+  const path = join(ATTACHMENTS_DIR, key, name)
+  if (!(await stat(path).catch(() => null))?.isFile()) return json(res, 404, { error: 'no such file' })
+  res.writeHead(200, { 'Content-Type': FILE_TYPES[name.split('.').pop()], 'Cache-Control': 'public, max-age=31536000, immutable' })
+  createReadStream(path).pipe(res)
 }
 
 const ASSET_TYPES = {

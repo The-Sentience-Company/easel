@@ -22,6 +22,7 @@ Daemon listens on `http://127.0.0.1:4400` (default; override with `EASEL_PORT`).
 | `GET /assets/client.js` | Chrome runtime. |
 | `GET /assets/easel.css` | Design system + chrome styles. |
 | `GET /health` | `{"ok": true, "app": "easel", "version": "0.2.0", "commit", "onDisk", "stale", "branch", "dirty"}` — the build being served. `stale` is commit drift, which `easel update` fixes; `branch`/`dirty` describe the checkout as it is right now, because an uncommitted edit never moves HEAD but `chrome/` is read per request. `easel publish` and `easel await` print one stderr line when any of the three is set. Cached 15s. |
+| `GET /b/:key/files/:sha256.:ext` | An image a round shows from the publishing agent's disk. At render, every `<img>` whose `src` names a file (absolute, `~/`, or relative to the board's source file) is checked to be a png, jpeg, gif or webp up to 15 MB, copied to `attachments/<key>/` under its content hash, and its `src` rewritten to this route; a missing or non-image file fails the render with the path in the error. Immutable; readable on ended boards. |
 | `GET /island-frame?key&index&round` | Sandboxed document for one island (below). `round` is a seq or `wip`; 404 when that round has no such island. Readable on ended boards — it is a read. |
 
 ### Islands — per-section freeform override

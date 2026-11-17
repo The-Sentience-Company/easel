@@ -28,19 +28,20 @@ export function render(data) {
       requireObject(c, cp)
       const label = requireString(c.label, `${cp}.label`)
       const src = requireString(c.src, `${cp}.src`)
-      // The publish sanitizer drops anything else, so a bad src would render an
-      // empty card that looks like the candidate failed to generate.
-      if (!HTTP.test(src)) fail(`${cp}.src must be an http(s) URL — ${src.slice(0, 40)} will not survive publish`)
+      // The publish sanitizer drops any other scheme, so a bad src would render an
+      // empty card that looks like the candidate failed to generate. A file path is
+      // fine: the daemon copies the image into the board (daemon/images.js).
+      if (/^[a-z][a-z0-9+.-]*:/i.test(src) && !HTTP.test(src)) fail(`${cp}.src must be an http(s) URL or an image file path — ${src.slice(0, 40)} will not survive publish`)
       return label
     })
     if (new Set(labels).size !== labels.length) fail(`${path}.candidates labels must be unique — they are the vote options`)
 
     const cards = candidates.map((c, j) => {
-      const width = c.width ? `|${Number(c.width)}` : ''
+      const width = c.width ? ` width="${Number(c.width)}"` : ''
       return [
         '<div class="sd-card">',
         `<div class="sd-card-title">${esc(c.label)}</div>`,
-        markdown(`![${c.label}${width}](${c.src})`),
+        `<img class="sd-md-img" src="${esc(c.src)}" alt="${esc(c.label)}"${width} loading="lazy">`,
         c.note ? `<div class="sd-muted">${markdown(c.note)}</div>` : '',
         '</div>',
       ].filter(Boolean).join('\n')
