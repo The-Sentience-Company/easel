@@ -607,12 +607,19 @@ body.sf-shell {
   padding: 2px 8px;
 }
 .sd-badge-value { padding: 1px 10px 1px 9px; }
-/* Status colors are solid fills, never a translucent tint over an unknown
-   backdrop — stacked opacity is what produced the unreadable-contrast page. */
-.sd-badge-success { background: var(--color-success); color: var(--color-status-content); border-color: transparent; }
-.sd-badge-warning { background: var(--color-warning); color: var(--color-status-content); border-color: transparent; }
-.sd-badge-error   { background: var(--color-error);   color: var(--color-status-content); border-color: transparent; }
-.sd-badge-info    { background: var(--color-info);    color: var(--color-status-content); border-color: transparent; }
+/* A status pill is a light tint of its colour with its word in a deeper shade
+   of the same hue, not white on a saturated fill. The tint is mixed into the
+   panel colour, so it is opaque: a translucent tint over an unknown backdrop is
+   what once produced an unreadable page. */
+.sd-badge-success { --badge-tone: var(--color-success); }
+.sd-badge-warning { --badge-tone: var(--color-warning); }
+.sd-badge-error   { --badge-tone: var(--color-error); }
+.sd-badge-info    { --badge-tone: var(--color-info); }
+:is(.sd-badge-success, .sd-badge-warning, .sd-badge-error, .sd-badge-info) {
+  background: color-mix(in oklab, var(--badge-tone) 16%, var(--color-base-100));
+  color: color-mix(in oklab, var(--badge-tone) 72%, var(--color-base-content));
+  border-color: transparent;
+}
 /* A two-voice status pill carries its colour on the key segment only. */
 .sd-badge-success:has(.sd-badge-key),
 .sd-badge-warning:has(.sd-badge-key),
@@ -676,6 +683,16 @@ div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content);
   text-transform: none;
 }
 .sd-meta .sd-badge-value { padding: 0; color: var(--color-base-content); }
+/* In a muted line the value names itself ("Izmir · new tier"), so the key
+   label ("pane") is noise; it stays in the markup for screen readers. */
+.sd-meta .sd-badge-key {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 .sd-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
 .sd-metric {
