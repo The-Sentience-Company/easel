@@ -116,6 +116,7 @@ function setThemeFamily(fam) {
   if (fam) localStorage.setItem(FAMILY_STORAGE, fam)
   else localStorage.removeItem(FAMILY_STORAGE)
   syncThemeToggle()
+  if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: wbTheme() })
 }
 
 function syncThemeToggle() {
@@ -128,7 +129,6 @@ function syncThemeToggle() {
   for (const btn of ui.themePick?.querySelectorAll('[data-family]') || []) {
     btn.classList.toggle('sf-on', btn.dataset.family === fam)
   }
-  postThemeMode()
 }
 
 function applyWidth(px) {
@@ -161,6 +161,7 @@ function cycleTheme() {
   if (next === 'auto') localStorage.removeItem(THEME_STORAGE)
   else localStorage.setItem(THEME_STORAGE, next)
   syncThemeToggle()
+  if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: wbTheme() })
 }
 
 function buildChrome() {
@@ -720,9 +721,7 @@ function mountIslands(d, showWip) {
     frame.setAttribute('sandbox', 'allow-scripts')
     frame.dataset.islandIndex = String(index)
     const round = showWip ? 'wip' : String(state.viewingRound ?? d.currentRound.seq)
-    // The mode rides in the url so the first paint is already right; later
-    // toggles arrive by message.
-    frame.src = `/island-frame?key=${encodeURIComponent(KEY)}&index=${index}&round=${round}&mode=${boardMode()}`
+    frame.src = `/island-frame?key=${encodeURIComponent(KEY)}&index=${index}&round=${round}`
     const declared = Number(node.dataset.islandHeight)
     frame.style.height = `${Number.isFinite(declared) && declared > 0 ? Math.min(declared, 4000) : 320}px`
     if (node.dataset.islandTitle) frame.title = node.dataset.islandTitle
@@ -734,11 +733,7 @@ function mountIslands(d, showWip) {
 
 // Sandboxed frames have an opaque origin, so '*' is the only addressable target.
 function postIslandMode(frame) {
-  frame.contentWindow?.postMessage({ easelIslandMode: true, annotating: state.annotating, theme: boardMode() }, '*')
-}
-
-function postIslandModes() {
-  CONTENT.querySelectorAll('.sd-island-frame').forEach(postIslandMode)
+  frame.contentWindow?.postMessage({ easelIslandMode: true, annotating: state.annotating }, '*')
 }
 
 window.addEventListener('message', (event) => {
@@ -1229,7 +1224,7 @@ function setAnnotating(on) {
   state.annotating = on
   document.body.classList.toggle('sf-annotating', on)
   ui.annotateToggle.classList.toggle('sf-on', on)
-  postIslandModes()
+  CONTENT.querySelectorAll('.sd-island-frame').forEach(postIslandMode)
   if (!on) closePopover()
 }
 
@@ -1883,14 +1878,7 @@ let wbChannelId = ''
 let wbReady = false
 let nextFlushId = 0
 
-// The board's light or dark mode, whatever the family. Frames that render on
-// their own (the whiteboard, islands) follow it instead of the OS setting.
-const boardMode = () => (document.documentElement.dataset.theme?.endsWith('dark') ? 'dark' : 'light')
-
-function postThemeMode() {
-  if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: boardMode() })
-  postIslandModes()
-}
+const wbTheme = () => (document.documentElement.dataset.theme?.endsWith('dark') ? 'dark' : 'light')
 
 function buildWhiteboard() {
   ui.wbOverlay = el('div', 'sf-wb-overlay')
@@ -2197,7 +2185,7 @@ async function authenticateWhiteboard(index, token) {
     saved: info.whiteboard?.scene ?? null,
     stale: info.stale,
     reason: info.reason,
-    theme: boardMode(),
+    theme: wbTheme(),
     ended,
   })
   return true
@@ -2256,9 +2244,8 @@ window.addEventListener('message', async (event) => {
   if (message.type === WB.flushComplete) finishFlush(index, message)
 })
 
-// In auto mode the board follows the OS live, and so do the frames.
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  syncThemeToggle()
+  if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: wbTheme() })
 })
 
 window.addEventListener('pagehide', () => {
