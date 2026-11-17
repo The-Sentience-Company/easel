@@ -1124,7 +1124,8 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   overflow-wrap: anywhere;
 }
 /* Accent outline and a faint accent wash, as on an Artifact page's option cards. */
-[data-option]:hover {
+/* Not on a disabled option: an ended board's controls must not look clickable. */
+[data-option]:hover:not([disabled]) {
   border-color: var(--color-primary);
   background: color-mix(in oklab, var(--color-primary) 9%, var(--color-base-100));
   color: var(--color-base-content);
