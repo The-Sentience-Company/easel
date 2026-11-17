@@ -555,9 +555,12 @@ body.sf-shell {
   box-shadow: var(--shadow-card);
   min-width: 0;
 }
-/* Stacked cards stand apart; a grid, row or column already spaces its own with gap. */
-.sd-card + .sd-card { margin-top: var(--space); }
+/* Stacked cards and grids of cards stand apart; a grid, row or column already
+   spaces its own children with gap. */
+:is(.sd-card, .sd-grid) + :is(.sd-card, .sd-grid) { margin-top: var(--space); }
 :is(.sd-grid, .sd-row, .sd-col) > .sd-card + .sd-card { margin-top: 0; }
+/* A muted line after a block belongs to what follows it, so it gets air above. */
+:is(.sd-card, .sd-grid) + div.sd-meta { margin-top: var(--space-3); }
 .sd-card-title { font-weight: 650; margin: 0 0 6px; font-size: 1.02rem; }
 /* Carried on the id so it outranks `#sf-content p`, and applied to descendants
    because a muted wrapper around markdown holds <p>, not text. */
@@ -899,6 +902,10 @@ div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content);
   background: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 }
 .sd-claims li:first-child { padding-top: 0; }
+/* Entries already boxed (a ruling's collapsible case) are apart by their own
+   edges; a bar between them only doubles the line. */
+.sd-claims li:has(> .sd-collapse) + li::before,
+.sd-claims li + li:has(> .sd-collapse)::before { display: none; }
 .sd-claims li:last-child { padding-bottom: 0; }
 .sd-note { font-size: 0.9rem; margin-top: 2px; }
 
