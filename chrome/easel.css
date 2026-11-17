@@ -521,6 +521,9 @@ body.sf-shell {
   box-shadow: var(--shadow-card);
   min-width: 0;
 }
+/* Stacked cards stand apart; a grid, row or column already spaces its own with gap. */
+.sd-card + .sd-card { margin-top: var(--space); }
+:is(.sd-grid, .sd-row, .sd-col) > .sd-card + .sd-card { margin-top: 0; }
 .sd-card-title { font-weight: 650; margin: 0 0 6px; font-size: 1.02rem; }
 /* Carried on the id so it outranks `#sf-content p`, and applied to descendants
    because a muted wrapper around markdown holds <p>, not text. */
