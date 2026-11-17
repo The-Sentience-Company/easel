@@ -494,7 +494,7 @@ describe('review', () => {
       ] }]))
       assert.equal((html.match(/class="sd-grid"/g) || []).length, 1)
       assert.equal((html.match(/class="sd-card"/g) || []).length, 2)
-      assert.match(html, /<div class="sd-card-title">Goal<\/div><div class="sd-row"><span class="sd-badge sd-badge-success">approved<\/span><\/div><p>x<\/p>/)
+      assert.match(html, /<div class="sd-card-title">Goal<\/div><div class="sd-row sd-meta"><span class="sd-badge sd-badge-success">approved<\/span><\/div><p>x<\/p>/)
     })
 
     test('callouts carry their tone; two share a grid, one stands alone', () => {

@@ -100,7 +100,7 @@ function entryCard(e, i, uniqueId) {
   return [
     `<div class="sd-card${open ? ' sd-accent' : ''}">`,
     e.title ? `<div class="sd-card-title">${esc(e.title)}</div>` : '',
-    `<div class="sd-row sd-badge-row">${meta}</div>`,
+    `<div class="sd-row sd-badge-row sd-meta">${meta}</div>`,
     e.read_first ? readFirst(e.read_first) : '',
     open ? `<p><strong>${inline(e.question)}</strong></p>` : `<p class="sd-muted">${inline(e.question)}</p>`,
     entryBody(e.body),

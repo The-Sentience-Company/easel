@@ -598,6 +598,56 @@ body.sf-shell {
 .sd-badge-error   .sd-badge-key { background: var(--color-error);   color: var(--color-status-content); }
 .sd-badge-info    .sd-badge-key { background: var(--color-info);    color: var(--color-status-content); }
 
+/* Who and what state, as one muted line rather than a row of pills (Ahmet's
+   pick 9): labels run as text separated by a middle dot, a status keeps its
+   colour only as a dot before its word, and a two-part "pane | reviewer" pill
+   reads as "pane reviewer". Status cells in tables keep their pills. */
+div.sd-meta { gap: 2px 0; font-size: 0.86rem; color: var(--color-muted-content); }
+/* The separator rides on the next label: first in its flex order, so a status
+   dot lands after it; inline-block, so a link's underline skips it. */
+.sd-meta > * + *::before {
+  content: "·";
+  order: -2;
+  display: inline-block;
+  margin: 0 8px;
+  color: var(--color-muted-content);
+  font-weight: 400;
+}
+.sd-meta .sd-badge,
+.sd-meta .sd-badge:has(.sd-badge-key) {
+  border: 0;
+  background: none;
+  padding: 0;
+  gap: 6px;
+  overflow: visible;
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--color-muted-content);
+}
+.sd-meta .sd-badge[class*="sd-badge-"] { color: var(--color-base-content); }
+.sd-meta .sd-badge[class*="sd-badge-"]::after {
+  content: "";
+  order: -1;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--meta-tone);
+}
+.sd-meta .sd-badge-success { --meta-tone: var(--color-success); }
+.sd-meta .sd-badge-warning { --meta-tone: var(--color-warning); }
+.sd-meta .sd-badge-error   { --meta-tone: var(--color-error); }
+.sd-meta .sd-badge-info    { --meta-tone: var(--color-info); }
+.sd-meta .sd-badge-key,
+.sd-meta :is(.sd-badge-success, .sd-badge-warning, .sd-badge-error, .sd-badge-info) .sd-badge-key {
+  background: none;
+  color: var(--color-muted-content);
+  padding: 0;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.sd-meta .sd-badge-value { padding: 0; color: var(--color-base-content); }
+
 .sd-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
 .sd-metric {
   background: var(--color-base-100);
