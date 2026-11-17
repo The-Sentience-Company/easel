@@ -1181,14 +1181,23 @@ body.sf-annotating #sf-content [data-sid] { cursor: default; }
    so a default cursor here would promise annotation the click does not deliver. */
 body.sf-annotating #sf-content summary[data-sid] { cursor: pointer; }
 body.sf-annotating #sf-content a[href] { cursor: pointer; }
-#sf-content .sf-hover { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 3px; }
+/* A faint wash and a hairline, as an Artifact page marks what you are about to
+   comment on. Annotate mode is on by default, so this shows on every pointer
+   move; a solid accent box there read as an alarm. The wash is an inset shadow,
+   not a background, so a card keeps its own fill. */
+#sf-content .sf-hover {
+  outline: 1px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 100vmax color-mix(in oklch, var(--color-primary) 6%, transparent);
+}
 /* Inside the scrollable table wrapper an outward outline clips at the wrapper
    edge (sides always, top/bottom on the first/last row) — draw it inward. */
 #sf-content .sd-tablewrap :is(tr, td, th).sf-hover,
 #sf-content .sd-tablewrap :is(tr, td, th).sf-annotated { outline-offset: -2px; }
 /* A header anchor stands for its column: body cells echo the mark, softer. */
 #sf-content .sd-tablewrap td.sf-annotated-col {
-  outline: 2px dashed color-mix(in oklch, var(--marker-color) 55%, transparent);
+  outline: 1px dashed color-mix(in oklch, var(--marker-color) 50%, transparent);
   outline-offset: -2px;
 }
 [data-marker-hue="0"] { --marker-color: var(--marker-0); }
@@ -1211,8 +1220,10 @@ button.sf-marker, .sf-item-marker {
   font-weight: 700;
   line-height: 15px;
   text-align: center;
-  background: var(--marker-color);
-  color: var(--marker-content);
+  /* A tint of the mark's hue with the hue as text: the id still matches its
+     feedback row, without a saturated blob in the margin. */
+  background: color-mix(in oklab, var(--marker-color) 20%, var(--color-base-100));
+  color: var(--marker-color);
 }
 button.sf-marker {
   position: absolute;
@@ -1237,7 +1248,7 @@ button.sf-marker:hover { filter: brightness(1.12); }
 #sf-content .sd-diagram.sf-annotated,
 #sf-content .sd-tablewrap.sf-annotated,
 #sf-content .sd-tablewrap .sf-annotated {
-  outline: 2px dashed var(--marker-color);
+  outline: 1px solid color-mix(in oklch, var(--marker-color) 55%, transparent);
   outline-offset: -2px;
 }
 #sf-content pre.sf-annotated > .sf-marker,
@@ -1335,7 +1346,7 @@ button.sf-marker:hover { filter: brightness(1.12); }
   width: auto; /* or the diff bar's 3px would survive and tint a strip, not the block */
   pointer-events: none;
   border-radius: 3px;
-  background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 22%, transparent);
+  background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent);
   animation: sf-flash 1.2s ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1443,7 +1454,13 @@ button.sf-chat-toggle {
   min-height: 2rem;
   font-weight: 560;
 }
-button.sf-annotate-toggle.sf-on { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+/* On by default, so it is tinted rather than filled: a solid accent there sat
+   beside Send and competed with it for every glance. */
+button.sf-annotate-toggle.sf-on {
+  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100));
+  color: var(--color-primary);
+  border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
+}
 button.sf-queue-toggle.sf-on, button.sf-chat-toggle.sf-on { border-color: var(--color-primary); color: var(--color-primary); }
 /* An empty queue's badge competed with the live controls for attention. */
 button.sf-queue-toggle.sf-empty .sf-queue-count {
@@ -1945,6 +1962,7 @@ button.sf-chat-submit {
   overflow: auto;
   overflow-wrap: anywhere;
 }
+.sf-popover-text:focus-visible { outline: none; border-color: var(--color-primary); }
 .sf-popover-text {
   width: 100%;
   font: inherit;
@@ -2297,8 +2315,9 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
   pointer-events: none;
 }
 .sf-toast {
-  background: var(--color-base-content);
-  color: var(--color-base-100);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border: 1px solid var(--border);
   border-radius: 999px;
   padding: 7px 16px;
   font-size: 0.85rem;
