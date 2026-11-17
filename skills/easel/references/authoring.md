@@ -77,7 +77,7 @@ Cadence ("nightly 05:00 UTC", "once a month", "by hand"), trigger (what fires it
 
 ## Source every non-obvious claim, or mark it a hypothesis
 
-The query, the commit sha, the trace, the `file:line`. "Is there any way to prove this?" must be answerable from the board with no round trip. Any per-item verdict the board renders ships the evidence it came from, not just the label.
+The query, the commit sha, the trace, the `file:line`. "Is there any way to prove this?" must be answerable from the board with no round trip. **When the source has an address the reader can open, link it**: the Linear ticket, the GitHub pull request or commit, a screenshot, another board. A bare id or path makes the reader go and find it. Any per-item verdict the board renders ships the evidence it came from, not just the label.
 
 A premise one command settles (a count, a flag's value, whether a file exists) is run before the round goes out, and the board shows the command and its output; every other premise carries the word *reasoned*, so the reader can tell a checked fact from an inference before acting on it.
 
