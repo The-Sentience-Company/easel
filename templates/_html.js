@@ -207,9 +207,13 @@ export function badge(label, style, path, title) {
 
 /** Widget markup only — client.js owns behavior. Options are native buttons so
     the annotation layer cannot swallow the click. */
-export function widget({ type, id, prompt, help, options, compact }) {
+export function widget({ type, id, prompt, help, options, compact, frame }) {
   requireString(type, 'widget.type')
   requireString(id, 'widget.id')
+  if (frame) {
+    requireString(frame.what, `widget[${id}].what`)
+    requireString(frame.why_you, `widget[${id}].why_you`)
+  }
   const allowed = ['vote', 'decision', 'approve', 'rating']
   if (!allowed.includes(type)) fail(`widget.type must be one of ${allowed.join(', ')}, got "${type}"`)
   const opts = requireArray(options, `widget[${id}].options`)
@@ -225,21 +229,30 @@ export function widget({ type, id, prompt, help, options, compact }) {
   })
   if (normalized.filter((o) => o.recommended).length > 1) fail(`widget[${id}]: only one option can be recommended`)
 
-  // An option with something to say beyond its label is a card: the label, the
-  // pick marked, and what choosing it changes in a muted line under it, all on
-  // the thing you click. Bare options (pass / needs-work) stay small buttons.
-  const cards = normalized.some((o) => o.basis || o.recommended)
   const buttons = normalized
-    .map((o) => cards
-      ? `<button type="button" data-option="${attr(o.value)}"><span class="sd-option-label">${esc(o.label)}${o.recommended ? '<span class="sd-widget-pick">Recommended</span>' : ''}</span>${o.basis ? `<span class="sd-option-basis">${esc(o.basis)}</span>` : ''}</button>`
-      : `<button type="button" data-option="${attr(o.value)}">${esc(o.label)}</button>`)
+    .map((o) => `<button type="button" data-option="${attr(o.value)}">${esc(o.label)}</button>`)
     .join('')
+  // The argument for each option lives here, above the buttons, so the label
+  // never has to carry it.
+  const basis = normalized.some((o) => o.basis || o.recommended)
+    ? `<ul class="sd-widget-basis">${normalized.map((o) =>
+        `<li><strong>${esc(o.label)}</strong>${o.recommended ? ' <span class="sd-widget-pick">recommended</span>' : ''}${o.basis ? `: ${esc(o.basis)}` : ''}</li>`,
+      ).join('')}</ul>`
+    : ''
+
+  // The three facts a cold reader needs before the question: what this builds,
+  // why the call is theirs, and (per option, in basis) what each choice changes.
+  const frameHtml = frame
+    ? `<div class="sd-widget-frame"><p><strong>What this is:</strong> ${esc(frame.what)}</p><p><strong>Why you decide:</strong> ${esc(frame.why_you)}</p></div>`
+    : ''
 
   return [
     `<div data-widget="${attr(type)}" data-widget-id="${attr(id)}"${compact ? ' class="sd-widget-compact"' : ''}>`,
+    frameHtml,
     prompt ? `<div class="sd-widget-prompt">${esc(prompt)}</div>` : '',
     help ? `<div class="sd-widget-help">${markdown(help)}</div>` : '',
-    `<div class="sd-widget-options${cards ? ' sd-widget-cards' : ''}">${buttons}</div>`,
+    basis,
+    `<div class="sd-widget-options">${buttons}</div>`,
     '</div>',
   ].filter(Boolean).join('')
 }

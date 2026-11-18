@@ -91,20 +91,18 @@ test('the frame adopts the easel theme, not the OS scheme', SLOW, async () => {
   assert.equal(light.colorScheme, 'light')
 })
 
-// The banner matches the default family's neutral surfaces (the Artifact look):
-// no channel runs far ahead of the others, so it reads neither warm nor blue.
-const neutral = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) <= 12
-
-test('the frame banner is a neutral surface in dark and clears AA', SLOW, async () => {
+test('the frame banner is warm in dark and clears AA', SLOW, async () => {
   const dark = await frameStateForTheme('dark')
   assert.ok(dark.bannerBg, 'no banner rendered, so nothing was measured')
-  assert.ok(neutral(dark.bannerBg), `frame banner is tinted, not neutral: rgb(${dark.bannerBg})`)
+  const [r, g, b] = dark.bannerBg
+  // The old value was #23293a — blue-dominant. Warm means red leads blue.
+  assert.ok(r > b, `frame banner still reads cool: rgb(${dark.bannerBg})`)
   assert.ok(dark.contrast >= 4.5, `frame banner contrast ${dark.contrast} is below AA`)
 })
 
-test('the frame banner is a neutral surface in light too, and clears AA', SLOW, async () => {
+test('the frame banner clears AA in light too', SLOW, async () => {
   const light = await frameStateForTheme('light')
   assert.ok(light.bannerBg, 'no banner rendered, so nothing was measured')
-  assert.ok(neutral(light.bannerBg), `light banner is tinted, not neutral: rgb(${light.bannerBg})`)
+  assert.ok(light.bannerBg[0] >= light.bannerBg[2], `light banner reads cool: rgb(${light.bannerBg})`)
   assert.ok(light.contrast >= 4.5, `frame banner contrast ${light.contrast} is below AA`)
 })

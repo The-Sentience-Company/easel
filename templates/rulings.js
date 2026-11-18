@@ -183,7 +183,7 @@ function caseBlock(c, at, caseOptions, ctx) {
     verdicts.push(badge(`model says: ${dissent}`, 'warning', at, ctx.labels.get(dissent) ?? "the model's verdict on this case"))
   }
   if (c.borderline) verdicts.push(badge('borderline', 'neutral', at, 'keyed away from the penalized label under the tie-break; this ruling moves the metric'))
-  const verdictRow = `<div class="sd-verdicts sd-meta">${verdicts.join('')}</div>`
+  const verdictRow = `<div class="sd-verdicts">${verdicts.join('')}</div>`
 
   const counter = c.counter
     ? (() => {

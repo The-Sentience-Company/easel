@@ -282,85 +282,86 @@ describe('round hotkeys', () => {
   })
 })
 
-/* Light or dark follows the computer, live, and nothing a browser saved under
-   the old toggle, family picker, tuner or width slider still applies. */
-describe('theme follows the computer', () => {
-  const PAGE = page('theme.html', '<h1>theme</h1><p>body</p>')
+/* The theme toggle: auto follows the OS, an override wins over the OS, and the
+   override survives a reload because the shell's inline script applies it. */
+describe('theme toggle', () => {
+  const PAGE = page('theme.html', '<h1>theme toggle</h1><p>body</p>')
   let key
 
-  before(async () => { key = await open(PAGE, 'theme') })
+  before(async () => { key = await open(PAGE, 'theme toggle') })
 
-  async function openPage(osTheme, query = '') {
+  async function openPage(osTheme) {
     const pg = await widePage()
     await pg.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: osTheme }])
-    await pg.goto(`${BASE}/b/${key}${query}`, { waitUntil: 'networkidle0' })
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
     return pg
   }
-  const theme = (pg) => pg.evaluate('document.documentElement.dataset.theme')
 
-  test('the board opens in the OS mode and follows a live OS change', async () => {
+  const read = (pg) =>
+    pg.evaluate(`(() => ({
+      theme: document.documentElement.dataset.theme,
+      label: document.querySelector('.sf-theme-toggle').textContent,
+      stored: localStorage.getItem('sf-theme'),
+    }))()`)
+
+  const click = (pg) => pg.click('.sf-theme-toggle')
+
+  test('the full cycle: auto follows the OS, light and dark override it, auto returns', async () => {
+    const pg = await openPage('dark')
+    assert.deepEqual(await read(pg), { theme: 'dark', label: '[T]heme: auto', stored: null })
+
+    await click(pg) // auto -> light, against a dark OS: the override must win
+    assert.deepEqual(await read(pg), { theme: 'light', label: '[T]heme: light', stored: 'light' })
+
+    await click(pg)
+    assert.deepEqual(await read(pg), { theme: 'dark', label: '[T]heme: dark', stored: 'dark' })
+
+    await click(pg) // back to auto: storage cleared, OS rules again
+    assert.deepEqual(await read(pg), { theme: 'dark', label: '[T]heme: auto', stored: null })
+    await pg.close()
+  })
+
+  test('an override is applied on a fresh load, before the OS preference', async () => {
+    const pg = await openPage('dark')
+    await click(pg) // pin light
+    await pg.reload({ waitUntil: 'networkidle0' })
+    assert.deepEqual(await read(pg), { theme: 'light', label: '[T]heme: light', stored: 'light' })
+
+    // Clean up the profile-wide localStorage for any test that follows.
+    await click(pg)
+    await click(pg)
+    assert.equal((await read(pg)).stored, null)
+    await pg.close()
+  })
+
+  test('the inline shell script alone applies the override (sessions index has no client.js)', async () => {
+    const pg = await browser.newPage()
+    await pg.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
+    await pg.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' })
+    await pg.evaluate('localStorage.setItem("sf-theme", "dark")')
+    await pg.reload({ waitUntil: 'domcontentloaded' })
+    assert.equal(await pg.evaluate('document.documentElement.dataset.theme'), 'dark')
+    // The index paints with system colors, so the override must reach color-scheme
+    // or the page stays visually light while claiming dark.
+    const [r, g, b] = await pg.evaluate(
+      'getComputedStyle(document.body).backgroundColor.match(/\\d+/g).map(Number)',
+    )
+    assert.ok(r + g + b < 240, `index background stayed light under a dark override: rgb(${r},${g},${b})`)
+    await pg.evaluate('localStorage.removeItem("sf-theme")')
+    await pg.close()
+  })
+
+  test('in auto, an OS theme change still lands live', async () => {
     const pg = await openPage('light')
-    assert.equal(await theme(pg), 'light')
+    assert.equal((await read(pg)).theme, 'light')
     await pg.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }])
     // The change event lands on a later task, so poll rather than read once.
     await pg.waitForFunction('document.documentElement.dataset.theme === "dark"', { timeout: 5000 })
     await pg.close()
   })
-
-  test('choices saved by the removed controls no longer apply', async () => {
-    const pg = await openPage('light')
-    await pg.evaluate(`(() => {
-      localStorage.setItem('sf-theme', 'dark')
-      localStorage.setItem('sf-theme-family', 'lantern')
-      localStorage.setItem('sf-width', '700')
-      localStorage.setItem('sf-tuner-v2', JSON.stringify({ vars: { '--color-base-200': '#112233' } }))
-    })()`)
-    await pg.reload({ waitUntil: 'networkidle0' })
-    assert.equal(await theme(pg), 'light', 'a saved mode or family still applied')
-    const inline = await pg.evaluate("document.documentElement.getAttribute('style') || ''")
-    assert.doesNotMatch(inline, /--content-max|--color-base-200/, `a saved width or tuner colour still applied: ${inline}`)
-    await pg.evaluate("['sf-theme', 'sf-theme-family', 'sf-width', 'sf-tuner-v2'].forEach((k) => localStorage.removeItem(k))")
-    await pg.close()
-  })
-
-  test('a ?theme= link still picks a family, in the OS mode', async () => {
-    const pg = await openPage('dark', '?theme=lantern')
-    assert.equal(await theme(pg), 'lantern-dark')
-    await pg.close()
-  })
-
-  test('the bar has no theme, tuner or width controls, and t, e, r do nothing', async () => {
-    const pg = await openPage('light')
-    for (const sel of ['.sf-theme-pick', '.sf-theme-toggle', '.sf-tuner-toggle', '.sf-width']) {
-      assert.equal(await pg.$(sel), null, `${sel} is still in the bar`)
-    }
-    for (const k of ['t', 'e', 'r']) await pg.keyboard.press(k)
-    assert.equal(await theme(pg), 'light', 't changed the mode')
-    assert.equal(await pg.evaluate("document.documentElement.getAttribute('style') || ''").then((v) => /--content-max/.test(v)), false, 'e or r changed the width')
-    await pg.close()
-  })
 })
 
-/* The agent, not the reader, picks the page width. */
-describe('agent-chosen width', () => {
-  const contentMax = (pg) => pg.evaluate("getComputedStyle(document.getElementById('sf-content')).maxWidth")
-
-  test('"width": "wide" in the data widens the page; without it the default holds', async () => {
-    const wide = join(DATA_DIR, 'wide.json')
-    const plain = join(DATA_DIR, 'plain.json')
-    writeFileSync(wide, JSON.stringify({ title: 'wide', width: 'wide', html: '<p>wide body</p>' }))
-    writeFileSync(plain, JSON.stringify({ title: 'plain', html: '<p>plain body</p>' }))
-    const wideKey = (await api('POST', '/api/open', { template: 'page', data: wide, title: 'wide' })).data.key
-    const plainKey = (await api('POST', '/api/open', { template: 'page', data: plain, title: 'plain' })).data.key
-    const pg = await widePage()
-    await pg.goto(`${BASE}/b/${wideKey}`, { waitUntil: 'networkidle0' })
-    assert.equal(await contentMax(pg), '1400px')
-    await pg.goto(`${BASE}/b/${plainKey}`, { waitUntil: 'networkidle0' })
-    assert.equal(await contentMax(pg), '1040px')
-    await pg.close()
-  })
-})
-
+/* Topbar hotkeys behind the labels, and a chrome that stays pinned. */
 describe('topbar', () => {
   const PAGE = page('topbar.html', `<h1>topbar</h1>${'<p>filler paragraph</p>'.repeat(120)}`)
   let key
@@ -374,12 +375,23 @@ describe('topbar', () => {
     return pg
   }
 
-  test('a toggles annotate mode', async () => {
+  test('t cycles the theme and a toggles annotate mode', async () => {
     const pg = await openPage()
+    const theme = () => pg.evaluate('document.documentElement.dataset.theme')
+    // From auto on a light OS the first press pins light — same paint, new mode —
+    // so the visible change lands on the second press.
+    await pg.keyboard.press('t')
+    assert.equal(await pg.evaluate("localStorage.getItem('sf-theme')"), 'light', 't did not pin a mode')
+    await pg.keyboard.press('t')
+    assert.equal(await theme(), 'dark', 'second t did not reach dark')
+
     const annotating = () => pg.evaluate("document.querySelector('.sf-annotate-toggle').classList.contains('sf-on')")
     const wasOn = await annotating()
     await pg.keyboard.press('a')
     assert.equal(await annotating(), !wasOn, 'a did not toggle annotate mode')
+
+    // Reset the profile-wide theme override for any test that follows.
+    await pg.evaluate("localStorage.removeItem('sf-theme')")
     await pg.close()
   })
 
@@ -388,10 +400,11 @@ describe('topbar', () => {
     await pg.keyboard.press('c') // open chat, focus lands in its input
     await pg.waitForSelector('.sf-chat.sf-open')
     await pg.focus('.sf-chat-input')
-    const annotating = () => pg.evaluate("document.querySelector('.sf-annotate-toggle').classList.contains('sf-on')")
-    const before = await annotating()
-    await pg.keyboard.type('a')
-    assert.equal(await annotating(), before, 'typing a in the chat input toggled annotate mode')
+    const before = await pg.evaluate('document.documentElement.dataset.theme')
+    await pg.keyboard.type('t')
+    assert.equal(await pg.evaluate('document.documentElement.dataset.theme'), before,
+      'typing t in the chat input cycled the theme')
+    await pg.evaluate("localStorage.removeItem('sf-theme')")
     await pg.close()
   })
 
@@ -458,8 +471,8 @@ describe('compact chrome', () => {
     await pg.click('.sf-chrome-toggle')
     const expanded = await pg.evaluate(rowSpan)
     assert.ok(expanded.height > collapsed.height, 'the toggle did not expand the bar')
-    assert.equal(await pg.evaluate("document.querySelector('.sf-end-session').offsetParent !== null"), true,
-      'expanding did not bring back End')
+    assert.equal(await pg.evaluate("document.querySelector('.sf-theme-pick').offsetParent !== null"), true,
+      'expanding did not bring back the theme picker')
     assert.equal(await pg.evaluate("localStorage.getItem('sf-chrome-compact')"), '0')
 
     // The choice, not the viewport, wins on the next load.
@@ -488,6 +501,78 @@ describe('compact chrome', () => {
       return new Set(kids.map((r) => Math.round(r.top + r.height / 2))).size
     })()`)
     assert.equal(rows, 1, `the expanded topbar wrapped to ${rows} rows at 1600px`)
+    await pg.close()
+  })
+})
+
+/* The ⚙ tuner popup. The tests share profile state deliberately —
+   the saved edit persisting across pages is the contract. */
+describe('tuner and family picker', () => {
+  const PAGE = page('tuner.html', '<h1>tuner</h1><p>body text</p>')
+  let key
+
+  before(async () => { key = await open(PAGE, 'tuner') })
+
+  test('popup opens via the gear or ?tuner=1; a color edit applies and survives reload', async () => {
+    const pg = await widePage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    assert.equal(await pg.$('.sf-tuner.sf-open'), null, 'popup must start closed')
+    await pg.click('.sf-tuner-toggle')
+    assert.ok(await pg.$('.sf-tuner.sf-open'), 'gear must open the popup')
+    await pg.click('.sf-tuner-toggle')
+    assert.equal(await pg.$('.sf-tuner.sf-open'), null, 'gear must close it again')
+
+    await pg.goto(`${BASE}/b/${key}?tuner=1`, { waitUntil: 'networkidle0' })
+    assert.ok(await pg.$('.sf-tuner.sf-open'), '?tuner=1 must open the popup on load')
+
+    await pg.evaluate(`(() => {
+      const input = document.querySelector('.sf-tuner input[type=color]')
+      input.value = '#112233'
+      input.dispatchEvent(new Event('input'))
+    })()`)
+    const applied = () => pg.evaluate(`document.documentElement.style.getPropertyValue('--color-base-200')`)
+    assert.equal(await applied(), '#112233', 'the edit must land on the html inline style')
+
+    await pg.reload({ waitUntil: 'networkidle0' })
+    assert.equal(await applied(), '#112233', 'the edit must persist across reload — with no ?tuner param')
+    await pg.close()
+  })
+
+  test('save-as-default closes the popup and keeps the edit; reset clears it', async () => {
+    const pg = await widePage()
+    await pg.goto(`${BASE}/b/${key}?tuner=1`, { waitUntil: 'networkidle0' })
+    await pg.click('.sf-tuner-send')
+    assert.equal(await pg.$('.sf-tuner.sf-open'), null, 'save must close the popup')
+    const applied = () => pg.evaluate(`document.documentElement.style.getPropertyValue('--color-base-200')`)
+    assert.equal(await applied(), '#112233', 'saving must keep the override')
+
+    await pg.click('.sf-tuner-toggle')
+    await Promise.all([pg.waitForNavigation({ waitUntil: 'networkidle0' }), pg.click('.sf-tuner-reset')])
+    assert.equal(await applied(), '', 'reset must clear the override')
+    await pg.close()
+  })
+
+  test('the picker swaps families before and after reload; T still cycles modes within one', async () => {
+    const pg = await widePage()
+    await pg.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0' })
+    const theme = () => pg.evaluate(`document.documentElement.dataset.theme`)
+
+    await pg.click('.sf-theme-pick-btn[data-family="lantern"]')
+    assert.match(await theme(), /^lantern-(light|dark)$/, 'picking lantern must swap the family')
+
+    await pg.reload({ waitUntil: 'networkidle0' })
+    assert.match(await theme(), /^lantern-(light|dark)$/, 'the picked family must survive reload')
+
+    await pg.click('.sf-theme-toggle')
+    const t1 = await theme()
+    await pg.click('.sf-theme-toggle')
+    const t2 = await theme()
+    assert.notEqual(t1, t2, 'mode cycle must flip modes')
+    assert.match(t1, /^lantern-/, 'mode cycle must stay inside the picked family')
+    assert.match(t2, /^lantern-/, 'mode cycle must stay inside the picked family')
+
+    await pg.click('.sf-theme-pick-btn[data-family=""]')
+    assert.match(await theme(), /^(light|dark)$/, 'default must drop the family suffix')
     await pg.close()
   })
 })

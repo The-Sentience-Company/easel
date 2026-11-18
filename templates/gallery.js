@@ -64,7 +64,7 @@ export function render(data) {
     return [
       '<section class="sd-section">',
       g.heading ? `<h2>${esc(g.heading)}</h2>` : '',
-      g.badges ? `<div class="sd-row sd-meta">${requireArray(g.badges, `${path}.badges`).map((b) => badge(typeof b === 'string' ? b : b.label, typeof b === 'string' ? null : b.tone, `${path}.badges tone`)).join('')}</div>` : '',
+      g.badges ? `<div class="sd-row">${requireArray(g.badges, `${path}.badges`).map((b) => badge(typeof b === 'string' ? b : b.label, typeof b === 'string' ? null : b.tone, `${path}.badges tone`)).join('')}</div>` : '',
       g.context ? `<div class="sd-muted">${markdown(g.context)}</div>` : '',
       `<div class="sd-grid">${cards}</div>`,
       vote,

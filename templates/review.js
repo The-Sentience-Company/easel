@@ -33,7 +33,7 @@ const renderBlocks = (blocks, path) => requireArray(blocks, path).map((b, j) => 
       return [
         '<div class="sd-card">',
         `<div class="sd-card-title">${esc(requireString(c.title, `${cp}.title`))}</div>`,
-        badges ? `<div class="sd-row sd-meta">${badges}</div>` : '',
+        badges ? `<div class="sd-row">${badges}</div>` : '',
         markdown(c.body ?? ''),
         '</div>',
       ].filter(Boolean).join('')
@@ -94,9 +94,7 @@ const groupTabs = (sections, htmls) => {
 export function render(data, { legacy = false } = {}) {
   requireObject(data, 'review')
   requireString(data.title, 'review.title')
-  // Optional now, and shown as a plain opening paragraph: the labelled "What
-  // this is" box read as filler to Ahmet ("slop").
-  if (data.about !== undefined) {
+  if (!legacy || data.about !== undefined) {
     requireString(data.about, 'review.about (what the work is, before any ask: what it does for a person, what was wrong, what this round changes)')
   }
 
@@ -113,15 +111,20 @@ export function render(data, { legacy = false } = {}) {
   }
 
   const uniqueId = makeIdGuard('review')
+  // One "Why you decide" line per decision: a sentence true of every decision
+  // on the board names none of them.
+  const whyYouSeen = new Map()
 
   const renderDecision = (d, path) => {
     requireObject(d, path)
     const options = requireArray(d.options, `${path}.options`)
-    // `what` and `why_you` are still accepted, so data written for the old
-    // "What this is" / "Why you decide" lines publishes unchanged, but they are
-    // neither shown nor required: Ahmet called them unnecessary. Each option's
-    // basis stays required; it is the consequence line on the option's card.
-    if (!legacy) {
+    const framed = !legacy || (d.what !== undefined && d.why_you !== undefined)
+    if (framed) {
+      requireString(d.what, `${path}.what (one sentence: what a person gets or sees when this ships)`)
+      requireString(d.why_you, `${path}.why_you (one sentence: why the reader decides this, or what it costs if wrong)`)
+      const line = d.why_you.trim().toLowerCase()
+      if (whyYouSeen.has(line)) fail(`${path}.why_you repeats ${whyYouSeen.get(line)}.why_you word for word — each decision's line names what that decision alone decides, or what goes wrong if it is wrong`)
+      whyYouSeen.set(line, path)
       options.forEach((o, i) => {
         if (typeof o === 'string' || typeof o.basis !== 'string' || !o.basis.trim()) {
           fail(`${path}.options[${i}].basis must be a non-empty string: what picking this option changes for a user or the reader`)
@@ -137,6 +140,7 @@ export function render(data, { legacy = false } = {}) {
         prompt: requireString(d.question, `${path}.question`),
         help: d.context,
         options,
+        frame: framed ? { what: d.what, why_you: d.why_you } : undefined,
       }),
       '</div>',
     ].filter(Boolean).join('\n')
@@ -156,7 +160,7 @@ export function render(data, { legacy = false } = {}) {
   const head = [
     `<h1>${esc(data.title)}</h1>`,
     data.summary ? `<div class="sd-muted">${markdown(data.summary)}</div>` : '',
-    data.about ? `<div class="sd-about">${markdown(data.about)}</div>` : '',
+    data.about ? `<div class="sd-about"><div class="sd-about-title">What this is</div>${markdown(data.about)}</div>` : '',
   ].filter(Boolean).join('\n')
 
   const metricsHtml = metrics.length
@@ -189,7 +193,7 @@ export function render(data, { legacy = false } = {}) {
     return [
       '<section class="sd-section">',
       `<h2>${esc(s.heading)}</h2>`,
-      badges ? `<div class="sd-row sd-meta">${badges}</div>` : '',
+      badges ? `<div class="sd-row">${badges}</div>` : '',
       body,
       blocks,
       inlineDecisions,

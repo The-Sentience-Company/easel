@@ -42,14 +42,20 @@ const QUEUE_HOTKEY = 'f'
 const QUEUE_HOTKEY_LABEL = 'press f'
 const CHAT_HOTKEY = 'c'
 const CHAT_HOTKEY_LABEL = 'press c'
+const THEME_HOTKEY = 't'
 const ANNOTATE_HOTKEY = 'a'
 const ROUND_BACK_HOTKEY = 'q'
 const ROUND_FORWARD_HOTKEY = 'w'
 const TAB_BACK_HOTKEY = 'z'
 const TAB_FORWARD_HOTKEY = 'x'
+const WIDTH_NARROW_HOTKEY = 'e'
+const WIDTH_WIDEN_HOTKEY = 'r'
 const SEND_HOTKEY = 's'
 const SEND_HOTKEY_LABEL = 'Cmd+Shift+S'
 const COMPACT_QUERY = '(max-width: 1500px)'
+const WIDTH_MIN = 600
+const WIDTH_MAX = 1400
+const WIDTH_KEY_STEP = 40
 const MARKER_HUES = 6
 const TABLE_ROW_TAGS = new Set(['TR', 'TABLE', 'THEAD', 'TBODY'])
 
@@ -80,25 +86,82 @@ function show(node, on) {
 
 const ui = {}
 
+// The shell's inline THEME_SCRIPT applies the same override before first paint.
+const THEME_STORAGE = 'sf-theme'
+const FAMILY_STORAGE = 'sf-theme-family'
 const LOOK_STORAGE = 'sf-diagram-look'
 const WRAP_STORAGE = 'sf-wrap-code'
+const WIDTH_STORAGE = 'sf-width'
 const COMPACT_STORAGE = 'sf-chrome-compact'
+const THEME_FAMILIES = [
+  ['', 'Default'],
+  ['lantern', 'Lantern'],
+  ['fig', 'Fig'],
+]
 
-// Light or dark follows the computer, and a ?theme=<family> link picks a family:
-// the shell's inline THEME_SCRIPT sets data-theme before first paint and on
-// every OS change. Page width is the board's, set by the agent ("width": "wide").
+function themeMode() {
+  const stored = localStorage.getItem(THEME_STORAGE)
+  return stored === 'light' || stored === 'dark' ? stored : 'auto'
+}
 
-// Collapsing hides the diff legend and the round note: everything a reader can
-// re-open, nothing they act on.
+// A ?theme= pin names a theme FAMILY and beats the picker; the mode cycle
+// still applies within either.
+const pinnedTheme = () => new URLSearchParams(location.search).get('theme')
+
+function themeFamily() {
+  return pinnedTheme() || localStorage.getItem(FAMILY_STORAGE) || ''
+}
+
+function setThemeFamily(fam) {
+  if (fam) localStorage.setItem(FAMILY_STORAGE, fam)
+  else localStorage.removeItem(FAMILY_STORAGE)
+  syncThemeToggle()
+  if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: wbTheme() })
+}
+
+function syncThemeToggle() {
+  const fam = themeFamily()
+  const mode = themeMode()
+  const effective =
+    mode === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode
+  document.documentElement.dataset.theme = fam ? `${fam}-${effective}` : effective
+  ui.themeToggle.textContent = `[T]heme: ${mode}`
+  for (const btn of ui.themePick?.querySelectorAll('[data-family]') || []) {
+    btn.classList.toggle('sf-on', btn.dataset.family === fam)
+  }
+}
+
+function applyWidth(px) {
+  document.documentElement.style.setProperty('--content-max', `${px}px`)
+  localStorage.setItem(WIDTH_STORAGE, px)
+}
+
+function nudgeWidth(dir) {
+  const cur = parseInt(ui.widthSlider.value) || 1040
+  const next = Math.min(WIDTH_MAX, Math.max(WIDTH_MIN, cur + dir * WIDTH_KEY_STEP))
+  ui.widthSlider.value = next
+  applyWidth(next)
+}
+
+// Collapsing hides the settings cluster (theme, width), the diff legend and the
+// round note — everything a reader can re-open, nothing they act on.
 function applyCompact(on) {
   state.compact = on
   CHROME.classList.toggle('sf-compact', on)
   ui.compactToggle.classList.toggle('sf-on', !on)
   ui.compactToggle.setAttribute('aria-expanded', String(!on))
   ui.compactToggle.title = on
-    ? 'Expand the bar: diff legend, round note'
+    ? 'Expand the bar: theme, page width, diff legend, round note'
     : 'Collapse the bar to one row'
   ui.compactToggle.setAttribute('aria-label', ui.compactToggle.title)
+}
+
+function cycleTheme() {
+  const next = { auto: 'light', light: 'dark', dark: 'auto' }[themeMode()]
+  if (next === 'auto') localStorage.removeItem(THEME_STORAGE)
+  else localStorage.setItem(THEME_STORAGE, next)
+  syncThemeToggle()
+  if (wbReady) postToWhiteboard({ type: WB.themeChanged, theme: wbTheme() })
 }
 
 function buildChrome() {
@@ -108,15 +171,27 @@ function buildChrome() {
   const brand = el('a', 'sf-brand', 'easel')
   brand.href = '/'
   brand.title = 'All sessions'
+  ui.themePick = el('div', 'sf-theme-pick')
+  for (const [fam, label] of THEME_FAMILIES) {
+    const btn = el('button', 'sf-theme-pick-btn', label)
+    btn.type = 'button'
+    btn.dataset.family = fam
+    btn.title = fam ? `${label} theme` : 'The stock theme'
+    btn.onclick = () => setThemeFamily(fam)
+    ui.themePick.appendChild(btn)
+  }
+  ui.tunerToggle = el('button', 'sf-tuner-toggle', '⚙')
+  ui.tunerToggle.type = 'button'
+  ui.tunerToggle.title = 'Tune the theme: colors, fonts, size'
+  ui.tunerToggle.onclick = () => toggleTuner()
+  ui.themePick.appendChild(ui.tunerToggle)
   ui.title = el('div', 'sf-title')
   ui.wipMarker = el('div', 'sf-wip-marker', 'unpublished changes')
   ui.wipMarker.title = 'unpublished changes' // collapsed, it is a dot with no room for the words
   show(ui.wipMarker, false)
   ui.agent = el('div', 'sf-agent')
   ui.agentLabel = el('span', 'sf-agent-label', '')
-  // It ends the agent's wait, so a later Send reaches no one; "Cancel" beside
-  // "Send 2" read as discarding the drafts.
-  ui.cancelWait = el('button', 'sf-cancel-wait', 'Stop waiting')
+  ui.cancelWait = el('button', 'sf-cancel-wait', 'Cancel')
   ui.cancelWait.type = 'button'
   ui.cancelWait.title = 'Stop the agent waiting on this board'
   show(ui.cancelWait, false)
@@ -126,6 +201,26 @@ function buildChrome() {
   ui.statusDot = el('span', 'sf-status-dot')
   ui.statusLabel = el('span', 'sf-status-label', 'connecting')
   ui.status.append(ui.statusDot, ui.statusLabel)
+  ui.themeToggle = el('button', 'sf-theme-toggle')
+  ui.themeToggle.type = 'button'
+  ui.themeToggle.title = `Cycle theme: auto → light → dark (press ${THEME_HOTKEY})`
+  ui.themeToggle.onclick = cycleTheme
+  syncThemeToggle()
+  ui.widthSlider = el('input', 'sf-width-slider')
+  ui.widthSlider.type = 'range'
+  ui.widthSlider.min = String(WIDTH_MIN)
+  ui.widthSlider.max = String(WIDTH_MAX)
+  ui.widthSlider.step = '20'
+  ui.widthSlider.title = 'Page width — E narrows, R widens; double-click to reset to the theme default'
+  ui.widthSlider.value = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--content-max')) || 1040
+  ui.widthSlider.oninput = () => applyWidth(ui.widthSlider.value)
+  ui.widthSlider.ondblclick = () => {
+    document.documentElement.style.removeProperty('--content-max')
+    localStorage.removeItem(WIDTH_STORAGE)
+    ui.widthSlider.value = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--content-max')) || 1040
+  }
+  ui.width = el('span', 'sf-width')
+  ui.width.append(el('span', 'sf-width-keys', '[E]'), ui.widthSlider, el('span', 'sf-width-keys', '[R]'))
   ui.annotateToggle = el('button', 'sf-annotate-toggle', '[A]nnotate')
   ui.annotateToggle.type = 'button'
   ui.annotateToggle.title = `Annotate mode (press ${ANNOTATE_HOTKEY})`
@@ -159,7 +254,7 @@ function buildChrome() {
     localStorage.setItem(COMPACT_STORAGE, state.compact ? '1' : '0')
   }
 
-  topbar.append(brand, ui.title, ui.wipMarker, ui.agent, ui.status, ui.annotateToggle, ui.sendNow, ui.queueToggle, ui.chatToggle, ui.endSession, ui.compactToggle)
+  topbar.append(brand, ui.themePick, ui.title, ui.wipMarker, ui.agent, ui.status, ui.themeToggle, ui.width, ui.annotateToggle, ui.sendNow, ui.queueToggle, ui.chatToggle, ui.endSession, ui.compactToggle)
 
   // A narrow viewport opens collapsed; once the button is pressed that choice
   // is the browser's, at every width.
@@ -187,7 +282,7 @@ function buildChrome() {
   ui.chatLog = el('div', 'sf-chat-log')
   ui.chatWorking = el('div', 'sf-chat-working')
   ui.chatWorking.append(el('span', 'sf-spinner'), el('span', null, 'Working…'))
-  ui.chatCancel = el('button', 'sf-chat-cancel', 'Stop waiting')
+  ui.chatCancel = el('button', 'sf-chat-cancel', 'Cancel')
   ui.chatCancel.type = 'button'
   ui.chatCancel.onclick = () => api.send('POST', `/api/b/${KEY}/cancel-waiting`).catch(() => {})
   ui.chatWorking.appendChild(ui.chatCancel)
@@ -593,9 +688,8 @@ function markPriorVerdicts(d) {
     if (!widget) continue
     const tag = document.createElement('span')
     tag.className = 'sf-prior'
-    const picked = [...widget.querySelectorAll('[data-option]')].find((o) => o.dataset.option === item.value)
-    tag.textContent = `Round ${item.round}: ${picked ? optionLabel(picked) : item.value}`
-    tag.title = `your answer on round ${item.round}`
+    tag.textContent = `r${item.round}: ${item.value}`
+    tag.title = `your verdict on round ${item.round}`
     widget.querySelector('.sd-widget-options')?.appendChild(tag)
     // The earlier choice also shows as the pressed button; the buttons stay
     // live, so a click on this round records a new answer.
@@ -765,8 +859,7 @@ function renderRounds(d) {
   if (showPills) renderRoundsToggle(strip, activePill, d.rounds.length)
   const legend = el('div', 'sf-diff-legend')
   if (showPills) {
-    // Removed blocks are not drawn on the page, so the legend does not promise them.
-    for (const [k, label] of [['added', 'added'], ['modified', 'changed'], ['moved', 'moved']]) legend.appendChild(el('span', `sf-legend-${k}`, label))
+    for (const k of ['added', 'removed', 'modified', 'moved']) legend.appendChild(el('span', `sf-legend-${k}`, k))
   }
   if (annotated) {
     const entry = el('span', 'sf-legend-annotated')
@@ -1143,39 +1236,20 @@ function closePopover() {
   if (popover) popover.remove()
   popover = null
   queueOpenPopover = null
-  clearHover()
+  CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
 }
 
 // Chrome-injected controls inside content act, never annotate.
 const CHROME_CONTROLS = '.sf-wb-open, .sf-diagram-look, .sf-wrap-toggle, .sf-tabs, .sf-tab-pager'
 
-// The highlight waits for the pointer to settle on one block. Shown at once,
-// it lit every block a mouse crossed on its way somewhere else.
-const HOVER_DWELL_MS = 150
-let hoverTimer = null
-let hoverTarget = null
-
-function clearHover() {
-  clearTimeout(hoverTimer)
-  hoverTarget = null
-  CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
-}
-
 CONTENT.addEventListener('mouseover', (e) => {
-  let target = null
-  if (state.annotating && !popover && !e.target.closest(CHROME_CONTROLS)) target = e.target.closest('[data-sid]')
+  if (!state.annotating || popover) return
+  const target = e.target.closest(CHROME_CONTROLS) ? null : e.target.closest('[data-sid]')
+  CONTENT.querySelectorAll('.sf-hover').forEach((n) => n.classList.remove('sf-hover'))
   // Hover previews only the anchor itself; the column echo appears on the
   // saved mark (sf-annotated-col), not while merely pointing at a header.
-  if (target?.closest('[data-option]')) target = null
-  // mouseover fires again at every inline child (a link, a bold word); within
-  // the same block the highlight, or its pending timer, stays as it is.
-  if (target === hoverTarget) return
-  clearHover()
-  if (!target) return
-  hoverTarget = target
-  hoverTimer = setTimeout(() => target.classList.add('sf-hover'), HOVER_DWELL_MS)
+  if (target && !target.closest('[data-option]')) target.classList.add('sf-hover')
 })
-CONTENT.addEventListener('mouseleave', clearHover)
 
 // Boards link to the daemon as 127.0.0.1. Opened through a tunnel such as Tailscale Serve,
 // point those links at the address this page came from, in the DOM itself so every way of
@@ -1558,17 +1632,20 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (typingInFormField(e.target)) return
   const key = e.key.toLowerCase()
-  if (![QUEUE_HOTKEY, CHAT_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, TAB_BACK_HOTKEY, TAB_FORWARD_HOTKEY].includes(key)) return
+  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY, TAB_BACK_HOTKEY, TAB_FORWARD_HOTKEY].includes(key)) return
   // A board without tabs leaves Z and X to the browser.
   if ((key === TAB_BACK_HOTKEY || key === TAB_FORWARD_HOTKEY) && !tabSets.length) return
   e.preventDefault()
   if (key === QUEUE_HOTKEY) toggleQueue()
   else if (key === CHAT_HOTKEY) toggleChat()
+  else if (key === THEME_HOTKEY) cycleTheme()
   else if (key === ANNOTATE_HOTKEY) setAnnotating(!state.annotating)
   else if (key === ROUND_BACK_HOTKEY) stepRound(-1)
   else if (key === ROUND_FORWARD_HOTKEY) stepRound(1)
   else if (key === TAB_BACK_HOTKEY) stepTab(-1)
-  else stepTab(1)
+  else if (key === TAB_FORWARD_HOTKEY) stepTab(1)
+  else if (key === WIDTH_NARROW_HOTKEY) nudgeWidth(-1)
+  else nudgeWidth(1)
 })
 
 // ---------------------------------------------------------------- widgets
@@ -1581,10 +1658,6 @@ function enqueueMutation(fn) {
   mutations = next.then(() => {}, () => {})
   return next
 }
-
-// What a reader sees on an option: its card label, or the button's own text.
-const optionLabel = (option) =>
-  (option.querySelector('.sd-option-label')?.firstChild?.textContent ?? option.textContent).trim()
 
 async function recordWidget(widget, option) {
   const widgetId = widget.dataset.widgetId
@@ -1610,7 +1683,7 @@ async function recordWidget(widget, option) {
     sync()
     return
   }
-  toast(`Queued '${optionLabel(option)}'. Send delivers it.`)
+  toast(`Queued ${widgetId}: ${item.value} — Send delivers`)
   sync()
 }
 
@@ -2179,6 +2252,145 @@ window.addEventListener('pagehide', () => {
   if (wbIndex !== null && wbReady) beginFlush(wbIndex)
 })
 
+// ----------------------------------------------------------------- tuner --
+
+// v2: overrides now apply on every load, so campaign-era 'sf-tuner' state
+// (already baked into lantern) must not resurface as a global override.
+const TUNER_STORAGE = 'sf-tuner-v2'
+const TUNER_VARS = [
+  ['Page ground', '--color-base-200'],
+  ['Panels', '--color-base-100'],
+  ['Raised / code', '--color-base-300'],
+  ['Emphasis ink', '--color-base-content'],
+  ['Body ink', '--color-body-content'],
+  ['Muted ink', '--color-muted-content'],
+  ['Primary accent', '--color-primary'],
+  ['Secondary accent', '--color-accent-2'],
+  ['Borders', '--border'],
+]
+const TUNER_FONTS = [
+  ['System sans', "ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif"],
+  ['Iowan Old Style', "'Iowan Old Style', 'Palatino Linotype', Georgia, serif"],
+  ['Charter', "'Charter', Georgia, serif"],
+  ['Hoefler Text', "'Hoefler Text', 'Athelas', Georgia, serif"],
+  ['Baskerville', "'Baskerville', 'Palatino Linotype', Georgia, serif"],
+  ['Optima', "'Optima', 'Seravek', sans-serif"],
+  ['Avenir Next', "'Avenir Next', 'Seravek', sans-serif"],
+  ['Helvetica Neue', "'Helvetica Neue', Helvetica, sans-serif"],
+  ['American Typewriter', "'American Typewriter', 'Courier New', serif"],
+  ['Didot', "'Didot', 'Bodoni 72', 'Hoefler Text', serif"],
+]
+
+function tunerState() {
+  try { return JSON.parse(localStorage.getItem(TUNER_STORAGE)) || {} } catch { return {} }
+}
+
+function tunerSave(s) { localStorage.setItem(TUNER_STORAGE, JSON.stringify(s)) }
+
+function tunerApply(s) {
+  for (const [k, v] of Object.entries(s.vars || {})) document.documentElement.style.setProperty(k, v)
+  if (s.bodyFont) document.body.style.fontFamily = s.bodyFont
+  if (s.headFont) document.documentElement.style.setProperty('--font-serif', s.headFont)
+  if (s.size) document.body.style.fontSize = `${s.size}px`
+  if (s.lh) document.body.style.lineHeight = s.lh
+}
+
+// Any CSS color → #rrggbb, via canvas normalization (oklch parses fine).
+function tunerHex(varName) {
+  const probe = el('span')
+  probe.style.color = `var(${varName})`
+  document.body.appendChild(probe)
+  const resolved = getComputedStyle(probe).color
+  probe.remove()
+  const ctx = el('canvas').getContext('2d')
+  ctx.fillStyle = resolved
+  ctx.fillRect(0, 0, 1, 1)
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+  return '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')
+}
+
+let tunerPanel = null
+
+function toggleTuner() {
+  if (!tunerPanel) tunerPanel = buildTuner()
+  const open = tunerPanel.classList.toggle('sf-open')
+  ui.tunerToggle.classList.toggle('sf-on', open)
+}
+
+function buildTuner() {
+  const s = tunerState()
+  const panel = el('aside', 'sf-tuner')
+  panel.append(el('div', 'sf-tuner-title', 'Theme tuner'))
+
+  for (const [label, varName] of TUNER_VARS) {
+    const row = el('label', 'sf-tuner-row', label)
+    const input = el('input', 'sf-tuner-color')
+    input.type = 'color'
+    input.value = s.vars?.[varName]?.startsWith('#') ? s.vars[varName] : tunerHex(varName)
+    input.oninput = () => {
+      s.vars = s.vars || {}
+      s.vars[varName] = input.value
+      document.documentElement.style.setProperty(varName, input.value)
+      tunerSave(s)
+    }
+    row.appendChild(input)
+    panel.appendChild(row)
+  }
+
+  const fontRow = (label, key, apply) => {
+    const row = el('label', 'sf-tuner-row', label)
+    const select = el('select', 'sf-tuner-select')
+    select.append(new Option('(theme default)', ''))
+    for (const [name, stack] of TUNER_FONTS) select.append(new Option(name, stack))
+    select.value = s[key] || ''
+    select.onchange = () => {
+      s[key] = select.value || undefined
+      apply(select.value)
+      tunerSave(s)
+    }
+    row.appendChild(select)
+    panel.appendChild(row)
+  }
+  fontRow('Body font', 'bodyFont', (v) => { document.body.style.fontFamily = v })
+  fontRow('Heading font', 'headFont', (v) => {
+    if (v) document.documentElement.style.setProperty('--font-serif', v)
+    else document.documentElement.style.removeProperty('--font-serif')
+  })
+
+  const rangeRow = (label, key, min, max, step, fallback, apply) => {
+    const row = el('label', 'sf-tuner-row', label)
+    const input = el('input', 'sf-tuner-range')
+    input.type = 'range'
+    input.min = min; input.max = max; input.step = step
+    input.value = s[key] || fallback
+    input.oninput = () => {
+      s[key] = input.value
+      apply(input.value)
+      tunerSave(s)
+    }
+    row.appendChild(input)
+    panel.appendChild(row)
+  }
+  rangeRow('Body size', 'size', 14, 19, 0.5, parseFloat(getComputedStyle(document.body).fontSize), (v) => { document.body.style.fontSize = `${v}px` })
+  rangeRow('Leading', 'lh', 1.4, 2.0, 0.02, 1.7, (v) => { document.body.style.lineHeight = v })
+
+  const actions = el('div', 'sf-tuner-actions')
+  // Edits already persist as they happen; this is the close that says so.
+  const save = el('button', 'sf-tuner-send', 'Save as default')
+  save.type = 'button'
+  save.onclick = () => {
+    toggleTuner()
+    toast('Saved — applies to every board in this browser')
+  }
+  const reset = el('button', 'sf-tuner-reset', 'Reset')
+  reset.type = 'button'
+  reset.onclick = () => { localStorage.removeItem(TUNER_STORAGE); location.reload() }
+  actions.append(save, reset)
+  panel.appendChild(actions)
+  document.body.appendChild(panel)
+  return panel
+}
+
 // ---------------------------------------------------------------- boot
 
 buildChrome()
@@ -2188,3 +2400,5 @@ buildWhiteboard()
 setAnnotating(true)
 sync()
 startEvents()
+tunerApply(tunerState())
+if (new URLSearchParams(location.search).has('tuner')) toggleTuner()

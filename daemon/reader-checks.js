@@ -80,15 +80,22 @@ export function readerChecks(html, { template } = {}) {
   const pointers = [...strip(prose).matchAll(POINTERS)].map((m) => m[0])
   if (pointers.length) add('pointer', `${pointers.length} pointer${pointers.length > 1 ? 's' : ''} to content not on this round`, [...new Set(pointers)].slice(0, 5).join(' · '))
 
-  // The opening paragraph (`about`) is optional; when there is one, it should
-  // say what the work is, not open on the ask or a status.
+  // Decisions published without the frame: boards opened before the review
+  // template required it, and other templates' decision widgets.
+  const unframed = [...html.matchAll(/<div data-widget="decision"[^>]*data-widget-id="([^"]*)"[^>]*>([\s\S]*?)<div class="sd-widget-options"/g)]
+    .filter((m) => !m[2].includes('sd-widget-frame')).map((m) => m[1])
+  if (unframed.length) add('frame', `${unframed.length} decision${unframed.length > 1 ? 's' : ''} without "What this is" and "Why you decide" lines`, unframed.slice(0, 5).join(', '))
+
+  // The "What this is" block: a review board opened before the template required
+  // it has none; one that opens on the ask or a status has it filled with the wrong thing.
   if (template === 'review') {
     const at = html.indexOf('class="sd-about')
-    if (at !== -1) {
+    if (at === -1) add('about', 'no "What this is" block before the first section', '')
+    else {
       const first = html.slice(at).match(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/)
       const text = first ? strip(first[1]) : ''
       // A count or ask that goes on to say what the work is in the same paragraph is fine.
-      if (ASK_OR_STATUS.test(text) && words(text).length < 20) add('about', 'the opening paragraph opens on the ask or a status', text.split(' ').slice(0, 8).join(' ') + ' …')
+      if (ASK_OR_STATUS.test(text) && words(text).length < 20) add('about', 'the "What this is" block opens on the ask or a status', text.split(' ').slice(0, 8).join(' ') + ' …')
     }
   }
 
@@ -96,11 +103,9 @@ export function readerChecks(html, { template } = {}) {
   const stacked = (html.match(/class="sd-grid sd-grid-stack"/g) || []).length
   if (stacked) add('stack', `${stacked} block${stacked > 1 ? 's' : ''} of cards or callouts stacked into one column`, '')
 
-  // Labels: a button over five words. An option card's consequence line and
-  // Recommended chip are not its label, so only the label part is counted.
+  // Labels: a button over five words.
   for (const m of html.matchAll(/<button[^>]*data-option="[^"]*"[^>]*>([\s\S]*?)<\/button>/g)) {
-    const label = m[1].match(/<span class="sd-option-label">([\s\S]*?)<span class="sd-widget-pick">|<span class="sd-option-label">([\s\S]*?)<\/span>/)
-    const w = words(label ? (label[1] ?? label[2]) : m[1])
+    const w = words(m[1])
     if (w.length > 5) add('label', `${w.length}-word button`, w.slice(0, 8).join(' ') + ' …')
   }
 
