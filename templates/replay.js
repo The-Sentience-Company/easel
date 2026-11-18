@@ -49,7 +49,7 @@ const judgeBlock = (judge, path) => {
   const verdict = requireString(judge.verdict, `${path}.verdict`)
   const tone = judge.tone ?? 'info'
   return [
-    `<div class="sd-row sd-meta">${badge(`judge: ${verdict}`, tone, `${path}.tone`)}</div>`,
+    `<div class="sd-row">${badge(`judge: ${verdict}`, tone, `${path}.tone`)}</div>`,
     judge.reasons ? `<div class="sd-muted">${markdown(String(judge.reasons))}</div>` : '',
   ].filter(Boolean).join('\n')
 }
@@ -119,7 +119,7 @@ export function render(data) {
     return [
       '<section class="sd-section">',
       `<h2>${esc(c.name ?? id)}</h2>`,
-      c.badges ? `<div class="sd-row sd-meta">${requireArray(c.badges, `${path}.badges`).map((b) => badge(typeof b === 'string' ? b : b.label, typeof b === 'string' ? null : b.tone, `${path}.badges tone`)).join('')}</div>` : '',
+      c.badges ? `<div class="sd-row">${requireArray(c.badges, `${path}.badges`).map((b) => badge(typeof b === 'string' ? b : b.label, typeof b === 'string' ? null : b.tone, `${path}.badges tone`)).join('')}</div>` : '',
       c.context ? `<div class="sd-muted">${markdown(String(c.context))}</div>` : '',
       userBlock(c.user, `${path}.user`),
       replyCards,

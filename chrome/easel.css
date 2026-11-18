@@ -4,10 +4,7 @@
 /* ---------------------------------------------------------------- tokens -- */
 
 /* Three FAMILIES — default, lantern, fig — picked in the topbar or pinned via
-   ?theme=<family>; each has -light and -dark modes and T flips within one.
-   These two shared blocks hold the warm surfaces lantern and fig build on, and
-   the status, marker, diff and chart tokens every family uses. The default
-   family replaces the surfaces and accent further down. */
+   ?theme=<family>; each has -light and -dark modes and T flips within one. */
 html[data-theme="light"],
 html[data-theme="lantern-light"],
 html[data-theme="fig-light"] {
@@ -64,8 +61,9 @@ html[data-theme="fig-light"] {
 }
 
 /* Warm dark, derived from the lavish reference: ground #16150f, accent #e0824b.
-   In dark, base-200 is the page ground; 100 and 300 step UP from it, so panels
-   lift off the page rather than recessing into it as they do in light. */
+   Hue 85 throughout replaces the previous cool 265, which read the accent blue. */
+/* base-200 is the page ground and is pure black; 100 and 300 step UP from it, so
+   panels lift off the page rather than recessing into it as they do in light. */
 html[data-theme="dark"],
 html[data-theme="lantern-dark"],
 html[data-theme="fig-dark"] {
@@ -182,77 +180,16 @@ html[data-theme="fig-dark"] {
   --content-max: 920px;
 }
 
-/* default: the look of a Claude Artifact page, after the Decision Desk board.
-   A cool grey ground with white cards in light; graphite with lifted panels in
-   dark; one blue accent; sans type throughout. The warm cream, serif and
-   terracotta it replaces live on in lantern, which shares the blocks above. */
-html[data-theme="light"] {
-  --color-base-100: oklch(1 0 0);
-  --color-base-200: oklch(0.973 0.003 265);
-  --color-base-300: oklch(0.942 0.005 265);
-  --color-base-content: oklch(0.215 0.016 265);
-  --color-body-content: oklch(0.36 0.018 265);
-  --color-muted-content: oklch(0.47 0.020 262);
-  --color-primary: oklch(0.51 0.19 266);
-  --color-accent-2: oklch(0.52 0.09 190);
-  --border: oklch(0.905 0.008 265);
-  --border-subtle: oklch(0.945 0.005 265);
-  /* Two parts: a soft wide one for the lift, a tight one for the contact edge.
-     A white card on the grey ground needs no outline as well. */
-  --shadow-card: 0 1px 3px oklch(0.2 0.02 265 / 0.08), 0 1px 2px oklch(0.2 0.02 265 / 0.05);
-  --card-edge: transparent;
-}
-html[data-theme="dark"] {
-  --color-base-100: oklch(0.215 0.012 265);
-  --color-base-200: oklch(0.175 0.010 265);
-  --color-base-300: oklch(0.265 0.014 265);
-  --color-base-content: oklch(0.945 0.006 265);
-  --color-body-content: oklch(0.835 0.012 265);
-  --color-muted-content: oklch(0.715 0.018 262);
-  --color-primary: oklch(0.74 0.13 268);
-  --color-primary-content: oklch(0.18 0.03 268);
-  --color-status-content: oklch(0.18 0.012 265);
-  --marker-content: oklch(0.18 0.012 265);
-  --color-accent-2: oklch(0.78 0.09 190);
-  --border: oklch(0.31 0.014 265);
-  --border-subtle: oklch(0.255 0.012 265);
-  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.25);
-  /* Shadows barely read on dark, so a faint edge and the lighter surface carry the lift. */
-  --card-edge: var(--border-subtle);
-}
-/* lantern and fig keep their serif display face; the default sets everything in sans. */
-html[data-theme^="lantern"], html[data-theme^="fig"] { --font-display: var(--font-serif); }
-
 :root {
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   /* All system faces — nothing here is fetched, so the sanitizer has no @font-face
      to strip and the publish path stays same-origin. */
   --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
-  /* Headings, ledes and entry names. Sans by default; lantern and fig set the serif. */
-  --font-display: var(--font-sans);
   --radius: 10px;
   --radius-sm: 6px;
   --space: 16px;
-  /* One type scale and one spacing scale, hand-picked rather than linear: small
-     steps at the bottom, big ones at the top. New rules pick from these. */
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-base: 15px;
-  --text-md: 17px;
-  --text-lg: 20px;
-  --text-xl: 24px;
-  --text-2xl: 30px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
   --rule: 1px solid var(--border);
-  /* A raised box's outline; the default family lifts with shadow instead. */
-  --card-edge: var(--border);
   --content-max: 1040px;
   --chrome-z: 2147480000;
 }
@@ -287,19 +224,13 @@ html:is([data-theme^="lantern"], [data-theme^="fig"]) #sf-content tbody tr:hover
 body.sf-shell {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: var(--text-base);
-  /* Prose runs loose; headings below run tight. Line height falls as size rises. */
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.68;
   /* explicit, not inherited: table cells do not pick up p/li color rules */
   color: var(--color-base-content);
   background: var(--color-base-200);
   -webkit-font-smoothing: antialiased;
 }
-
-/* The agent asks for a wide page: "width": "wide" in a template's data makes the
-   daemon add an empty .sd-width-wide div, and a hand-written HTML board can
-   carry one itself. */
-#sf-content:has(.sd-width-wide) { --content-max: 1400px; }
 
 #sf-content {
   max-width: var(--content-max);
@@ -310,26 +241,19 @@ body.sf-shell {
   overflow-wrap: break-word;
 }
 
-/* Headings are sized for what they do, not for their tag: the page title leads,
-   and a section heading mostly labels the content under it, so it stays modest
-   and lets weight do the work. Each sits closer to what follows it than to what
-   came before, so it reads as that content's heading. Sans in the default
-   family, serif in lantern and fig (--font-display). */
+/* Serif display against sans body, ~3x display-to-body, matching the reference. */
 #sf-content h1, #sf-content h2, #sf-content h3, #sf-content h4 {
-  font-family: var(--font-display);
-  font-weight: 650;
-  line-height: 1.25;
-  margin: 0 0 var(--space-2);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 0.5em;
   color: var(--color-base-content);
   text-wrap: balance;
 }
-#sf-content h1 { font-size: var(--text-2xl); line-height: 1.2; letter-spacing: -0.02em; margin-bottom: var(--space-3); }
-#sf-content h2 { font-size: var(--text-lg); letter-spacing: -0.01em; margin-top: var(--space-12); }
-#sf-content h3 { font-size: var(--text-md); margin-top: var(--space-8); }
-#sf-content h4 { font-size: var(--text-base); margin-top: var(--space-6); }
-/* Running text stops near 72 characters a line, however wide the column. */
-#sf-content p,
-#sf-content :is(ul, ol):not([class]):not(.sd-claims ul) > li { max-width: 72ch; }
+#sf-content h1 { font-size: clamp(32px, 5.2vw, 46px); line-height: 1.08; letter-spacing: -0.015em; }
+#sf-content h2 { font-size: clamp(23px, 3.4vw, 30px); line-height: 1.18; letter-spacing: -0.01em; margin-top: 1.4em; }
+#sf-content h3 { font-size: 1.22rem; margin-top: 1.4em; }
+#sf-content h4 { font-size: 1.02rem; margin-top: 1.2em; }
 /* The two tiers: prose recedes, emphasis is the only near-full-contrast text. */
 #sf-content p, #sf-content li { color: var(--color-body-content); }
 #sf-content strong, #sf-content b { color: var(--color-base-content); font-weight: 650; }
@@ -373,7 +297,7 @@ body.sf-shell {
   line-height: 1.55;
   background: var(--color-base-200);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   padding: 14px 16px;
   overflow-x: auto;
   margin: 0 0 1em;
@@ -550,18 +474,12 @@ body.sf-shell {
 
 .sd-card {
   background: var(--color-base-100);
-  border: 1px solid var(--card-edge);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px 20px;
   box-shadow: var(--shadow-card);
   min-width: 0;
 }
-/* Stacked cards and grids of cards stand apart; a grid, row or column already
-   spaces its own children with gap. */
-:is(.sd-card, .sd-grid) + :is(.sd-card, .sd-grid) { margin-top: var(--space); }
-:is(.sd-grid, .sd-row, .sd-col) > .sd-card + .sd-card { margin-top: 0; }
-/* A muted line after a block belongs to what follows it, so it gets air above. */
-:is(.sd-card, .sd-grid) + div.sd-meta { margin-top: var(--space-3); }
 .sd-card-title { font-weight: 650; margin: 0 0 6px; font-size: 1.02rem; }
 /* Carried on the id so it outranks `#sf-content p`, and applied to descendants
    because a muted wrapper around markdown holds <p>, not text. */
@@ -588,7 +506,7 @@ body.sf-shell {
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.4;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-base-content);
   background: var(--color-base-100);
   color: var(--color-base-content);
   /* A label is one token. Wrapping split words mid-character ("Vacuou s
@@ -611,19 +529,12 @@ body.sf-shell {
   padding: 2px 8px;
 }
 .sd-badge-value { padding: 1px 10px 1px 9px; }
-/* A status pill is a light tint of its colour with its word in a deeper shade
-   of the same hue, not white on a saturated fill. The tint is mixed into the
-   panel colour, so it is opaque: a translucent tint over an unknown backdrop is
-   what once produced an unreadable page. */
-.sd-badge-success { --badge-tone: var(--color-success); }
-.sd-badge-warning { --badge-tone: var(--color-warning); }
-.sd-badge-error   { --badge-tone: var(--color-error); }
-.sd-badge-info    { --badge-tone: var(--color-info); }
-:is(.sd-badge-success, .sd-badge-warning, .sd-badge-error, .sd-badge-info) {
-  background: color-mix(in oklab, var(--badge-tone) 16%, var(--color-base-100));
-  color: color-mix(in oklab, var(--badge-tone) 72%, var(--color-base-content));
-  border-color: transparent;
-}
+/* Status colors are solid fills, never a translucent tint over an unknown
+   backdrop — stacked opacity is what produced the unreadable-contrast page. */
+.sd-badge-success { background: var(--color-success); color: var(--color-status-content); border-color: transparent; }
+.sd-badge-warning { background: var(--color-warning); color: var(--color-status-content); border-color: transparent; }
+.sd-badge-error   { background: var(--color-error);   color: var(--color-status-content); border-color: transparent; }
+.sd-badge-info    { background: var(--color-info);    color: var(--color-status-content); border-color: transparent; }
 /* A two-voice status pill carries its colour on the key segment only. */
 .sd-badge-success:has(.sd-badge-key),
 .sd-badge-warning:has(.sd-badge-key),
@@ -638,73 +549,11 @@ body.sf-shell {
 .sd-badge-error   .sd-badge-key { background: var(--color-error);   color: var(--color-status-content); }
 .sd-badge-info    .sd-badge-key { background: var(--color-info);    color: var(--color-status-content); }
 
-/* Who and what state, as one muted line rather than a row of pills (Ahmet's
-   pick 9): labels run as text separated by a middle dot, a status keeps its
-   colour only as a dot before its word, and a two-part "pane | reviewer" pill
-   reads as "pane reviewer". Status cells in tables keep their pills. */
-div.sd-meta { gap: 2px 0; margin-bottom: var(--space-3); font-size: 0.86rem; color: var(--color-muted-content); }
-/* The separator rides on the next label: first in its flex order, so a status
-   dot lands after it; inline-block, so a link's underline skips it. */
-.sd-meta > * + *::before {
-  content: "·";
-  order: -2;
-  display: inline-block;
-  margin: 0 8px;
-  color: var(--color-muted-content);
-  font-weight: 400;
-}
-.sd-meta .sd-badge,
-.sd-meta .sd-badge:has(.sd-badge-key) {
-  border: 0;
-  background: none;
-  padding: 0;
-  gap: 6px;
-  overflow: visible;
-  font-size: inherit;
-  font-weight: 500;
-  color: var(--color-muted-content);
-}
-.sd-meta .sd-badge[class*="sd-badge-"] { color: var(--color-base-content); }
-.sd-meta .sd-badge[class*="sd-badge-"]::after {
-  content: "";
-  flex: none;
-  order: -1;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--meta-tone);
-}
-.sd-meta .sd-badge-success { --meta-tone: var(--color-success); }
-.sd-meta .sd-badge-warning { --meta-tone: var(--color-warning); }
-.sd-meta .sd-badge-error   { --meta-tone: var(--color-error); }
-.sd-meta .sd-badge-info    { --meta-tone: var(--color-info); }
-.sd-meta .sd-badge-key,
-.sd-meta :is(.sd-badge-success, .sd-badge-warning, .sd-badge-error, .sd-badge-info) .sd-badge-key {
-  background: none;
-  color: var(--color-muted-content);
-  padding: 0;
-  font: inherit;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.sd-meta .sd-badge-value { padding: 0; color: var(--color-base-content); }
-/* In a muted line the value names itself ("Izmir · new tier"), so the key
-   label ("pane") is noise; it stays in the markup for screen readers. */
-.sd-meta .sd-badge-key {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .sd-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
 .sd-metric {
   background: var(--color-base-100);
-  border: 1px solid var(--card-edge);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
   padding: 14px 16px;
   min-width: 0;
 }
@@ -719,25 +568,17 @@ div.sd-meta { gap: 2px 0; margin-bottom: var(--space-3); font-size: 0.86rem; col
    An .sd-intro block gets it on its first paragraph without the author asking. */
 .sd-lede,
 .sd-intro > p:first-child {
-  font-family: var(--font-display);
+  font-family: var(--font-serif);
   font-size: clamp(17px, 2.4vw, 20px);
   line-height: 1.5;
   color: var(--color-base-content);
 }
 .sd-intro { font-size: 1.04rem; }
 
-/* Sections part by space, not by a rule line; the first heading needs no gap above. */
-.sd-section { margin: 0 0 var(--space-8); }
-#sf-content .sd-section:first-of-type > h2 { margin-top: var(--space-6); }
+.sd-section { margin: 0 0 52px; }
+.sd-section > h2 { padding-top: 40px; border-top: var(--rule); }
+.sd-section:first-of-type > h2 { padding-top: 0; border-top: 0; }
 .sd-count { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 26px; }
-/* In a fold's label the count reads as part of it ("Answered 1"): on the label's
-   line and in its face, not lifted by a margin as a small mono superscript. */
-details.sd-collapse > summary .sd-count {
-  margin: 0;
-  font: inherit;
-  letter-spacing: 0;
-  color: var(--color-muted-content);
-}
 
 /* Section number, mono accent — sits with the heading, carries no link. */
 .sd-secnum {
@@ -869,7 +710,7 @@ details.sd-collapse > summary .sd-count {
 .sd-rules { display: grid; gap: 34px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); margin: 0 0 28px; }
 .sd-rule > p:last-child { margin-bottom: 0; }
 
-.sd-focus { background: var(--color-base-100); border: 1px solid var(--card-edge); box-shadow: var(--shadow-card); border-radius: var(--radius); padding: 22px 26px; }
+.sd-focus { background: var(--color-base-100); border: var(--rule); border-radius: var(--radius); padding: 22px 26px; }
 #sf-content .sd-focus-list { list-style: none; padding: 0; margin: 0; }
 .sd-focus-list li { padding: 9px 0; border-top: var(--rule); }
 .sd-focus-list li:first-child { border-top: 0; padding-top: 0; }
@@ -885,13 +726,13 @@ details.sd-collapse > summary .sd-count {
 .sd-entries > * { min-width: 0; }
 .sd-entry {
   background: var(--color-base-100);
-  border: 1px solid var(--card-edge);
-  border-radius: var(--radius);
+  border: var(--rule);
+  border-radius: 8px;
   padding: 24px 26px 20px;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   min-width: 0;
 }
-.sd-entry-name { font-family: var(--font-display); font-size: 1.28rem; line-height: 1.25; color: var(--color-base-content); }
+.sd-entry-name { font-family: var(--font-serif); font-size: 1.28rem; line-height: 1.25; color: var(--color-base-content); }
 .sd-entry-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; margin: 4px 0 18px; min-width: 0; }
 .sd-entry-meta > * { min-width: 0; }
 
@@ -912,10 +753,6 @@ details.sd-collapse > summary .sd-count {
   background: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 }
 .sd-claims li:first-child { padding-top: 0; }
-/* Entries already boxed (a ruling's collapsible case) are apart by their own
-   edges; a bar between them only doubles the line. */
-.sd-claims li:has(> .sd-collapse) + li::before,
-.sd-claims li + li:has(> .sd-collapse)::before { display: none; }
 .sd-claims li:last-child { padding-bottom: 0; }
 .sd-note { font-size: 0.9rem; margin-top: 2px; }
 
@@ -958,11 +795,19 @@ details.sd-collapse > summary .sd-count {
 .sd-callout-warning { border-top-color: var(--color-warning); }
 .sd-callout-error   { border-top-color: var(--color-error); }
 
-/* What the work is: plain opening prose under the title, no box and no label.
-   Rounds published before this stored a "What this is" heading; hide it. */
-.sd-about-title { display: none; }
-.sd-about { margin: 0 0 var(--space-8); color: var(--color-body-content); }
+/* The board's "What this is" block: a callout's box, info accent, sat between
+   the summary and the first section so the work is read before any ask. */
+.sd-about {
+  padding: 14px 18px;
+  margin: 0 0 22px;
+  border: var(--rule);
+  border-top: 3px solid var(--color-info);
+  border-radius: var(--radius-sm);
+  background: var(--color-base-100);
+  color: var(--color-body-content);
+}
 .sd-about > :last-child { margin-bottom: 0; }
+.sd-about-title { font-weight: 640; color: var(--color-base-content); margin-bottom: 4px; }
 
 /* An opt-in edge for telling one entry from the next. Colour rides the border
    only — a tinted fill would move every contrast pair inside the card. */
@@ -1039,6 +884,7 @@ details.sd-collapse > summary::before {
 details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 .sd-collapse-body { padding: 0 16px 16px; border-top: 1px solid var(--border); padding-top: 14px; }
 
+.sd-section { margin: 0 0 28px; }
 
 /* ---------------------------------------------------------- diagram/svg --- */
 
@@ -1162,14 +1008,15 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
 /* Markup is emitted by templates; behavior and sf-recorded come from
    client.js. Options must be native <button> to stay clickable in-session. */
 
-/* No box and no rule: space sets a widget apart, and its option cards carry
-   their own edges. A recorded answer shows on the chosen option itself. */
+/* Flattened to a rule: the box is gone, so the controls carry the contrast it
+   was spending. .sf-recorded still colours the remaining top border. */
 [data-widget] {
   border: 0;
+  border-top: var(--rule);
   border-radius: 0;
   background: none;
-  padding: 0;
-  margin: var(--space-6) 0 var(--space-4);
+  padding: 14px 0 0;
+  margin: 20px 0 4px;
   min-width: 0;
 }
 .sd-widget-prompt {
@@ -1179,34 +1026,25 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   margin-bottom: 4px;
 }
 .sd-widget-help { font-size: 0.85rem; color: var(--color-muted-content); margin-bottom: 10px; }
+/* Above the question: what this builds and why the reader is the one deciding. */
+.sd-widget-frame { margin: 0 0 10px; font-size: 0.9rem; color: var(--color-body-content); }
+.sd-widget-frame p { margin: 2px 0; }
+.sd-widget-frame strong { color: var(--color-base-content); }
 .sd-widget-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
-/* Option cards: stacked full width, the label over a muted line saying what
-   picking it changes, the recommended one marked with a small chip. */
-.sd-widget-cards { flex-direction: column; align-items: stretch; }
-.sd-widget-cards .sf-prior { align-self: flex-start; }
-.sd-widget-cards [data-option] {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  text-align: left;
-  padding: 10px 14px;
-}
-.sd-option-label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.sd-option-basis { font-size: 0.86rem; font-weight: 400; color: var(--color-muted-content); }
+/* One line per option, above the buttons: what picking it causes, and which
+   one is recommended — so the label itself can stay two or three words. */
+.sd-widget-basis { margin: 0 0 10px; padding-left: 1.2em; font-size: 0.88rem; color: var(--color-body-content); }
+.sd-widget-basis li { margin: 2px 0; }
+.sd-widget-basis strong { color: var(--color-base-content); }
 .sd-widget-pick {
-  font-size: 0.66rem;
-  font-weight: 650;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
-  color: var(--color-success);
-  background: color-mix(in oklab, var(--color-success) 14%, var(--color-base-100));
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  vertical-align: 1px;
 }
-/* On the chosen card the fill is the accent, so its lines take the card's ink. */
-[data-option][aria-pressed="true"] .sd-option-basis,
-[data-option].sf-chosen .sd-option-basis { color: inherit; opacity: 0.85; }
 .sd-read-first { font-size: 0.88rem; margin: 6px 0 8px; }
 /* Inside a table the row separator already rules the line — a second rule
    from the widget reads as a double border. */
@@ -1221,9 +1059,12 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   font-weight: 500;
   padding: 3px 10px;
   min-height: 1.5rem;
+  border-width: 1px;
+  border-color: var(--color-muted-content);
   color: var(--color-muted-content);
   background: none;
 }
+.sd-widget-compact [data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); }
 .sd-widget-compact.sf-recorded [data-option][aria-pressed="true"],
 .sd-widget-compact.sf-recorded [data-option].sf-chosen { color: inherit; }
 
@@ -1235,27 +1076,20 @@ details.sd-collapse[open] > summary::before { transform: rotate(90deg); }
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 8px 14px;
+  padding: 8px 16px;
   min-height: 2.25rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--color-base-100);
+  border-radius: 4px;
+  border: 1.5px solid var(--color-base-content);
+  background: var(--color-base-200);
   color: var(--color-base-content);
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-/* Accent outline and a faint accent wash, as on an Artifact page's option cards. */
-/* Not on a disabled option: an ended board's controls must not look clickable. */
-[data-option]:hover:not([disabled]) {
-  border-color: var(--color-primary);
-  background: color-mix(in oklab, var(--color-primary) 9%, var(--color-base-100));
-  color: var(--color-base-content);
-}
+[data-option]:hover { background: var(--color-base-content); color: var(--color-base-100); border-color: var(--color-base-content); }
 [data-option]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
-/* On a chosen option the fill is the accent, so the ring takes the ink to show. */
-[data-option][aria-pressed="true"]:focus-visible { outline-color: var(--color-base-content); }
 
 /* Recorded state: the widget holds a queued (or sent) value. */
+[data-widget].sf-recorded { border-color: var(--color-primary); }
 [data-widget].sf-recorded [data-option] { opacity: 1; }
 [data-widget].sf-recorded [data-option][aria-pressed="true"],
 [data-widget].sf-recorded [data-option].sf-chosen {
@@ -1271,24 +1105,14 @@ body.sf-annotating #sf-content [data-sid] { cursor: default; }
    so a default cursor here would promise annotation the click does not deliver. */
 body.sf-annotating #sf-content summary[data-sid] { cursor: pointer; }
 body.sf-annotating #sf-content a[href] { cursor: pointer; }
-/* A faint wash and a hairline, as an Artifact page marks what you are about to
-   comment on. Annotate mode is on by default, so this shows on every pointer
-   move; a solid accent box there read as an alarm. The wash is a background
-   image: it layers over a card's own fill and leaves its drop shadow alone,
-   where an inset box-shadow replaced it. */
-#sf-content .sf-hover {
-  outline: 1px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
-  outline-offset: 2px;
-  border-radius: 4px;
-  background-image: linear-gradient(color-mix(in oklab, var(--color-primary) 6%, transparent), color-mix(in oklab, var(--color-primary) 6%, transparent));
-}
+#sf-content .sf-hover { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 3px; }
 /* Inside the scrollable table wrapper an outward outline clips at the wrapper
    edge (sides always, top/bottom on the first/last row) — draw it inward. */
 #sf-content .sd-tablewrap :is(tr, td, th).sf-hover,
 #sf-content .sd-tablewrap :is(tr, td, th).sf-annotated { outline-offset: -2px; }
 /* A header anchor stands for its column: body cells echo the mark, softer. */
 #sf-content .sd-tablewrap td.sf-annotated-col {
-  outline: 1px dashed color-mix(in oklch, var(--marker-color) 50%, transparent);
+  outline: 2px dashed color-mix(in oklch, var(--marker-color) 55%, transparent);
   outline-offset: -2px;
 }
 [data-marker-hue="0"] { --marker-color: var(--marker-0); }
@@ -1311,10 +1135,8 @@ button.sf-marker, .sf-item-marker {
   font-weight: 700;
   line-height: 15px;
   text-align: center;
-  /* A tint of the mark's hue with the hue as text: the id still matches its
-     feedback row, without a saturated blob in the margin. */
-  background: color-mix(in oklab, var(--marker-color) 20%, var(--color-base-100));
-  color: var(--marker-color);
+  background: var(--marker-color);
+  color: var(--marker-content);
 }
 button.sf-marker {
   position: absolute;
@@ -1334,12 +1156,12 @@ button.sf-marker:hover { filter: brightness(1.12); }
   padding: 0 4px;
 }
 /* A scroll container clips a gutter marker, so its badge tucks inside and a
-   hairline outline carries the mark; nested anchors nest their outlines. */
+   dashed outline carries the mark; nested anchors nest their outlines. */
 #sf-content pre.sf-annotated,
 #sf-content .sd-diagram.sf-annotated,
 #sf-content .sd-tablewrap.sf-annotated,
 #sf-content .sd-tablewrap .sf-annotated {
-  outline: 1px solid color-mix(in oklch, var(--marker-color) 55%, transparent);
+  outline: 2px dashed var(--marker-color);
   outline-offset: -2px;
 }
 #sf-content pre.sf-annotated > .sf-marker,
@@ -1391,45 +1213,33 @@ button.sf-marker:hover { filter: brightness(1.12); }
 /* Widget rows anchor to a sid but carry no marker hue, so these fall back. */
 #sf-content .sf-linked { background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent); }
 .sf-queue-item.sf-linked { border-color: var(--marker-color, var(--color-primary)); }
-/* What changed since the last round: one small hollow ring in the left margin,
-   in the change's colour. It covers nothing (a wash behind changed blocks made
-   a busy board unreadable) and is hollow so it never reads as a status dot. */
+/* An overlay child, not an inset box-shadow: a marked block whose child paints
+   its own background (a card in a grid) covers anything drawn inside it. */
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed) {
   position: relative;
 }
 #sf-content :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
   content: "";
   position: absolute;
-  left: -16px;
-  top: 0.5em;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: 2px solid var(--diff-edge);
+  /* In the gutter, not at left 0: a bare p or heading starts its text at the
+     content edge, and a bar drawn there slices the first glyph. */
+  left: -10px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--diff-edge);
   pointer-events: none;
+  /* Above a positioned child — an annotated card, a diagram — that paints its own. */
   z-index: 1;
 }
-/* A list bullet owns the near gutter, and an annotation badge the gutter just
-   outside the text; the ring sits clear of both. */
-#sf-content li:is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after { left: calc(-1.4em - 14px); }
-#sf-content .sf-annotated:is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after { left: -38px; }
-#sf-content li.sf-annotated:is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after { left: -58px; }
-/* A block that scrolls itself would clip a margin ring, so the ring sits inside
-   its bottom-left corner (top-left holds an annotation badge, top-right the
-   wrap chip). A cell inside a table wrapper keeps it at its right edge. */
-#sf-content :is(pre, .sd-tablewrap, .sd-diagram, .sd-chartrow):is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
-  left: 6px;
-  top: auto;
-  bottom: 6px;
-}
+/* An overflow wrapper would clip a gutter bar to nothing; cells carry their own
+   padding, so inside one the bar hugs the edge without touching a glyph. */
 #sf-content .sd-tablewrap :is(.sf-diff-added, .sf-diff-modified, .sf-diff-moved, .sf-diff-removed)::after {
-  left: auto;
-  right: 6px;
+  left: 0;
 }
 #sf-content :is(.sf-diff-added, .sf-tab[data-sf-diff="added"]) { --diff-edge: var(--color-success); }
-/* Modified, the commonest mark, takes the accent: an amber wash read as a muddy
-   tan on dark. */
-#sf-content :is(.sf-diff-modified, .sf-tab[data-sf-diff="modified"]) { --diff-edge: var(--color-primary); }
+#sf-content :is(.sf-diff-modified, .sf-tab[data-sf-diff="modified"]) { --diff-edge: var(--color-warning); }
 #sf-content :is(.sf-diff-moved, .sf-tab[data-sf-diff="moved"]) { --diff-edge: var(--color-info); }
 #sf-content .sf-diff-removed  { --diff-edge: var(--color-error); }
 
@@ -1446,12 +1256,10 @@ button.sf-marker:hover { filter: brightness(1.12); }
   content: "";
   position: absolute;
   inset: 0;
-  /* auto, or a diff dot's 6px size would survive and tint a speck, not the block */
-  width: auto;
-  height: auto;
+  width: auto; /* or the diff bar's 3px would survive and tint a strip, not the block */
   pointer-events: none;
   border-radius: 3px;
-  background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 14%, transparent);
+  background: color-mix(in oklch, var(--marker-color, var(--color-primary)) 22%, transparent);
   animation: sf-flash 1.2s ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1506,9 +1314,8 @@ button.sf-marker:hover { filter: brightness(1.12); }
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  /* The status-pill treatment: a tint of the colour, the word in its deep shade. */
-  background: color-mix(in oklab, var(--color-warning) 16%, var(--color-base-100));
-  color: color-mix(in oklab, var(--color-warning) 72%, var(--color-base-content));
+  background: var(--color-warning);
+  color: var(--color-status-content);
 }
 
 .sf-agent { display: inline-flex; align-items: center; gap: 7px; flex: none; color: var(--color-muted-content); font-size: 0.85rem; }
@@ -1526,15 +1333,15 @@ button.sf-marker:hover { filter: brightness(1.12); }
   .sf-agent.sf-agent-waiting::before { animation-duration: 3s; }
 }
 button.sf-cancel-wait {
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-muted-content);
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
   border-radius: var(--radius-sm);
   padding: 3px 9px;
   min-height: 1.75rem;
   font-size: 0.8rem;
 }
-button.sf-cancel-wait:hover { background: var(--color-base-200); color: var(--color-error); }
+button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--color-error); }
 
 .sf-status { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: 0.82rem; color: var(--color-muted-content); }
 .sf-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-muted-content); flex: none; }
@@ -1542,33 +1349,26 @@ button.sf-cancel-wait:hover { background: var(--color-base-200); color: var(--co
 .sf-status-dot.sf-reconnecting { background: var(--color-warning); animation: sf-pulse 1.2s ease-in-out infinite; }
 @keyframes sf-pulse { 50% { opacity: 0.3; } }
 
-/* One primary action in the bar, Send, is the only solid button. The panel
-   launchers and End are quiet: no outline, a light ground on hover, a soft
-   accent tint while on. */
+/* The panel launchers shipped unstyled and rendered as native buttons next to
+   themed ones; they take the same treatment. */
+button.sf-theme-toggle,
 button.sf-annotate-toggle,
 button.sf-queue-toggle,
-button.sf-chat-toggle,
-button.sf-end-session {
+button.sf-chat-toggle {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-body-content);
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 5px 12px;
   min-height: 2rem;
   font-weight: 560;
 }
-:is(button.sf-annotate-toggle, button.sf-queue-toggle, button.sf-chat-toggle, button.sf-end-session):hover {
-  background: var(--color-base-200);
-  color: var(--color-base-content);
-}
-:is(button.sf-annotate-toggle, button.sf-queue-toggle, button.sf-chat-toggle).sf-on {
-  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100));
-  color: var(--color-primary);
-}
+button.sf-annotate-toggle.sf-on { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+button.sf-queue-toggle.sf-on, button.sf-chat-toggle.sf-on { border-color: var(--color-primary); color: var(--color-primary); }
 /* An empty queue's badge competed with the live controls for attention. */
 button.sf-queue-toggle.sf-empty .sf-queue-count {
   background: none;
@@ -1576,6 +1376,78 @@ button.sf-queue-toggle.sf-empty .sf-queue-count {
   border: 1px solid var(--border);
   font-weight: 600;
 }
+/* Page-width control: slider drives --content-max live, E/R nudge it,
+   double-click resets. */
+.sf-width { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+input.sf-width-slider { flex: none; width: 90px; accent-color: var(--color-primary); cursor: ew-resize; }
+.sf-width-keys {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted-content);
+  cursor: default;
+}
+
+/* Theme picker: family buttons at the left end of the topbar; the gear opens
+   the tuner popup. */
+.sf-theme-pick { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+button.sf-theme-pick-btn, button.sf-tuner-toggle {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-muted-content);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+button.sf-theme-pick-btn:hover, button.sf-tuner-toggle:hover { color: var(--color-base-content); }
+button.sf-theme-pick-btn.sf-on {
+  border-color: var(--border);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+}
+button.sf-tuner-toggle { padding: 3px 6px; }
+button.sf-tuner-toggle.sf-on { color: var(--color-primary); }
+
+/* Theme tuner popup (gear button, or ?tuner=1 to open on load). */
+.sf-tuner {
+  display: none;
+  position: fixed;
+  top: 70px;
+  right: 14px;
+  z-index: var(--chrome-z);
+  width: 210px;
+  padding: 12px 14px;
+  background: var(--color-base-100);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  font-size: 12.5px;
+  color: var(--color-base-content);
+}
+.sf-tuner.sf-open { display: block; }
+.sf-tuner-title { font-weight: 650; margin-bottom: 8px; }
+.sf-tuner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 5px 0;
+  color: var(--color-body-content);
+}
+input.sf-tuner-color { width: 34px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 4px; background: none; flex: none; }
+select.sf-tuner-select { max-width: 118px; font-size: 11.5px; }
+input.sf-tuner-range { width: 110px; accent-color: var(--color-primary); }
+.sf-tuner-actions { display: flex; gap: 8px; margin-top: 10px; }
+button.sf-tuner-send, button.sf-tuner-reset {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+}
+button.sf-tuner-send { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+
 /* Drafts are only sendable from inside the panel, which is closed by default —
    this surfaces the action in the topbar whenever drafts exist. */
 button.sf-send-now {
@@ -1593,8 +1465,17 @@ button.sf-send-now {
 }
 button.sf-send-now:hover { filter: brightness(1.06); }
 
-button.sf-end-session { color: var(--color-muted-content); }
-button.sf-end-session:hover { color: var(--color-error); }
+button.sf-end-session {
+  flex: none;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
+  color: var(--color-muted-content);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  min-height: 2rem;
+  font-weight: 560;
+}
+button.sf-end-session:hover { border-color: var(--color-error); color: var(--color-error); }
 
 /* rounds ---------------------------------------------------------------- */
 
@@ -1672,15 +1553,15 @@ button.sf-round-pill {
   flex: none;
 }
 button.sf-round-pill.sf-round-current { border-color: var(--color-primary); }
-button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)); color: var(--color-primary); border-color: transparent; }
+button.sf-round-pill.sf-round-active { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
 
 .sf-diff-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 0.78rem; color: var(--color-muted-content); min-width: 0; }
 .sf-diff-legend > * { display: inline-flex; align-items: center; gap: 5px; }
-/* Swatches are the page's hollow rings, so the legend matches what it explains. */
-.sf-diff-legend > *::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 2px solid; background: none !important; flex: none; }
-.sf-legend-added::before    { border-color: var(--color-success); }
-.sf-legend-modified::before { border-color: var(--color-primary); }
-.sf-legend-moved::before    { border-color: var(--color-info); }
+.sf-diff-legend > *::before { content: ""; width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.sf-legend-added::before    { background: var(--color-success); }
+.sf-legend-removed::before  { background: var(--color-error); }
+.sf-legend-modified::before { background: var(--color-warning); }
+.sf-legend-moved::before    { background: var(--color-info); }
 /* Shows a real badge instead of a swatch: the colour cycles per annotation, so a
    single swatch would name a colour that no particular mark has. */
 .sf-legend-annotated::before { display: none; }
@@ -1712,9 +1593,6 @@ button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--col
    strip keeps at least the pill it scrolled the active round to. */
 .sf-compact .sf-round-strip { order: 3; flex: 0 0 auto; max-width: 32%; }
 .sf-compact .sf-wip-marker { order: 4; }
-/* After the round pills it explains; no auto margin, which in the one-row bar
-   would push it away from them. */
-.sf-compact .sf-diff-legend { order: 4; flex: none; margin-left: 0; gap: 10px; }
 .sf-compact .sf-agent { order: 5; }
 .sf-compact .sf-status { order: 6; }
 .sf-compact .sf-send-now { order: 7; }
@@ -1724,13 +1602,15 @@ button.sf-round-pill.sf-round-active { background: color-mix(in oklab, var(--col
 .sf-compact .sf-chrome-toggle { order: 11; }
 
 /* !important because show() writes an inline display on several of these. */
+.sf-compact .sf-theme-pick,
+.sf-compact .sf-theme-toggle,
+.sf-compact .sf-width,
 .sf-compact .sf-end-session,
 .sf-compact .sf-round-keys,
 .sf-compact .sf-rounds-expand,
+.sf-compact .sf-diff-legend,
 .sf-compact .sf-round-note,
-.sf-compact .sf-status-label,
-/* The change legend stays even collapsed: the rings mean nothing without it. */
-.sf-compact .sf-legend-annotated { display: none !important; }
+.sf-compact .sf-status-label { display: none !important; }
 
 /* The marker keeps its warning colour but spends a dot's worth of room; the
    full wording stays on its tooltip. */
@@ -1766,11 +1646,11 @@ button.sf-chrome-toggle {
   width: 1.9rem;
   height: 1.9rem;
   padding: 0;
-  border: 0;
-  background: none;
+  border: 1px solid var(--border);
+  background: var(--color-base-200);
   color: var(--color-muted-content);
   border-radius: 999px;
-  transition: transform 160ms ease, color 160ms ease, background 160ms ease;
+  transition: transform 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 /* Drawn, not typed: the chevron glyphs sit off-centre and hairline-thin at this
    size in most of the theme fonts. */
@@ -1783,7 +1663,7 @@ button.sf-chrome-toggle::before {
   border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg);
 }
-button.sf-chrome-toggle:hover { color: var(--color-base-content); background: var(--color-base-200); }
+button.sf-chrome-toggle:hover { color: var(--color-base-content); border-color: var(--color-primary); }
 /* One glyph, two states: sf-on marks the expanded bar, where the affordance
    points back up at the row it collapses into. */
 button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
@@ -1843,10 +1723,8 @@ button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
 }
 .sf-queue-list { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
-/* No outline: the ground sets an item apart, and the left edge carries its
-   state. A linked item still gains a coloured outline. */
 .sf-queue-item {
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 9px 11px;
   background: var(--color-base-200);
@@ -1855,13 +1733,13 @@ button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
 }
 /* Border-left carries state, background carries kind — a widget row has both
    classes, so sharing one property would hide draft-vs-sent on widgets. */
-.sf-item-draft     { border-left: 2px solid var(--color-warning); padding-right: 42px; }
-.sf-item-submitted { border-left: 2px solid var(--color-success); }
+.sf-item-draft     { border-left: 3px solid var(--color-warning); padding-right: 42px; }
+.sf-item-submitted { border-left: 3px solid var(--color-success); }
 .sf-item-widget    { background: var(--color-base-300); }
 .sf-item-excerpt {
   font-size: 0.8rem;
   color: var(--color-muted-content);
-  /* Page prose, quoted: the body face, not a code face. */
+  font-family: var(--font-mono);
   /* excerpts are arbitrary page text — clamp instead of letting them run */
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1870,7 +1748,7 @@ button.sf-chrome-toggle.sf-on { transform: rotate(180deg); }
   overflow-wrap: anywhere;
 }
 .sf-item-comment { margin-top: 5px; overflow-wrap: anywhere; }
-.sf-item-round { font-size: 0.72rem; font-weight: 500; color: var(--color-muted-content); }
+.sf-item-round { font-size: 0.72rem; font-weight: 700; color: var(--color-muted-content); text-transform: uppercase; }
 /* Reads as a button, not a glyph: the bare × was mistaken for decoration and
    left users believing queued feedback could not be removed. */
 button.sf-item-remove, button.sf-draft-remove {
@@ -1929,7 +1807,7 @@ button.sf-queue-send:disabled { opacity: 0.5; cursor: not-allowed; }
   flex: none;
 }
 button.sf-chat-cancel {
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   background: none;
   color: var(--color-muted-content);
   border-radius: var(--radius-sm);
@@ -1937,7 +1815,7 @@ button.sf-chat-cancel {
   min-height: 1.7rem;
   font-size: 0.8rem;
 }
-button.sf-chat-cancel:hover { color: var(--color-error); background: var(--color-base-200); }
+button.sf-chat-cancel:hover { color: var(--color-error); border-color: var(--color-error); }
 
 .sf-chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); min-width: 0; }
 .sf-chat-input {
@@ -1991,7 +1869,6 @@ button.sf-chat-submit {
   overflow: auto;
   overflow-wrap: anywhere;
 }
-.sf-popover-text:focus-visible { outline: none; border-color: var(--color-primary); }
 .sf-popover-text {
   width: 100%;
   font: inherit;
@@ -2344,9 +2221,8 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
   pointer-events: none;
 }
 .sf-toast {
-  background: var(--color-base-100);
-  color: var(--color-base-content);
-  border: 1px solid var(--border);
+  background: var(--color-base-content);
+  color: var(--color-base-100);
   border-radius: 999px;
   padding: 7px 16px;
   font-size: 0.85rem;
@@ -2447,12 +2323,10 @@ button.sf-end-session.sf-armed { border-color: var(--color-error); color: var(--
 
 /* Prior-round verdict, carried onto the current round's widget: the tag names
    the round, and the button you chose then renders pressed. */
-/* A pick from an earlier round is a dashed tint, not the solid fill of this
-   round's answer, so an unanswered round never looks answered. */
-[data-widget].sf-prior-answered:not(.sf-recorded) [data-option][aria-pressed="true"] {
-  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
-  color: var(--color-base-content);
-  border: 1px dashed var(--color-primary);
+[data-widget].sf-prior-answered [data-option][aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  border-color: transparent;
 }
 .sf-prior {
   align-self: center;

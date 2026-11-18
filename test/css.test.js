@@ -52,8 +52,7 @@ describe('easel.css', () => {
     assert.equal(got.cell, '-2px', 'hovered cell must draw its outline inward')
     assert.notEqual(got.outside, '-2px', 'outside a tablewrap the outline stays outward')
     assert.equal(got.widgetRule, '0px', 'a widget inside a table must not draw a second rule')
-    // No widget draws a rule now: space sets it apart (fewer borders).
-    assert.equal(got.widgetRuleOutside, '0px', 'a widget outside a table drew a rule')
+    assert.notEqual(got.widgetRuleOutside, '0px', 'a widget outside a table keeps its rule')
   })
 
   test('a pick row fuses with the row above — no separator between them', async () => {
