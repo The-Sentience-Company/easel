@@ -18,38 +18,20 @@ describe('wall', () => {
   })
 })
 
-describe('frame', () => {
-  const decision = (inner) => `<div data-widget="decision" data-widget-id="d1">${inner}<div class="sd-widget-options"><button type="button" data-option="a">a</button></div></div>`
-
-  test('a decision without the frame lines is flagged by widget id', () => {
-    const findings = readerChecks(decision('<div class="sd-widget-prompt">q</div>'))
-    assert.equal(findings.filter((f) => f.type === 'frame').length, 1)
-    assert.match(findings.find((f) => f.type === 'frame').sample, /d1/)
-  })
-
-  test('a decision carrying the frame is clean, and a vote needs none', () => {
-    assert.equal(readerChecks(decision('<div class="sd-widget-frame"><p>x</p></div><div class="sd-widget-prompt">q</div>')).filter((f) => f.type === 'frame').length, 0)
-    const vote = '<div data-widget="approve" data-widget-id="v1"><div class="sd-widget-prompt">ok?</div><div class="sd-widget-options"><button type="button" data-option="yes">yes</button></div></div>'
-    assert.equal(readerChecks(vote).filter((f) => f.type === 'frame').length, 0)
-  })
-})
-
-const ABOUT = '<div class="sd-about"><div class="sd-about-title">What this is</div><p>The chat finds a tool it was not given and runs it; this round changes how it runs one.</p></div>'
+const ABOUT = '<div class="sd-about"><p>The chat finds a tool it was not given and runs it; this round changes how it runs one.</p></div>'
 
 describe('about', () => {
   const section = '<section class="sd-section"><h2>h</h2><p>b</p></section>'
   const types = (html, opts) => readerChecks(html, opts).map((f) => f.type)
 
-  test('a review board with no "What this is" block is flagged; other templates are not', () => {
-    assert.deepEqual(types(section, { template: 'review' }), ['about'])
-    assert.deepEqual(types(section, { template: 'queue' }), [])
-    assert.deepEqual(types(section), [])
+  test('a review board without an opening paragraph is not flagged: it is optional', () => {
+    assert.deepEqual(types(section, { template: 'review' }), [])
   })
 
-  test('a block that says what the work is passes; one that opens on the ask or a status is flagged with its first words', () => {
+  test('an opening paragraph that says what the work is passes; one that opens on the ask or a status is flagged with its first words', () => {
     assert.deepEqual(types(ABOUT + section, { template: 'review' }), [])
     for (const opener of ['What I need from you', '5 decisions, then one approve.', 'One pick.', 'Round 4: done.', 'Approve the three lines below.', 'Sign off one case.']) {
-      const html = `<div class="sd-about"><div class="sd-about-title">What this is</div><p>${opener}</p></div>` + section
+      const html = `<div class="sd-about"><p>${opener}</p></div>` + section
       const f = readerChecks(html, { template: 'review' }).filter((x) => x.type === 'about')
       assert.equal(f.length, 1, opener)
       assert.match(f[0].detail, /opens on the ask or a status/)
@@ -59,7 +41,7 @@ describe('about', () => {
 
   test('a count that goes on to say what the work is in the same paragraph passes', () => {
     const p = '5 decisions, then one approve. First: which screens the rule covers. The rule is drafted around the recommended answers below; the PR opens with this text and merges only after you approve it here.'
-    assert.deepEqual(types(`<div class="sd-about"><div class="sd-about-title">What this is</div><p>${p}</p></div>` + section, { template: 'review' }), [])
+    assert.deepEqual(types(`<div class="sd-about"><p>${p}</p></div>` + section, { template: 'review' }), [])
   })
 })
 
@@ -120,6 +102,13 @@ describe('pointer', () => {
 })
 
 describe('label', () => {
+  test('an option card counts only its label, not its consequence line', () => {
+    const card = '<button type="button" data-option="a"><span class="sd-option-label">Fix emails<span class="sd-widget-pick">Recommended</span></span><span class="sd-option-basis">Prices, a pay button and an ended-trial email get added to every message.</span></button>'
+    assert.equal(readerChecks(card).filter((f) => f.type === 'label').length, 0)
+    const long = '<button type="button" data-option="b"><span class="sd-option-label">Fix every single one of the emails now</span><span class="sd-option-basis">x</span></button>'
+    assert.equal(readerChecks(long).filter((f) => f.type === 'label').length, 1)
+  })
+
   test('button over five words is flagged', () => {
     const html = '<button data-option="a">Approve as written with changes today</button>'
     const findings = readerChecks(html)

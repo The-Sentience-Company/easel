@@ -298,18 +298,15 @@ describe('widgets', () => {
     assert.throws(() => widget({ type: 'vote', id: 'w', prompt: 'p', options: [] }), TemplateError)
   })
 
-  test('option objects render the basis list above the buttons', () => {
+  test('option objects render as cards: label, the pick marked, the basis under it, all inside the button', () => {
     const html = widget({ type: 'decision', id: 'w1', prompt: 'Retry?', options: [
       { value: 'yes', label: 'Do it', basis: 'Adds 50ms per call', recommended: true },
       { value: 'no', label: 'Skip it', basis: 'Saves the latency' },
     ] })
-    const basisIdx = html.indexOf('sd-widget-basis')
-    const optionsIdx = html.indexOf('sd-widget-options')
-    assert.ok(basisIdx !== -1, 'no sd-widget-basis list')
-    assert.ok(optionsIdx !== -1, 'no sd-widget-options')
-    assert.ok(basisIdx < optionsIdx, 'basis list must appear before the buttons')
-    assert.match(html, /sd-widget-pick/)
-    assert.match(html, /recommended/)
+    assert.match(html, /class="sd-widget-options sd-widget-cards"/)
+    assert.match(html, /<button type="button" data-option="yes"><span class="sd-option-label">Do it<span class="sd-widget-pick">Recommended<\/span><\/span><span class="sd-option-basis">Adds 50ms per call<\/span><\/button>/)
+    assert.match(html, /<button type="button" data-option="no"><span class="sd-option-label">Skip it<\/span><span class="sd-option-basis">Saves the latency<\/span><\/button>/)
+    assert.doesNotMatch(html, /sd-widget-basis/, 'the separate list above the buttons is gone')
   })
 
   test('two recommended options throw', () => {
@@ -321,7 +318,7 @@ describe('widgets', () => {
 
   test('plain string options render without a basis list, same shape as before', () => {
     const html = widget({ type: 'vote', id: 'w1', prompt: 'Ship?', options: ['yes', 'no'] })
-    assert.doesNotMatch(html, /sd-widget-basis/)
+    assert.doesNotMatch(html, /sd-widget-cards/)
     assert.match(html, /<button type="button" data-option="yes">yes<\/button>/)
     assert.match(html, /<button type="button" data-option="no">no<\/button>/)
   })
@@ -423,17 +420,32 @@ describe('review', () => {
   describe('decision frame', () => {
     const board = (d) => ({ title: 't', about: 'the work', sections: [{ heading: 'h', body: 'b', decisions: [d] }] })
 
-    test('renders what and why-you above the question, and the basis per option', () => {
+    // Ahmet: "this is unnecessary what this is and why you decide". The fields
+    // are still accepted, so data written to the old rule publishes unchanged.
+    test('what and why_you are accepted but not shown; the basis per option is', () => {
       const html = review.render(board(framed({ id: 'd', question: 'Which?', options: ['a', 'b'] })))
-      assert.match(html, /<strong>What this is:<\/strong> what a person gets/)
-      assert.match(html, /<strong>Why you decide:<\/strong> why the reader decides/)
-      assert.ok(html.indexOf('sd-widget-frame') < html.indexOf('sd-widget-prompt'), 'the frame precedes the question')
+      assert.doesNotMatch(html, /What this is:|Why you decide:|sd-widget-frame/)
+      assert.doesNotMatch(html, /why the reader decides/)
       assert.match(html, /what a changes/)
     })
 
+    test('a decision without what or why_you renders', () => {
+      const d = framed({ id: 'd', question: 'q', options: ['a', 'b'] })
+      delete d.what
+      delete d.why_you
+      assert.match(review.render(board(d)), /data-widget-id="d"/)
+    })
+
+    test('two decisions with the same why_you render', () => {
+      const line = 'Every line a model reads is yours to approve before merge.'
+      const html = review.render({ title: 't', about: 'the work', sections: [{ heading: 'h', body: 'b', decisions: [
+        framed({ id: 'first', question: 'q1', options: ['a'], why_you: line }),
+        framed({ id: 'second', question: 'q2', options: ['a'], why_you: line }),
+      ] }] })
+      assert.match(html, /data-widget-id="second"/)
+    })
+
     for (const [name, mutate, message] of [
-      ['what', (d) => { delete d.what }, /sections\[0\]\.decisions\[0\]\.what/],
-      ['why_you', (d) => { delete d.why_you }, /sections\[0\]\.decisions\[0\]\.why_you/],
       ['an option basis', (d) => { d.options[1] = { value: 'b', label: 'B' } }, /sections\[0\]\.decisions\[0\]\.options\[1\]\.basis/],
       ['a string option', (d) => { d.options[0] = 'a' }, /options\[0\]\.basis/],
     ]) {
@@ -444,61 +456,27 @@ describe('review', () => {
       })
     }
 
-    test('a vote carries no frame and still renders with string options', () => {
-      const html = review.render({ title: 't', about: 'the work', votes: [{ id: 'v', question: 'ok?', type: 'approve' }] })
-      assert.match(html, /data-widget="approve"/)
-      assert.doesNotMatch(html, /sd-widget-frame/)
-    })
-
-    test('legacy mode renders a frameless decision as before, and a framed one with its frame', () => {
+    test('legacy mode renders a decision without basis lines as before', () => {
       const bare = review.render(board({ id: 'd', question: 'q', options: ['a'] }), { legacy: true })
       assert.match(bare, /data-widget-id="d"/)
-      assert.doesNotMatch(bare, /sd-widget-frame/)
-      const full = review.render(board(framed({ id: 'd', question: 'q', options: ['a'] })), { legacy: true })
-      assert.match(full, /sd-widget-frame/)
     })
   })
 
   describe('about: what the work is, before any ask', () => {
     const board = (extra) => ({ title: 't', sections: [{ heading: 'h', body: 'b' }], ...extra })
 
-    test('renders as a "What this is" block between the summary and the first section', () => {
+    test('renders as plain opening prose between the summary and the first section, with no label', () => {
       const html = review.render(board({ summary: 'Two decisions.', about: 'The chat finds a tool it was not given.\n\nThis round changes how it runs one.' }))
       const at = html.indexOf('class="sd-about')
       assert.ok(at > html.indexOf('Two decisions.'), 'after the summary')
       assert.ok(at < html.indexOf('<section'), 'before the first section')
-      assert.match(html, /<div class="sd-about-title">What this is<\/div><p>The chat finds a tool/)
+      assert.match(html, /<div class="sd-about"><p>The chat finds a tool/)
+      assert.doesNotMatch(html, /What this is/)
     })
 
-    test('a board without it fails with the path', () => {
-      assert.throws(() => review.render(board({})), (err) => err instanceof TemplateError && /review\.about/.test(err.message))
+    test('a board without it renders; a blank one still fails with the path', () => {
+      assert.match(review.render(board({})), /<section/)
       assert.throws(() => review.render(board({ about: '  ' })), (err) => err instanceof TemplateError && /review\.about/.test(err.message))
-    })
-
-    test('legacy mode renders without it, and with it when given', () => {
-      assert.doesNotMatch(review.render(board({}), { legacy: true }), /sd-about/)
-      assert.match(review.render(board({ about: 'the work' }), { legacy: true }), /sd-about/)
-    })
-  })
-
-  describe('one "Why you decide" line per decision', () => {
-    const two = (a, b) => ({
-      title: 't', about: 'the work',
-      sections: [{ heading: 'h', body: 'b', decisions: [
-        framed({ id: 'first', question: 'q1', options: ['a'], why_you: a }),
-        framed({ id: 'second', question: 'q2', options: ['a'], why_you: b }),
-      ] }],
-    })
-
-    test('two decisions sharing one line fail naming both paths', () => {
-      const line = 'Every line a model reads is yours to approve before merge.'
-      assert.throws(() => review.render(two(line, ` ${line.toUpperCase()} `)), (err) =>
-        err instanceof TemplateError && /decisions\[1\]\.why_you repeats .*decisions\[0\]\.why_you/.test(err.message))
-    })
-
-    test('two decisions with their own lines render', () => {
-      const html = review.render(two('If the reply shape is wrong the model calls a tool it no longer has.', 'If the key accepts a re-search, a model that forgets the tool passes.'))
-      assert.match(html, /data-widget-id="second"/)
     })
   })
 
@@ -512,7 +490,7 @@ describe('review', () => {
       ] }]))
       assert.equal((html.match(/class="sd-grid"/g) || []).length, 1)
       assert.equal((html.match(/class="sd-card"/g) || []).length, 2)
-      assert.match(html, /<div class="sd-card-title">Goal<\/div><div class="sd-row"><span class="sd-badge sd-badge-success">approved<\/span><\/div><p>x<\/p>/)
+      assert.match(html, /<div class="sd-card-title">Goal<\/div><div class="sd-row sd-meta"><span class="sd-badge sd-badge-success">approved<\/span><\/div><p>x<\/p>/)
     })
 
     test('callouts carry their tone; two share a grid, one stands alone', () => {
@@ -1345,7 +1323,7 @@ describe('queue', () => {
     assert.ok(html2.includes('data-option="no"'))
   })
 
-  test('option objects with basis and recommended render the basis list above the buttons', async () => {
+  test('option objects with basis and recommended render as option cards', async () => {
     const data = await base()
     data.entries[0].options = [
       { value: 'approve', label: 'Approve', basis: 'Ships the design as-is.', recommended: true },
@@ -1353,13 +1331,10 @@ describe('queue', () => {
     ]
     const html = queue.render(data)
     const card = html.slice(html.indexOf('design-note-extraction-table') - 500, html.indexOf('design-note-extraction-table') + 3000)
-    assert.match(card, /class="sd-widget-basis"/)
-    assert.match(card, /Ships the design as-is\./)
-    assert.match(card, /Blocks the PR until revised\./)
-    assert.match(card, /class="sd-widget-pick">recommended</)
-    const basisPos = card.indexOf('sd-widget-basis')
-    const buttonsPos = card.indexOf('sd-widget-options')
-    assert.ok(basisPos < buttonsPos, 'basis list must appear above the buttons')
+    assert.match(card, /class="sd-widget-options sd-widget-cards"/)
+    assert.match(card, /<span class="sd-option-basis">Ships the design as-is\.<\/span>/)
+    assert.match(card, /<span class="sd-option-basis">Blocks the PR until revised\.<\/span>/)
+    assert.match(card, /class="sd-widget-pick">Recommended</)
   })
 })
 

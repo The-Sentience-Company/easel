@@ -149,6 +149,10 @@ async function renderSource(board) {
     // A board opened before this daemon started predates the decision frame;
     // it publishes as before and the reader checks warn instead.
     raw = mod.render(data, { legacy: board.created_at < DAEMON_STARTED_AT })
+    // The agent picks the page width, not the reader. An empty marker div, so
+    // the choice rides with the round and needs no store column; easel.css
+    // widens the column when it sees one.
+    if (data?.width === 'wide') raw = '<div class="sd-width-wide"></div>' + raw
   } else if (/\.md$/i.test(board.file)) {
     raw = markdown(await readFile(board.file, 'utf8'))
   } else {
@@ -559,16 +563,14 @@ const GATE_SCRIPT =
   `b.__sfGateTimer=setTimeout(function(){reveal("timeout")},${GATE_MAX_HOLD_MS});` +
   `b.querySelector(".sf-gate-show").onclick=function(){reveal("manual")}})()</script>`
 
+// Light or dark follows the computer, live; a ?theme=<family> link picks a
+// family. Runs before first paint, so the board never flashes the wrong mode.
 const THEME_SCRIPT =
-  `<script>(function(){var p=new URLSearchParams(location.search).get("theme")` +
-  `||localStorage.getItem("sf-theme-family");` +
+  `<script>(function(){var p=new URLSearchParams(location.search).get("theme");` +
   `var m=matchMedia("(prefers-color-scheme: dark)");` +
-  `function sync(){var o=localStorage.getItem("sf-theme");` +
-  `var mode=o==="light"||o==="dark"?o:m.matches?"dark":"light";` +
+  `function sync(){var mode=m.matches?"dark":"light";` +
   `document.documentElement.dataset.theme=p?p+"-"+mode:mode}` +
-  `sync();m.addEventListener("change",sync);` +
-  `var w=localStorage.getItem("sf-width");` +
-  `if(w)document.documentElement.style.setProperty("--content-max",w+"px")})()</script>`
+  `sync();m.addEventListener("change",sync)})()</script>`
 
 function shellPage(board) {
   return `<!doctype html>
