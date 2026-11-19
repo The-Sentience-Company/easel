@@ -6,7 +6,7 @@ The template decides the shape. These decide whether the reader can act on it. E
 
 When the board's subject IS a change to something concrete, or to how something behaves, the change is on the board:
 
-- a real unified diff in a ` ```diff ` fence for any text, prompt, config, or rule edit — **the fence works in every template's prose field**, not only `page`
+- a real unified diff in a ` ```diff ` fence for any text, prompt, config, or rule edit — **the fence works in every template's prose field**, not only `page`. After the reader approves a round, the old side is the approved wording and unchanged sections are left out, so the diff shows only the new edit
 - the verbatim payload in an `sd-collapse` for anything being reasoned about
 - a rendered mockup for every UI option, showing every state the decision turns on — selected, opened, hovered — plus the surface it sits in; islands allow full CSS, so those states render
 - real images for an image vote, at the size they ship at
