@@ -22,7 +22,7 @@ const CHROME_CLASSES = [
   'sf-gate-banner', 'sf-gated', 'sf-end-session', 'sf-gate-stalled',
   'sf-theme-toggle', 'sf-width', 'sf-width-slider', 'sf-width-keys',
   'sf-theme-pick', 'sf-theme-pick-btn', 'sf-tuner-toggle',
-  'sf-chrome-toggle', 'sf-compact', 'sf-queue-toggle', 'sf-chat-toggle', 'sf-empty',
+  'sf-chrome-toggle', 'sf-compact', 'sf-queue-toggle', 'sf-chat-toggle', 'sf-empty', 'sf-next-pick',
   'sf-tuner', 'sf-tuner-title', 'sf-tuner-row', 'sf-tuner-color',
   'sf-tuner-select', 'sf-tuner-range', 'sf-tuner-actions', 'sf-tuner-send', 'sf-tuner-reset',
   'sf-prior-answered',

@@ -1251,7 +1251,7 @@ button.sf-marker:hover { filter: brightness(1.12); }
   30%      { opacity: 1; }
 }
 /* The overlay resolves against its own cell, not some positioned ancestor. */
-#sf-content :is(td, th).sf-flash { position: relative; }
+#sf-content :is(td, th, [data-widget]).sf-flash { position: relative; }
 #sf-content .sf-flash::after {
   content: "";
   position: absolute;
@@ -1352,6 +1352,7 @@ button.sf-cancel-wait:hover { border-color: var(--color-error); color: var(--col
 /* The panel launchers shipped unstyled and rendered as native buttons next to
    themed ones; they take the same treatment. */
 button.sf-theme-toggle,
+button.sf-next-pick,
 button.sf-annotate-toggle,
 button.sf-queue-toggle,
 button.sf-chat-toggle {
@@ -1369,6 +1370,9 @@ button.sf-chat-toggle {
 }
 button.sf-annotate-toggle.sf-on { background: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
 button.sf-queue-toggle.sf-on, button.sf-chat-toggle.sf-on { border-color: var(--color-primary); color: var(--color-primary); }
+/* Outlined while a pick is open; with none left the shared disabled rule greys it. */
+button.sf-next-pick { white-space: nowrap; }
+button.sf-next-pick:enabled { border-color: var(--color-primary); color: var(--color-primary); }
 /* An empty queue's badge competed with the live controls for attention. */
 button.sf-queue-toggle.sf-empty .sf-queue-count {
   background: none;
@@ -1598,8 +1602,9 @@ button.sf-round-pill.sf-round-active { background: var(--color-primary); color: 
 .sf-compact .sf-send-now { order: 7; }
 .sf-compact .sf-annotate-toggle { order: 8; }
 .sf-compact .sf-queue-toggle { order: 9; }
-.sf-compact .sf-chat-toggle { order: 10; }
-.sf-compact .sf-chrome-toggle { order: 11; }
+.sf-compact .sf-next-pick { order: 10; }
+.sf-compact .sf-chat-toggle { order: 11; }
+.sf-compact .sf-chrome-toggle { order: 12; }
 
 /* !important because show() writes an inline display on several of these. */
 .sf-compact .sf-theme-pick,
@@ -1626,6 +1631,7 @@ button.sf-round-pill.sf-round-active { background: var(--color-primary); color: 
 .sf-compact .sf-round-strip.sf-expanded { flex-wrap: nowrap; flex-basis: auto; overflow-x: auto; }
 .sf-compact button.sf-round-pill { padding: 2px 10px; min-height: 1.6rem; font-size: 0.78rem; }
 .sf-compact button.sf-annotate-toggle,
+.sf-compact button.sf-next-pick,
 .sf-compact button.sf-queue-toggle,
 .sf-compact button.sf-chat-toggle,
 .sf-compact button.sf-send-now { padding: 4px 10px; min-height: 1.85rem; font-size: 0.85rem; }

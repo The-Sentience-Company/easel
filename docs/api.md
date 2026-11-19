@@ -254,6 +254,7 @@ body.sf-shell
 │   │   ├── .sf-status                   SSE connection state
 │   │   │   └── .sf-status-dot           .sf-connected | .sf-reconnecting
 │   │   ├── button.sf-theme-toggle       cycles auto → light → dark ("[T]heme: {mode}"); override in localStorage sf-theme; hotkey "t"
+│   │   ├── button.sf-next-pick          "[N]ext pick · {n} left": jumps to the next unanswered widget on the board, in page order from where the reader is and across tabs, wrapping; opens the pick's tab and any folded block around it, scrolls to it and flashes it. Disabled as "No open picks here" once none is open; hidden on queue boards. Hotkey "n", and "b" steps back. A `#pick=<widget id>` link opens that pick the same way
 │   │   ├── button.sf-annotate-toggle    .sf-on when annotate mode active (on at load); hotkey "a"
 │   │   ├── button.sf-send-now           "Send N" — visible only while drafts exist; hotkey Cmd+Shift+S (Ctrl+Shift+S) sends from anywhere on the board, even while typing; a note open in the comment pop-up is queued first. Not inside the whiteboard or an island frame
 │   │   ├── button.sf-queue-toggle       opens/closes the queue panel (.sf-on while open); contains .sf-queue-count, and .sf-empty while no draft is queued; hotkey "f"
@@ -320,7 +321,7 @@ body.sf-shell
 | `sf-hover` | any node | Current annotation hover target. |
 | `sf-annotated` | node with `data-sid` | Has at least one queued/submitted annotation. Hosts a `button.sf-marker` — a gutter badge carrying a 2-char id (`A1`, `A2`, …) and a cycling hue from `data-marker-hue`, matching its feedback row. Deliberately not a left bar: that shape belongs to the diff marks. Scroll containers (`pre`, `.sd-diagram`, `.sd-tablewrap`) clip a gutter badge, so they tuck it inside and add a dashed outline; table rows host it in their first cell, since a button is not valid content for a `<tr>`. |
 | `sf-linked` | anchored node or `.sf-queue-item` | Hover on either side of an annotation↔row pair highlights the other. |
-| `sf-flash` | node with `data-sid` | Transient, ~1.2s: a feedback row was clicked and scrolled its anchor into view. |
+| `sf-flash` | node with `data-sid`, or a `[data-widget]` | Transient, ~1.2s: a feedback row was clicked and scrolled its anchor into view, or Next pick jumped to this widget. |
 | `sf-diff-added` / `sf-diff-modified` / `sf-diff-moved` | node with `data-sid` | Viewing a round with the diff view on. |
 | `sf-recorded` | `[data-widget]` node | Widget holds a queued (or sent) value; the queue panel's Remove drops a queued one. |
 | `sf-prior-answered` | `[data-widget]` node | The reader answered this widget on a prior round; the matching `[data-option]` carries `aria-pressed="true"` and renders pressed. Buttons stay live — a click records a new answer for the current round. |
