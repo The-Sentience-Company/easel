@@ -48,6 +48,8 @@ const ROUND_BACK_HOTKEY = 'q'
 const ROUND_FORWARD_HOTKEY = 'w'
 const TAB_BACK_HOTKEY = 'z'
 const TAB_FORWARD_HOTKEY = 'x'
+const NEXT_PICK_HOTKEY = 'n'
+const PREV_PICK_HOTKEY = 'b'
 const WIDTH_NARROW_HOTKEY = 'e'
 const WIDTH_WIDEN_HOTKEY = 'r'
 const SEND_HOTKEY = 's'
@@ -225,6 +227,11 @@ function buildChrome() {
   ui.annotateToggle.type = 'button'
   ui.annotateToggle.title = `Annotate mode (press ${ANNOTATE_HOTKEY})`
   ui.annotateToggle.onclick = () => setAnnotating(!state.annotating)
+  ui.nextPick = el('button', 'sf-next-pick')
+  ui.nextPick.type = 'button'
+  ui.nextPick.title = `Jump to the next unanswered pick on this board (press ${NEXT_PICK_HOTKEY}; ${PREV_PICK_HOTKEY} goes back)`
+  ui.nextPick.onclick = () => stepPick(1)
+  show(ui.nextPick, false)
   // Panel launchers live in the always-visible topbar: the panels themselves are
   // display:none until sf-open, so nothing inside them can be the opener.
   ui.queueToggle = el('button', 'sf-queue-toggle sf-empty', '[F]eedback')
@@ -254,7 +261,7 @@ function buildChrome() {
     localStorage.setItem(COMPACT_STORAGE, state.compact ? '1' : '0')
   }
 
-  topbar.append(brand, ui.themePick, ui.title, ui.wipMarker, ui.agent, ui.status, ui.themeToggle, ui.width, ui.annotateToggle, ui.sendNow, ui.queueToggle, ui.chatToggle, ui.endSession, ui.compactToggle)
+  topbar.append(brand, ui.themePick, ui.title, ui.wipMarker, ui.agent, ui.status, ui.themeToggle, ui.width, ui.nextPick, ui.annotateToggle, ui.sendNow, ui.queueToggle, ui.chatToggle, ui.endSession, ui.compactToggle)
 
   // A narrow viewport opens collapsed; once the button is pressed that choice
   // is the browser's, at every width.
@@ -457,19 +464,22 @@ let tabSets = []
 const tabStripObserver = new ResizeObserver((entries) => entries.forEach((e) => markTabOverflow(e.target)))
 
 // A hand-edited or truncated link must fall back to the first tab, not abort the render.
-const hashTab = () => {
-  const m = location.hash.match(/^#tab=(.+)$/)
+const hashValue = (name) => {
+  const m = location.hash.match(new RegExp(`^#${name}=(.+)$`))
   try {
     return m ? decodeURIComponent(m[1]) : null
   } catch {
     return null
   }
 }
+const hashTab = () => hashValue('tab')
 
 window.addEventListener('hashchange', () => {
   const set = tabSets[0]
   const k = set ? set.panels.findIndex((p) => p.dataset.tab === hashTab()) : -1
   if (k !== -1) selectTab(set, k)
+  linkedPick = hashValue('pick')
+  openLinkedPick()
 })
 
 function attachTabs() {
@@ -670,6 +680,71 @@ function render() {
     attachTabs()
   }
   refreshTabBadges()
+  refreshNextPick()
+  openLinkedPick()
+}
+
+// A pick is a widget; open means no answer clicked, sent, or carried from an earlier round.
+function openPicks() {
+  if (ended || state.data?.board.template === 'queue') return []
+  return [...CONTENT.querySelectorAll('[data-widget]:not(.sf-recorded, .sf-prior-answered)')]
+}
+
+function refreshNextPick() {
+  const left = openPicks().length
+  show(ui.nextPick, state.data.board.template !== 'queue')
+  ui.nextPick.disabled = left === 0
+  ui.nextPick.textContent = left ? `[N]ext pick · ${left} left` : 'No open picks here'
+}
+
+// Whether a pick sits below the reading line. One in a hidden tab has no box: left of
+// the open tab it is behind once the tab bar is in view, right of it ahead until that tab is scrolled past.
+function pickAhead(pick, line) {
+  const set = tabSets.find((s) => s.panels.some((p) => p.hidden && p.contains(pick)))
+  if (set) {
+    const shown = set.panels.find((p) => !p.hidden)
+    return shown.compareDocumentPosition(pick) & Node.DOCUMENT_POSITION_FOLLOWING
+      ? shown.getBoundingClientRect().bottom >= line
+      : set.bar.getBoundingClientRect().top >= window.innerHeight
+  }
+  // A pick folded away stands where the block that folds it does.
+  let boxed = pick
+  while (!boxed.getClientRects().length && boxed !== CONTENT) boxed = boxed.parentElement
+  return boxed.getBoundingClientRect().top >= line
+}
+
+// While the pick the last jump landed on is still on screen, steps go from it;
+// once the reader scrolls away, from the top of what they are reading.
+let lastPick = null
+function stepPick(delta) {
+  const open = openPicks()
+  if (!open.length) return
+  const line = CHROME.getBoundingClientRect().bottom
+  const box = lastPick?.getBoundingClientRect()
+  const here = Boolean(box) && box.bottom > line && box.top < window.innerHeight
+  const pool = here ? open.filter((w) => w !== lastPick) : open
+  const ahead = here
+    ? (w) => lastPick.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING
+    : (w) => pickAhead(w, line)
+  const target = delta > 0 ? pool.find(ahead) ?? pool[0] : pool.findLast((w) => !ahead(w)) ?? pool.at(-1)
+  jumpToPick(target ?? lastPick)
+}
+
+function jumpToPick(pick) {
+  for (let n = pick.parentElement; n !== CONTENT; n = n.parentElement) {
+    if (n.tagName === 'DETAILS') n.open = true
+    else if (n.classList.contains('sf-collapsed')) n.click()
+  }
+  lastPick = pick
+  revealNode(pick, false)
+}
+
+// Read at load: opening the first tab rewrites the hash before the first render ends.
+let linkedPick = hashValue('pick')
+function openLinkedPick() {
+  const pick = linkedPick && CONTENT.querySelector(`[data-widget-id="${CSS.escape(linkedPick)}"]`)
+  linkedPick = null
+  if (pick) jumpToPick(pick)
 }
 
 // A widget answered on an earlier round shows that verdict as a badge, so a
@@ -1181,10 +1256,13 @@ function highlightQueueRows(key, on) {
 
 function revealAnchor(sid) {
   const node = CONTENT.querySelector(`[data-sid="${CSS.escape(sid)}"]`)
-  if (!node) return
+  if (node) revealNode(node, true)
+}
+
+function revealNode(node, smooth) {
   revealTabFor(node)
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  node.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+  node.scrollIntoView({ behavior: smooth && !reduced ? 'smooth' : 'auto', block: 'center' })
   clearTimeout(flashTimer)
   CONTENT.querySelectorAll('.sf-flash').forEach((n) => n.classList.remove('sf-flash'))
   void node.offsetWidth // restart the animation if the same row is clicked twice
@@ -1632,7 +1710,7 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (typingInFormField(e.target)) return
   const key = e.key.toLowerCase()
-  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY, TAB_BACK_HOTKEY, TAB_FORWARD_HOTKEY].includes(key)) return
+  if (![QUEUE_HOTKEY, CHAT_HOTKEY, THEME_HOTKEY, ANNOTATE_HOTKEY, ROUND_BACK_HOTKEY, ROUND_FORWARD_HOTKEY, WIDTH_NARROW_HOTKEY, WIDTH_WIDEN_HOTKEY, TAB_BACK_HOTKEY, TAB_FORWARD_HOTKEY, NEXT_PICK_HOTKEY, PREV_PICK_HOTKEY].includes(key)) return
   // A board without tabs leaves Z and X to the browser.
   if ((key === TAB_BACK_HOTKEY || key === TAB_FORWARD_HOTKEY) && !tabSets.length) return
   e.preventDefault()
@@ -1644,6 +1722,8 @@ document.addEventListener('keydown', (e) => {
   else if (key === ROUND_FORWARD_HOTKEY) stepRound(1)
   else if (key === TAB_BACK_HOTKEY) stepTab(-1)
   else if (key === TAB_FORWARD_HOTKEY) stepTab(1)
+  else if (key === NEXT_PICK_HOTKEY) stepPick(1)
+  else if (key === PREV_PICK_HOTKEY) stepPick(-1)
   else if (key === WIDTH_NARROW_HOTKEY) nudgeWidth(-1)
   else nudgeWidth(1)
 })
@@ -1752,6 +1832,7 @@ function setEnded() {
   show(ui.endedBanner, true)
   document.body.classList.add('sf-ended')
   disableContentControls()
+  if (state.data) refreshNextPick()
   if (wbIndex !== null && wbReady) postToWhiteboard({ type: WB.boardEnded })
 }
 
