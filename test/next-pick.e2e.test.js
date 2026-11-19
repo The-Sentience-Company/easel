@@ -59,8 +59,21 @@ async function openBoard(title, hash = '') {
   return { key, page, source }
 }
 
-async function openPage(key, hash = '') {
+// The flash lasts 1.2s, which a busy machine can outlast, so each page keeps the last pick flashed.
+async function newPage() {
   const page = await browser.newPage()
+  await page.evaluateOnNewDocument(() => {
+    new MutationObserver((records) => {
+      for (const { target } of records) {
+        if (target.matches?.('[data-widget].sf-flash')) window.__flashed = target.dataset.widgetId
+      }
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] })
+  })
+  return page
+}
+
+async function openPage(key, hash = '') {
+  const page = await newPage()
   await page.setViewport({ width: 1300, height: 800 })
   await page.goto(`${BASE}/b/${key}${hash}`, { waitUntil: 'networkidle0', timeout: 60000 })
   await page.waitForSelector('.sf-tabs')
@@ -69,7 +82,7 @@ async function openPage(key, hash = '') {
 
 const probe = (page) => page.evaluate(() => {
   const button = document.querySelector('.sf-next-pick')
-  const flashed = document.querySelector('#sf-content [data-widget].sf-flash')
+  const flashed = window.__flashed ? document.querySelector(`[data-widget-id="${window.__flashed}"]`) : null
   const box = flashed?.getBoundingClientRect()
   return {
     label: button ? button.textContent : null,
@@ -167,7 +180,7 @@ test('a jump opens the folded block its pick sits in', SLOW, async () => {
     `<details><summary>a folded case</summary>${pick('in-details')}</details>`,
   ].join('\n'))
   const key = (await api('POST', '/api/open', { file, title: 'folded picks' })).data.key
-  const page = await browser.newPage()
+  const page = await newPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0', timeout: 60000 })
   await waitLabel(page, '[N]ext pick · 2 left')
   await page.evaluate(() => document.querySelector('.sd-section .sf-sec-toggle').click())
@@ -194,11 +207,11 @@ test('a #pick=<id> link opens the tab that pick sits on and flashes it', SLOW, a
   const { key, page } = await openBoard('linked pick')
   await page.close()
   const linked = await openPage(key, '#pick=beta-vote')
-  await linked.waitForSelector('#sf-content [data-widget].sf-flash')
+  await linked.waitForFunction(() => window.__flashed === 'beta-vote')
   assert.deepEqual(await press(linked, 'Shift'), { flashed: 'beta-vote', onScreen: true, tab: 'Beta' })
 
   await linked.evaluate(() => { location.hash = '#pick=top' })
-  await linked.waitForFunction(() => document.querySelector('#sf-content [data-widget].sf-flash')?.dataset.widgetId === 'top')
+  await linked.waitForFunction(() => window.__flashed === 'top')
   await linked.close()
 })
 
@@ -210,7 +223,7 @@ test('a queue board has no Next pick button, and N does nothing there', SLOW, as
     open_prs: [{ number: 7, url: 'https://example.com/pr/7', title: 'a pull request' }],
   }))
   const key = (await api('POST', '/api/open', { template: 'queue', data: source })).data.key
-  const page = await browser.newPage()
+  const page = await newPage()
   await page.goto(`${BASE}/b/${key}`, { waitUntil: 'networkidle0', timeout: 60000 })
   await page.waitForSelector('[data-widget-id="ask-1"]')
 

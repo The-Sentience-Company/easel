@@ -686,7 +686,7 @@ function render() {
 
 // A pick is a widget; open means no answer clicked, sent, or carried from an earlier round.
 function openPicks() {
-  if (ended || state.data.board.template === 'queue') return []
+  if (ended || state.data?.board.template === 'queue') return []
   return [...CONTENT.querySelectorAll('[data-widget]:not(.sf-recorded, .sf-prior-answered)')]
 }
 
