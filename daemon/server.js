@@ -16,6 +16,7 @@ import { markdown } from '../templates/_html.js'
 import { ROUTES } from './routes.js'
 import { readerChecks, sinceLast } from './reader-checks.js'
 import { sendHeartbeat } from './telemetry.js'
+import { bakeLocalImages, sourceDir, IMAGE_TYPES, STORED_NAME } from './local-images.js'
 
 const PORT = Number(process.env.EASEL_PORT || 4400)
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -155,7 +156,12 @@ async function renderSource(board) {
     raw = extractBody(await readFile(board.file, 'utf8'))
   }
   const rendered = await mermaidRender(raw)
-  return { ...rendered, html: await chartRender(await diffRender(rendered.html)), raw }
+  const html = await bakeLocalImages(await chartRender(await diffRender(rendered.html)), {
+    baseDir: sourceDir(board),
+    storeDir: join(ATTACHMENTS_DIR, board.key),
+    urlPrefix: `/b/${board.key}/img/`,
+  })
+  return { ...rendered, html, raw }
 }
 
 // Advisory-only static checks; the headless-render audit can extend this later.
@@ -983,6 +989,27 @@ const handlers = {
   boardPage(req, res, match) {
     const board = requireBoard(match[1], res)
     if (board) html(res, 200, shellPage(board))
+  },
+
+  // By board key and content hash only: the url never names a filesystem path.
+  async boardImage(req, res, match) {
+    const board = store.board(match[1])
+    const name = match[2]
+    if (!board || !STORED_NAME.test(name)) return json(res, 404, { error: 'no such image' })
+    let body
+    try {
+      body = await readFile(join(ATTACHMENTS_DIR, board.key, name))
+    } catch {
+      return json(res, 404, { error: 'no such image' })
+    }
+    res.writeHead(200, {
+      'Content-Type': IMAGE_TYPES[name.split('.').pop()],
+      'X-Content-Type-Options': 'nosniff',
+      // An svg opened as a document must not run script on the daemon origin.
+      'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox",
+      'Cache-Control': 'private, max-age=31536000, immutable',
+    })
+    res.end(body)
   },
 
   sse(req, res, match) {

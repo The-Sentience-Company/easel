@@ -170,7 +170,7 @@ test('allowlist preserves ordinary markup, sd- classes, widgets, and rendered me
     '<section class="sd-card"><h2>Title</h2>' +
       '<p>Text <a href="https://x.test">link</a> <strong>bold</strong> <code>c</code></p>' +
       '<ul><li>one</li></ul>' +
-      '<figure><img src="/img/a.png" alt="a"><figcaption>cap</figcaption></figure>' +
+      '<figure><img src="https://x.test/a.png" alt="a"><figcaption>cap</figcaption></figure>' +
       '<table><thead><tr><th>H</th></tr></thead><tbody><tr><td colspan="2">cell</td></tr></tbody></table>' +
       '<details open><summary>more</summary><p>body</p></details>' +
       '<div data-widget="vote" data-widget-id="w1"><button type="button" data-option="yes">Yes</button></div>' +
@@ -181,7 +181,7 @@ test('allowlist preserves ordinary markup, sd- classes, widgets, and rendered me
   )
   for (const t of [
     'sd-card', '<h2', 'href="https://x.test"', '<strong>', '<code>', '<li', 'one</li>',
-    'src="/img/a.png"', 'alt="a"', '<figcaption', 'colspan="2"', '<details open', '<summary',
+    'src="https://x.test/a.png"', 'alt="a"', '<figcaption', 'colspan="2"', '<details open', '<summary',
     'data-widget="vote"', 'data-option="yes"', 'type="button"',
     '<svg', '<path', 'transform=',
     'marker-end', '<foreignObject',

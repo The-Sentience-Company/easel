@@ -88,7 +88,7 @@ A section over 250 words with no list, table, or block trips the publish check.
 
 Markdown is the only structure a prose field has, so `authoring.md`'s paragraph rule applies to `summary`, `body`, and `detail` alike: terms, options, labeled facts, and steps are a table or list, not a paragraph.
 
-Headings, ordered and unordered lists, blockquotes, fenced code, ` ```mermaid ` fences, tables, inline `` `code` ``, `**bold**`, `*italic*`, `[links](https://example.com)`, and `![images](https://example.com/x.jpg)` (rendered bounded — max-height 340px; pin a width in px with `![alt|96](url)`). Only `http(s):` and `mailto:` URLs survive; anything else is dropped; image `src` is `http(s):` only.
+Headings, ordered and unordered lists, blockquotes, fenced code, ` ```mermaid ` fences, tables, inline `` `code` ``, `**bold**`, `*italic*`, `[links](https://example.com)`, and `![images](https://example.com/x.jpg)` (rendered bounded — max-height 340px; pin a width in px with `![alt|96](url)`). Only `http(s):` and `mailto:` URLs survive; anything else is dropped. An image `src` may also be a local path — absolute, or relative to the data file (`![shot](shots/a.png)`, spaces as `%20`); it is copied at publish, and a missing file fails the publish naming the path.
 
 ### Tables
 

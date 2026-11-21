@@ -9,7 +9,7 @@ When the board's subject IS a change to something concrete, or to how something 
 - a real unified diff in a ` ```diff ` fence for any text, prompt, config, or rule edit — **the fence works in every template's prose field**, not only `page`
 - the verbatim payload in an `sd-collapse` for anything being reasoned about
 - a rendered mockup for every UI option, showing every state the decision turns on — selected, opened, hovered — plus the surface it sits in; islands allow full CSS, so those states render
-- real images for an image vote, at the size they ship at
+- real images for an image vote, at the size they ship at. Reference a local image by path (`<img src="/abs/shot.png">`, a path relative to the source file, or `![alt](shot.png)` in markdown); it is copied at publish, and a missing file fails the publish naming it. Never hand-embed base64
 - a worked example for a decision about behaviour: one real input (a message, a settings row, a request) and what the person sees under each option, side by side, because a behaviour described in prose reads the same for every option until the reader sees two outputs differ
 - a diagram in a ` ```mermaid ` fence when the flow crosses more than two parts (an app, a server, a third-party service), its boxes labelled with what happens
 - a state table for a control with three or more states: one row per state, what the person sees and what a click does

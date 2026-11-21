@@ -1,7 +1,7 @@
 /* rulings template — labeled cases adjudicated one by one, grouped by decision:
    sections ordered by judgment needed, one vote per case, skim sections one line each. */
 
-import { esc, markdown, widget, attr, badge, makeIdGuard, requireObject, requireArray, requireString, fail } from './_html.js'
+import { esc, markdown, widget, attr, badge, makeIdGuard, requireObject, requireArray, requireString, fail, isLocalSrc } from './_html.js'
 
 export const name = 'rulings'
 
@@ -228,7 +228,7 @@ function caseBlock(c, at, caseOptions, ctx) {
       spec = c.image
     }
     const src = requireString(spec.src, `${at}.image.src`)
-    if (!/^https?:\/\//.test(src)) fail(`${at}.image.src must be an http(s) URL — the publish sanitizer drops anything else`)
+    if (!/^https?:\/\//.test(src) && !isLocalSrc(src)) fail(`${at}.image.src must be an http(s) URL or a local file path — the publish sanitizer drops anything else`)
     let width = ''
     if (spec.px !== undefined) {
       if (!Number.isFinite(spec.px) || spec.px < 16 || spec.px > 800) fail(`${at}.image.px must be a number 16..800`)

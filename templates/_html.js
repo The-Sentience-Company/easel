@@ -166,15 +166,25 @@ const alignments = (line) => splitRow(line).map((c) => {
   return null
 })
 
+/** A path on this machine (absolute, relative to the board source, or file:) rather than a URL. */
+export function isLocalSrc(src) {
+  const s = String(src).trim()
+  if (!s || s.startsWith('#') || s.startsWith('//')) return false
+  if (/^file:/i.test(s)) return true
+  return !/^[a-z][a-z0-9+.-]*:/i.test(s)
+}
+
 export function inline(text) {
   let s = esc(text)
   s = s.replace(/`([^`]+)`/g, (_, c) => `<code>${c}</code>`)
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   s = s.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
-  // Only http(s) and mailto survive — no javascript: or data: URLs.
+  // Only http(s), mailto and local image paths survive — no javascript: or data: URLs.
   // Obsidian-style size hint: ![alt|96](url) pins the rendered width in px.
-  s = s.replace(/!\[([^\]|]*)(?:\|(\d{1,4}))?\]\((https?:[^)\s]+)\)/g, (_, alt, w, src) =>
-    `<img class="sd-md-img" src="${src}" alt="${alt}"${w ? ` width="${w}"` : ''} loading="lazy">`)
+  s = s.replace(/!\[([^\]|]*)(?:\|(\d{1,4}))?\]\(([^)\s]+)\)/g, (all, alt, w, src) =>
+    /^https?:/i.test(src) || isLocalSrc(src)
+      ? `<img class="sd-md-img" src="${src}" alt="${alt}"${w ? ` width="${w}"` : ''} loading="lazy">`
+      : all)
   s = s.replace(/\[([^\]]+)\]\(((?:https?:|mailto:)[^)\s]+)\)/g, '<a href="$2">$1</a>')
   return s
 }
